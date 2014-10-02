@@ -650,12 +650,14 @@ if __name__ == '__main__':
         axs[1].plot(stim_group['traces_fem']['time'], stim_group['traces_fem']
                 ['force']*1e3, '-k', label='Model')
     axs[0].legend(loc=2)
-#    axs[0].set_xticks(range(300, 800, 100))
     axs[0].set_xlabel(r'Static displacement ($\mu$m)')
     axs[0].set_ylabel(r'Static force (mN)')
     axs[1].legend()
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
+    # Setting the range
+    axs[0].set_xlim(300, 600)    
+    axs[0].set_ylim(0, 12)    
     axs[1].set_ylim(-1, 8)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
@@ -722,106 +724,6 @@ if __name__ == '__main__':
             fontsize=12, fontweight='bold', va='top')    
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_time_series.png', dpi=300)
-    #%% Plot experiment data with displ / force aligned - static
-    fig, axs = plt.subplots(1, 2, figsize=(3.27, 2))
-    for i, fiber in enumerate(fiber_list):
-        fmt = ':' + MARKER_LIST[i]
-        color = COLOR_LIST[i]
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[1].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-    axs[0].set_xlim(300, 700)
-    axs[0].set_xticks(range(300, 800, 100))
-    axs[1].set_xlim(-1, 15)
-    axs[0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[1].set_xlabel(r'Static force (mN)')
-    axs[0].set_ylabel('Mean FR (Hz)')
-    # Adding legend box
-    h, l = axs[0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(0.1, 0.9, 0.9, .1), ncol=3,
-        mode='expand', frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)
-    # Adding panel labels
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.3, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')
-    fig.tight_layout()
-    fig.subplots_adjust(top=.83)
-    fig.savefig('./plots/paper_static_displ_force.png', dpi=300)
-    #%% Plot experiment data with displ / force aligned - dynamic
-    fig, axs = plt.subplots(1, 2, figsize=(3.27, 2))
-    for i, fiber in enumerate(fiber_list):
-        fmt = ':' + MARKER_LIST[i]
-        color = COLOR_LIST[i]
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[1].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-    axs[0].set_xlim(300, 700)
-    axs[0].set_xticks(range(300, 800, 100))
-    axs[1].set_xlim(-1, 15)
-    axs[0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[1].set_xlabel(r'Static force (mN)')
-    axs[0].set_ylabel('Mean FR (Hz)')
-    # Adding legend box
-    h, l = axs[0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(0.1, 0.9, 0.9, .1), ncol=3,
-        mode='expand', frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)
-    # Adding panel labels
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.3, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')
-    fig.tight_layout()
-    fig.subplots_adjust(top=.83)
-    fig.savefig('./plots/paper_dynamic_displ_force.png', dpi=300)
-    #%% Plot experiment data with displ / force aligned on both phases
-    fig, axs = plt.subplots(2, 2, figsize=(3.27, 3.27))
-    for i, fiber in enumerate(fiber_list):
-        fmt = ':' + MARKER_LIST[i]
-        color = COLOR_LIST[i]
-        axs[1, 0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[1, 1].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[0, 0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[0, 1].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-    for axes in axs[:, 0]:
-        axes.set_xlim(300, 700)
-        axes.set_xticks(range(300, 800, 100))
-        axes.set_ylabel('Mean FR (Hz)')
-    for axes in axs[:, 1]:
-        axes.set_xlim(-1, 15)
-    for axes in axs[0, :]:
-        axes.set_ylim(-20, 180)
-    axs[1, 0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[1, 1].set_xlabel(r'Static force (mN)')
-    # Adding legend box
-    h, l = axs[0, 0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(0.1, 0.9, 0.9, .1), ncol=3,
-        mode='expand', frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)
-    # Adding panel labels
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.35, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')
-    fig.tight_layout()
-    fig.subplots_adjust(top=.9)
-    fig.savefig('./plots/paper_both_displ_force.png', dpi=300)
     #%% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting
     displ_list, force_list, static_fr_list, dynamic_fr_list = [], [], [], []
