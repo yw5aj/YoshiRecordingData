@@ -403,86 +403,11 @@ class Fiber:
         return
 
 
-def plot_all_binned_exp(fiber_list, fiber_mech, quantity_name):
-    
-    def fit_fun(param, xdata):
-#        return param[0] * np.exp(param[1] * xdata) + param[2]
-        return param[0] + param[1] * xdata
-        
-    def r2_fit_fun(param, xdata, ydata, sign=1.):
-        ydata_fit = fit_fun(param, xdata)
-        sse = np.linalg.norm(ydata-ydata_fit)**2
-        sst = np.var(ydata) * ydata.shape[0]
-        r2 = 1. - sse / sst
-        return sign * r2
-        
-    fig, axs = plt.subplots(3, 1, figsize=(3.27, 6.83))
-    for i, fiber in enumerate(fiber_list):
-        fmt = MARKER_LIST[i]
-        color = COLOR_LIST[i]
-        # Static firing rate
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label=r'#%d, $R^2$=%.2f' % (
-            fiber.fiber_id, fiber.lif_r2[quantity_name][0]))
-        xopt = minimize(r2_fit_fun, np.ones(2)*1e-5, args=(fiber.binned_exp[
-            'displ_all'], fiber.binned_exp['static_fr_all'], -1.), 
-            method='L-BFGS-B').x
-        displ_all_interp = np.linspace(fiber.binned_exp['displ_mean'].min(), 
-            fiber.binned_exp['displ_mean'].max(), 20)
-        axs[0].plot(displ_all_interp, fit_fun(xopt, displ_all_interp),
-            c=color, ls=':')
-        axs[0].plot(fiber.binned_exp['displ_mean'], fiber.lif_fr[quantity_name
-            ][:, 0], c=color, ls='-')
-        # Dynamic firing rate
-        axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label=r'#%d, $R^2$=%.2f' % (
-            fiber.fiber_id, fiber.lif_r2[quantity_name][1]))
-        xopt = minimize(r2_fit_fun, np.ones(3)*1e-5, args=(fiber.binned_exp[
-            'displ_all'], fiber.binned_exp['dynamic_fr_all'], -1.), 
-            method='L-BFGS-B').x
-        displ_all_interp = np.linspace(fiber.binned_exp['displ_mean'].min(), 
-            fiber.binned_exp['displ_mean'].max(), 20)
-        axs[1].plot(displ_all_interp, fit_fun(xopt, displ_all_interp), 
-            c=color, ls=':')
-        axs[1].plot(fiber.binned_exp['displ_mean'], fiber.lif_fr[quantity_name
-            ][:, 1], c=color, ls='-')
-        # Force displacement
-        axs[2].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'force_mean'], fiber.binned_exp['force_std'], fmt=fmt+':',
-            c=color, mec=color, ms=MS, label='#%d'%i)
-        axs[2].plot(fiber_mech.abq_displ_scaled, fiber.abq_force, ls='-', 
-            c=color)
-    # Add the suptitle
-    axs[0].set_title(quantity_name+r'#1 avg R$^2$=%.2f, #2 avg R$^2$=%.2f' %
-        (np.mean(fiber_list[0].lif_r2[quantity_name]), np.mean(
-        fiber_list[1].lif_r2[quantity_name])))
-    # Format the figure
-    axs[0].set_xlabel(r'Displ. ($\mu$m)')
-    axs[1].set_xlabel(r'Displ. ($\mu$m)')
-    axs[2].set_xlabel(r'Displ. ($\mu$m)')
-    axs[0].set_ylabel('Static FR (Hz)')
-    axs[1].set_ylabel('Dynamic FR (Hz)')
-    axs[2].set_ylabel('Force (mN)')
-    axs[0].set_xlim(300, 700)
-    axs[1].set_xlim(300, 700)
-    axs[2].set_xlim(300, 700)
-    axs[0].set_ylim(-5, 60)
-    axs[1].set_ylim(0, 180)
-    axs[2].set_ylim(0, 15)
-    axs[0].legend(loc=2)
-    axs[1].legend(loc=2)
-    axs[2].legend(loc=2)
-    fig.tight_layout()
-    fig.savefig('./plots/binned_exp_all_'+quantity_name+'.png', dpi=300)
-    return fig, axs
-
 
 if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
     run_calibration = False
-    make_plot = True
+    make_plot = False
     run_fiber_mech = False
     run_each_fiber = False
     run_fitting = False
@@ -584,8 +509,6 @@ if __name__ == '__main__':
                     return static_r2, dynamic_r2
                 fiber.lif_r2[quantity_name] = get_lif_r2(target_fr_array,
                     fiber.lif_fr[quantity_name])
-    for quantity_name in quantity_name_list:
-        plot_all_binned_exp(fiber_list, fiber_mech, quantity_name)
     #%% Plot fitting figure for paper
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
     for fiber_id in FIBER_FIT_ID_LIST:
