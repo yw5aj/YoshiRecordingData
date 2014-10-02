@@ -80,20 +80,30 @@ class SimFiber:
     
     def load_traces(self):
         fpath = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
+        # Use stim_num - 1 to leave space for the zero-stim trace
         fname_list = [self.factor + str(self.level) + str(stim) +\
-            self.control + '.csv' for stim in range(stim_num)]
+            self.control + '.csv' for stim in range(stim_num-1)]
         self.traces = [{} for i in range(stim_num)]
+        # Read the non-zero output from FEM
         for i, fname in enumerate(fname_list):
             time, force, displ, stress, strain, sener = np.loadtxt(
                 fpath+fname, delimiter=',').T
             fine_time = np.arange(0, time.max(), DT)
-            self.traces[i]['time'] = fine_time
-            self.traces[i]['force'] = np.interp(fine_time, time, force)
-            self.traces[i]['displ'] = np.interp(fine_time, time, displ)
-            self.traces[i]['stress'] = np.interp(fine_time, time, stress)
-            self.traces[i]['strain'] = np.interp(fine_time, time, strain)
-            self.traces[i]['sener'] = np.interp(fine_time, time, sener)
-            self.traces[i]['max_index'] = self.traces[i]['force'].argmax()
+            self.traces[i+1]['time'] = fine_time
+            self.traces[i+1]['force'] = np.interp(fine_time, time, force)
+            self.traces[i+1]['displ'] = np.interp(fine_time, time, displ)
+            self.traces[i+1]['stress'] = np.interp(fine_time, time, stress)
+            self.traces[i+1]['strain'] = np.interp(fine_time, time, strain)
+            self.traces[i+1]['sener'] = np.interp(fine_time, time, sener)
+            self.traces[i+1]['max_index'] = self.traces[i+1]['force'].argmax()
+        # Fill the zero-stim trace
+        self.traces[0]['max_index'] = self.traces[1]['max_index']
+        self.traces[0]['time'] = self.traces[1]['time']
+        self.traces[0]['force'] = np.zeros_like(self.traces[0]['time'])
+        self.traces[0]['displ'] = np.zeros_like(self.traces[0]['time'])
+        self.traces[0]['stress'] = np.zeros_like(self.traces[0]['time'])
+        self.traces[0]['strain'] = np.zeros_like(self.traces[0]['time'])
+        self.traces[0]['sener'] = np.zeros_like(self.traces[0]['time'])
         # Get the FEM and corresponding displ / force
         self.static_displ_fem = np.array([self.traces[i]['displ'][-1]
             for i in range(stim_num)])
@@ -264,9 +274,9 @@ if __name__ == '__main__':
                 for col, axes in enumerate(axs_row):
                     # X-ticks
                     if col < 2:
-                        axes.set_xlim(350, 600)
+                        axes.set_xlim(300, 600)
                     else:
-                        axes.set_xlim(0, 12)
+                        axes.set_xlim(0, 8)
                     # Y-lim record
                     ymin_array[row, col] = axes.get_ylim()[0]                        
                     ymax_array[row, col] = axes.get_ylim()[1]
