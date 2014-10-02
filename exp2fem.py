@@ -867,32 +867,23 @@ if __name__ == '__main__':
     displ_static_fit_r2 = get_r2(static_fr_list, displ_static_predict)
     force_static_fit_r2 = get_r2(static_fr_list, force_static_predict)
     # Plotting
-    fig0, axs0 = plt.subplots()
-    fig1, axs1 = plt.subplots()
-    fig2, axs2 = plt.subplots()
-    axs = [axs0, axs1, axs2]
+    fig, axs = plt.subplots(3, 1, figsize=(3.27, 9.19))
     for i, fiber in enumerate(fiber_list):
         fmt = MARKER_LIST[i] + ':'
-#        color = COLOR_LIST[i]
         color = 'k'
         axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[1].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
-        axs[2].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
             'force_mean'], fiber.binned_exp['force_std'], fmt=fmt, c=color,
-            mec=color, ms=MS, label='Fiber #%d' % i)
-    axs[0].plot(sorted(displ_list), np.sort(displ_static_predict), '-k',
+            mec=color, ms=MS, label='Fiber #%d' % i)        
+        axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
+            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
+        axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
+            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
+            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
+    axs[1].plot(sorted(displ_list), np.sort(displ_static_predict), '-k',
         label='Linear regression')
-    axs[1].plot(sorted(force_list), np.sort(force_static_predict), '-k',
+    axs[2].plot(sorted(force_list), np.sort(force_static_predict), '-k',
         label='Linear regression')
-#    axs[0].set_xlim(300, 700)
-#    axs[0].set_xticks(range(300, 800, 100))
-#    axs[1].set_xlim(-1, 15)
-#    axs[2].set_xlim(300, 700)
-#    axs[2].set_ylim(-1, 15)
     axs[0].set_xlabel(r'Static displ. ($\mu$m)')
     axs[1].set_xlabel(r'Static force (mN)')
     axs[2].set_xlabel(r'Static displ. ($\mu$m)')
@@ -900,12 +891,6 @@ if __name__ == '__main__':
     axs[1].set_ylabel('Mean static FR (Hz)')
     axs[2].set_ylabel(r'Static force (mN)')
     axs[0].legend(loc=2)
-    axs[1].legend(loc=2)
-    axs[2].legend(loc=2)
-    fig0.tight_layout()
-    fig0.savefig('./plots/paper_static_displ.png', dpi=300)
-    fig1.tight_layout()
-    fig1.savefig('./plots/paper_static_force.png', dpi=300)
-    fig2.tight_layout()
-    fig2.savefig('./plots/paper_static_displ_force.png', dpi=300)
+    fig.tight_layout()
+    fig.savefig('./plots/compare_variance.png', dpi=300)
 #    print(force_static_fit_resvar, displ_static_fit_resvar)
