@@ -22,8 +22,7 @@ factor_display_list = ['skin thickness', 'skin modulus',
 level_num = 5
 control_list = ['Displ', 'Force']
 quantity_list = ['force', 'displ', 'stress', 'strain', 'sener']
-quantile_label_list = ['Min', 'LQ', 'Med', 
-    'UQ', 'Max']
+quantile_label_list = ['Min', 'LQ', 'Med', 'UQ', 'Max']
 phase_list = ['dynamic', 'static']
 percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
@@ -210,8 +209,6 @@ def fit_sim_cluster(simFiberLevelList, fiber_id, quantity):
 
 
 if __name__ == '__main__':
-    # Switches for the script
-    plot_exp_flag = True
     # Load experiment data
     binned_exp_list = []
     for i in range(FIBER_TOT_NUM):
@@ -227,7 +224,9 @@ if __name__ == '__main__':
                 simFiber = SimFiber(factor, level, control)
                 simFiberList[i][j].append(simFiber)
                 print(factor+str(level)+control+' is done.')
-    #%%
+    #%% 
+    # Switches for the script
+    plot_exp_flag = False                
     # Plotting the big figure
     fig_list = [[] for i in range(len(factor_list))]
     axs_list = [[] for i in range(len(factor_list))]                
@@ -274,9 +273,9 @@ if __name__ == '__main__':
                 for col, axes in enumerate(axs_row):
                     # X-ticks
                     if col < 2:
-                        axes.set_xlim(300, 600)
+                        axes.set_xlim(300, 650)
                     else:
-                        axes.set_xlim(0, 8)
+                        axes.set_xlim(-0.5, 8.5)
                     # Y-lim record
                     ymin_array[row, col] = axes.get_ylim()[0]                        
                     ymax_array[row, col] = axes.get_ylim()[1]
@@ -284,11 +283,11 @@ if __name__ == '__main__':
                 for col, axes in enumerate(axs_row):
                     ymin = ymin_array[row, col%2::2].min()
                     ymax = ymax_array[row, col%2::2].max()
-                    axes.set_ylim(ymin-5, ymax+5)
+                    axes.set_ylim(-5, ymax+5)
             # Adding axes labels
             for row, axes in enumerate(axs[:, 0]):
                 quantity_label_list = ['force', 'displacement', 'stress', 
-                    'strain', 'SED']
+                    'strain', 'sener']
                 axes.set_ylabel('Predicted from ' + quantity_label_list[row]\
                     +'\nMean firing (Hz)')
             for col, axes in enumerate(axs[-1, :]):
@@ -339,6 +338,7 @@ if __name__ == '__main__':
                     resvar_list[i][k][quantity], prediction_list[i][k][
                         quantity] = fit_sim_cluster(simFiberLevelList,
                         fiber_id, quantity)            
+
     #%% Factors explaining the force-alignment - static
     for k, quantity in enumerate(quantity_list[-3:]):
         fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
@@ -393,77 +393,6 @@ if __name__ == '__main__':
         fig.subplots_adjust(top=.92, bottom=.15)
         fig.savefig('./plots/paper_%s_align_force_static.png' % quantity,
                     dpi=300)
-    #%% Factors explaining the force-alignment - dynamic
-    for k, quantity in enumerate(quantity_list[-3:]):
-        fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
-        fiber_id = FIBER_FIT_ID_LIST[0]
-        for i, factor in enumerate(factor_list[:3]):
-            factor_display = factor_display_list[i]
-            for level in range(level_num):
-                color = str(.6 - .15 * level)
-                axs[i, 0].plot(simFiberList[i][level][0].static_displ_exp, 
-                    simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
-                    [:, 2], c=color, mec=color, ms=MS, marker='o')
-                axs[i, 0].set_ylabel('Dynamic mean FR (Hz)\nVary %s'
-                    % factor_display[5:])
-                axs[i, 1].plot(simFiberList[i][level][0].static_force_exp, 
-                    simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
-                    [:, 2], c=color, mec=color, ms=MS, marker='o')
-        axs[-1, 0].set_xlabel(r'Static displ. ($\mu$m)')
-        axs[-1, 1].set_xlabel(r'Static force (mN)')    
-        for axes in axs.ravel():
-            axes.set_ylim(bottom=axes.get_ylim()[0]-5)
-            axes.set_ylim(top=axes.get_ylim()[1]+5)
-            axes.set_xlim(left=axes.get_xlim()[0]-1)
-            axes.set_xlim(right=axes.get_xlim()[1]+1)
-        for axes_id, axes in enumerate(axs.ravel()):
-            xloc = -.35# if quantity is 'stress' else -.27
-            axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
-                fontsize=12, fontweight='bold', va='top')      
-        fig.tight_layout()
-        fig.suptitle('Predicted by ' + quantity)
-        fig.subplots_adjust(top=.92)
-        fig.savefig('./plots/paper_%s_align_force_dynamic.png' % quantity,
-                    dpi=300)
-    #%% Factors explaining the force-alignment - dynamic - force controlled
-    for k, quantity in enumerate(quantity_list[-3:]):
-        fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
-        fiber_id = FIBER_FIT_ID_LIST[0]
-        for i, factor in enumerate(factor_list[:3]):
-            factor_display = factor_display_list[i]
-            for level in range(level_num):
-                color = str(.6 - .15 * level)
-                axs[i, 0].plot(simFiberList[i][level][0].static_force_exp, 
-                    simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
-                    [:, 2], c=color, mec=color, ms=MS, marker='o')
-                axs[i, 0].set_ylabel('Dynamic mean FR (Hz)\nVary %s'
-                    % factor_display[5:])
-                axs[i, 1].plot(simFiberList[i][level][1].static_force_exp, 
-                    simFiberList[i][level][1].predicted_fr[fiber_id][quantity]
-                    [:, 2], c=color, mec=color, ms=MS, marker='o')
-        axs[-1, 0].set_xlabel(r'Static force (mN)')
-        axs[-1, 1].set_xlabel(r'Static force (mN)')    
-        for axes_id, axes in enumerate(axs.ravel()):
-            axes.set_ylim(bottom=axes.get_ylim()[0]-5)
-            axes.set_ylim(top=axes.get_ylim()[1]+5)
-            axes.set_xlim(left=axes.get_xlim()[0]-1)
-            axes.set_xlim(right=axes.get_xlim()[1]+1)
-        for axs_row in axs:
-            xlim_right = max([axes.get_xlim()[1] for axes in axs_row])
-            ylim_top = max([axes.get_ylim()[1] for axes in axs_row])
-            [(axes.set_xlim(right=xlim_right), axes.set_ylim(top=ylim_top))
-                for axes in axs_row]
-        for m, axes in enumerate(axs[0]):
-            axes.set_title(control_list[m] + ' controlled')
-        for axes_id, axes in enumerate(axs.ravel()):
-            xloc = -.35 if axes_id % 2 is 0 else -.3
-            axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
-                fontsize=12, fontweight='bold', va='top')      
-        fig.tight_layout()
-        fig.suptitle('Predicted by ' + quantity)
-        fig.subplots_adjust(top=.92)
-        fig.savefig('./plots/paper_%s_align_force_dynamic_fc.png' % quantity,
-                    dpi=300)
     #%% Factors explaining the force-alignment - static - force controlled
     for k, quantity in enumerate(quantity_list[-3:]):
         fig, axs = plt.subplots(5, 2, figsize=(3.27, 7))
@@ -498,62 +427,6 @@ if __name__ == '__main__':
         fig.subplots_adjust(top=.94)
         fig.savefig('./plots/paper_%s_align_force_static_fc.png' % quantity,
                     dpi=300)
-    #%% Force traces under force control
-    fiber_id = FIBER_FIT_ID_LIST[0]
-    for quantity in quantity_list[-3:]:
-        fig, axs = plt.subplots(1, 2, figsize=(3.27, 2))        
-        for level in range(level_num):
-            color = str(.6 - .15 * level)
-            traces = simFiberList[0][level][0].traces[2]
-            axs[0].plot(traces['time'], traces[quantity], c=color,
-                mec=color)
-            axs[0].set_label('Displ control')
-            traces = simFiberList[0][level][1].traces[2]                
-            axs[1].plot(traces['time'], traces[quantity], c=color,
-                mec=color)
-            axs[1].set_label('Force control')                
-            for axes in axs:            
-                axes.set_xlim(0, 0.3)
-                axes.set_xlabel('Time (s)')
-                axes.set_ylim(top=max([axs[i].get_ylim()[1] for i in range(2)]))
-            axs[0].set_ylabel(quantity.capitalize())
-        for axes_id, axes in enumerate(axs.ravel()):
-            axes.text(-.15, 1.2, chr(65+axes_id), transform=axes.transAxes,
-                fontsize=12, fontweight='bold', va='top')      
-        fig.tight_layout()
-        fig.suptitle('Predicted by ' + quantity)
-        fig.subplots_adjust(top=.8)
-        fig.savefig('./plots/paper_%s_fc_variability.png' % quantity,
-                    dpi=300)
-    #%% Force traces under force control
-    fiber_id = FIBER_FIT_ID_LIST[0]
-    fig, axs_all = plt.subplots(3, 2, figsize=(3.27, 5))        
-    axs = axs_all.ravel()
-    for i, factor in enumerate(factor_list):
-        for level in range(level_num):
-            color = str(.6 - .15 * level)
-            simFiber = simFiberList[i][level][0]
-            axs[i].plot(simFiber.static_displ_exp,
-                simFiber.static_force_exp, c=color, mec=color, ms=MS,
-                marker='o', label=quantile_label_list[level])
-        axs[i].set_ylim(-2, 27)
-        axs[i].set_ylabel('Static force (mN)')
-        axs[i].set_xlabel(r'Static displacement ($\mu$m)')
-        axs[i].set_title(factor_display_list[i].capitalize())
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.3, 1.2, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')      
-    fig.delaxes(axs[-1])
-    # Legend
-    h, l = axs[0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(.05, 0.02, .9, .1),
-        loc=3, ncol=level_num, mode='expand', borderaxespad=0.,
-        frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)    
-    fig.tight_layout()
-    fig.subplots_adjust(bottom=.15)
-    fig.savefig('./plots/paper_all_static_force_displ.png', dpi=300)
     #%% Print all force ratios
     for quantity in quantity_list[-3:]:
         fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
@@ -604,6 +477,3 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.subplots_adjust(top=.95, bottom=.15)
         fig.savefig('./plots/paper_%s-force.png'%quantity, dpi=300)
-    
-
-
