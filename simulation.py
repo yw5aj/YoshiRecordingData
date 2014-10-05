@@ -393,40 +393,6 @@ if __name__ == '__main__':
         fig.subplots_adjust(top=.92, bottom=.15)
         fig.savefig('./plots/paper_%s_align_force_static.png' % quantity,
                     dpi=300)
-    #%% Factors explaining the force-alignment - static - force controlled
-    for k, quantity in enumerate(quantity_list[-3:]):
-        fig, axs = plt.subplots(5, 2, figsize=(3.27, 7))
-        fiber_id = FIBER_FIT_ID_LIST[0]
-        for i, factor in enumerate(factor_list[:3]):
-            factor_display = factor_display_list[i]
-            for level in range(level_num):
-                color = str(.6 - .15 * level)
-                axs[i, 0].plot(simFiberList[i][level][0].static_force_exp, 
-                    simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
-                    [:, 1], c=color, mec=color, ms=MS, marker='o')
-                axs[i, 0].set_ylabel('Dynamic mean FR (Hz)\nVary %s'
-                    % factor_display[5:])
-                axs[i, 1].plot(simFiberList[i][level][1].static_force_exp, 
-                    simFiberList[i][level][1].predicted_fr[fiber_id][quantity]
-                    [:, 1], c=color, mec=color, ms=MS, marker='o')
-        axs[-1, 0].set_xlabel(r'Static force (mN)')
-        axs[-1, 1].set_xlabel(r'Static force (mN)')    
-        for axes in axs.ravel():
-            axes.set_ylim(bottom=axes.get_ylim()[0]-5)
-            axes.set_ylim(top=axes.get_ylim()[1]+5)
-            axes.set_xlim(left=axes.get_xlim()[0]-1)
-            axes.set_xlim(right=axes.get_xlim()[1]+1)
-        for m, axes in enumerate(axs[0]):
-            axes.set_title(control_list[m] + ' controlled')
-        for axes_id, axes in enumerate(axs.ravel()):
-            xloc = -.35 if quantity is 'stress' else -.27
-            axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
-                fontsize=12, fontweight='bold', va='top')      
-        fig.tight_layout()
-        fig.suptitle('Predicted by ' + quantity)
-        fig.subplots_adjust(top=.94)
-        fig.savefig('./plots/paper_%s_align_force_static_fc.png' % quantity,
-                    dpi=300)
     #%% Print all force ratios
     for quantity in quantity_list[-3:]:
         fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
