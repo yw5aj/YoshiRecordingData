@@ -535,7 +535,8 @@ if __name__ == '__main__':
                 quantity)
     # Adjust formatting
     for axes in axs:
-        axes.set_xlabel(r'Displacement ($\mu$m)')
+        axes.set_xlim(390, 550)
+    axs[1].set_xlabel(r'Displacement ($\mu$m)')
     axs[0].set_ylabel('Dynamic mean firing (Hz)')
     axs[1].set_ylabel('Static mean firing (Hz)')
     h, l = axs[0].get_legend_handles_labels()
@@ -710,11 +711,11 @@ if __name__ == '__main__':
     axs[2].plot(sorted(force_list), np.sort(force_static_predict), '-k',
         label='Linear regression')
     axs[0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[1].set_xlabel(r'Static force (mN)')
-    axs[2].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[0].set_ylabel('Mean static FR (Hz)')
+    axs[1].set_xlabel(r'Static displ. ($\mu$m)')
+    axs[2].set_xlabel(r'Static force (mN)')    
+    axs[0].set_ylabel(r'Static force (mN)')
     axs[1].set_ylabel('Mean static FR (Hz)')
-    axs[2].set_ylabel(r'Static force (mN)')
+    axs[2].set_ylabel('Mean static FR (Hz)')
     axs[0].legend(loc=2)
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
