@@ -14,6 +14,7 @@ from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     STATIC_END)
 from fitlif import trans_param_to_predicted_fr
 
+BASE_CSV_PATH = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
 factor_list = ['SkinThick', 'SkinAlpha', 'SkinGinf', 'SylgardThick',
                'SylgardC10']
 factor_display_list = ['skin thickness', 'skin modulus',
@@ -26,7 +27,7 @@ quantile_label_list = ['Min', 'LQ', 'Med', 'UQ', 'Max']
 phase_list = ['dynamic', 'static']
 percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
-stim_num = 5
+stim_num = 6
 AREA = np.pi * 1e-3**2 / 4
 
 
@@ -56,6 +57,21 @@ class SimFiber:
         self.load_trans_params()
         self.get_predicted_fr()
         self.get_line_fit()
+        self.get_dist()
+        return
+    
+    def get_dist(self):
+        fpath = BASE_CSV_PATH
+        # Use the 2nd magnitude as example
+        stim = 2
+        self.dist = {}        
+        key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'mcncsener',
+                    'mcncstrain', 'mcncstress', 'mcncxnew', 'mcncxold',
+                    'time']
+        for key in key_list:
+            self.dist[key] = np.loadtxt(
+                fpath+self.factor+str(self.level)+str(stim)+self.control+'_'
+                +key+'.csv', delimiter=',')
         return
     
     def get_traces_mean(self):
@@ -78,7 +94,7 @@ class SimFiber:
         return
     
     def load_traces(self):
-        fpath = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
+        fpath = BASE_CSV_PATH
         # Use stim_num - 1 to leave space for the zero-stim trace
         fname_list = [self.factor + str(self.level) + str(stim) +\
             self.control + '.csv' for stim in range(stim_num-1)]
@@ -338,7 +354,6 @@ if __name__ == '__main__':
                     resvar_list[i][k][quantity], prediction_list[i][k][
                         quantity] = fit_sim_cluster(simFiberLevelList,
                         fiber_id, quantity)            
-
     #%% Factors explaining the force-alignment - static
     for k, quantity in enumerate(quantity_list[-3:]):
         fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
@@ -351,7 +366,7 @@ if __name__ == '__main__':
                     simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
                     [:, 1], c=color, mec=color, ms=MS, marker='o',
                     label=quantile_label_list[level])
-                axs[i, 0].set_ylabel('Static mean FR (Hz)\nVary %s'
+                axs[i, 0].set_ylabel('Mean response (Hz)\nVary %s'
                     % factor_display[5:])
                 axs[i, 1].plot(simFiberList[i][level][0].static_force_exp, 
                     simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
@@ -371,14 +386,21 @@ if __name__ == '__main__':
         # Formatting
         axs[-1, 0].set_xlabel(r'Static displ. ($\mu$m)')
         axs[-1, 1].set_xlabel(r'Static force (mN)')    
-        for axes in axs.ravel():
-            axes.set_ylim(bottom=axes.get_ylim()[0]-5)
-            axes.set_ylim(top=axes.get_ylim()[1]+5)
-            axes.set_xlim(left=axes.get_xlim()[0]-1)
-            axes.set_xlim(right=axes.get_xlim()[1]+1)
+        ymargin = 5
+        xmargin = 1
+        for i, axes in enumerate(axs.ravel()):
+            axes.set_ylim(bottom=axes.get_ylim()[0]-ymargin)
+            axes.set_ylim(top=axes.get_ylim()[1]+ymargin)
+            if i % 2 == 0:
+                axes.set_xlim(300, 600)
+                axes.set_xticks(np.arange(300, 700, 100))
+            elif i % 2 == 1:
+                xmargin = 2
+                axes.set_xlim(left=axes.get_xlim()[0]-xmargin)
+                axes.set_xlim(right=axes.get_xlim()[1]+xmargin) 
         for axes_id, axes in enumerate(axs.ravel()):
-            xloc = -.35 if quantity is 'stress' else -.27
-            axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
+            xloc = -.27
+            axes.text(xloc, 1.15, chr(65+axes_id), transform=axes.transAxes,
                 fontsize=12, fontweight='bold', va='top')      
         # Legend
         h, l = axs[0, 0].get_legend_handles_labels()
@@ -397,7 +419,6 @@ if __name__ == '__main__':
     for quantity in quantity_list[-3:]:
         fig, axs = plt.subplots(3, 2, figsize=(3.27, 4.5))
         fiber_id = FIBER_FIT_ID_LIST[0]
-        temp = []
         for i, factor in enumerate(factor_list[:3]):
             for level in range(level_num):
                 color = str(.6 - .15 * level)
@@ -419,11 +440,22 @@ if __name__ == '__main__':
         frame = legend.get_frame()
         frame.set_linewidth(.5)
         # Formatting
-#        for axes in axs.ravel():
-#            axes.set_ylim(bottom=axes.get_ylim()[0]-ymargin)
-#            axes.set_ylim(top=axes.get_ylim()[1]+ymargin)
-#            axes.set_xlim(left=axes.get_xlim()[0]-xmargin)
-#            axes.set_xlim(right=axes.get_xlim()[1]+xmargin)        
+        for i, axes in enumerate(axs.ravel()):
+            if quantity is 'strain':
+                ymargin = .1
+            elif quantity is 'stress':
+                ymargin = 1
+            elif quantity is 'sener':
+                ymargi = .2
+            axes.set_ylim(bottom=axes.get_ylim()[0]-ymargin)
+            axes.set_ylim(top=axes.get_ylim()[1]+ymargin)
+            if i % 2 == 0:
+                axes.set_xlim(300, 600)
+                axes.set_xticks(np.arange(300, 700, 100))
+            elif i % 2 == 1:
+                xmargin = 2
+                axes.set_xlim(left=axes.get_xlim()[0]-xmargin)
+                axes.set_xlim(right=axes.get_xlim()[1]+xmargin)       
         axs[-1, 1].set_xlabel(r'Static force (mN)')
         axs[-1, 0].set_xlabel(r'Static displ. ($\mu$m)')
         for row, axes in enumerate(axs[:, 0]):
@@ -437,9 +469,107 @@ if __name__ == '__main__':
             else:
                 axes.set_ylabel(r'Static strain'+'\nVary %s' % factor_display)
         for axes_id, axes in enumerate(axs.ravel()):
-            xloc = -.3
-            axes.text(xloc, 1.2, chr(65+axes_id), transform=axes.transAxes,
+            if quantity is 'stress':
+                xloc = -.27
+            elif quantity is 'strain':
+                xloc = -.35
+            elif quantity is 'sener':
+                xloc = -.3
+            axes.text(xloc, 1.15, chr(65+axes_id), transform=axes.transAxes,
                 fontsize=12, fontweight='bold', va='top')      
         fig.tight_layout()
         fig.subplots_adjust(top=.95, bottom=.15)
         fig.savefig('./plots/paper_%s-force.png'%quantity, dpi=300)
+    #%% Force traces under force control
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    for quantity in quantity_list[-3:]:
+        fig, axs = plt.subplots(1, 2, figsize=(3.27, 2))        
+        for level in range(level_num):
+            color = str(.6 - .15 * level)
+            traces = simFiberList[0][level][0].traces[2]
+            axs[0].plot(traces['time'], traces[quantity], c=color,
+                mec=color)
+            axs[0].set_label('Displ control')
+            traces = simFiberList[0][level][1].traces[2]                
+            axs[1].plot(traces['time'], traces[quantity], c=color,
+                mec=color)
+            axs[1].set_label('Force control')                
+            for axes in axs:            
+                axes.set_xlim(0, 0.3)
+                axes.set_xlabel('Time (s)')
+                axes.set_ylim(top=max([axs[i].get_ylim()[1] for i in range(2)]))
+            axs[0].set_ylabel(quantity.capitalize())
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.15, 1.2, chr(65+axes_id), transform=axes.transAxes,
+                fontsize=12, fontweight='bold', va='top')      
+        fig.tight_layout()
+        fig.suptitle('Predicted by ' + quantity)
+        fig.subplots_adjust(top=.8)
+        fig.savefig('./plots/paper_%s_fc_variability.png' % quantity,
+                    dpi=300)
+    #%% Exapmle quantity traces - skinthickness, displ vs force control
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(3, 2, figsize=(3.27, 5))
+    i, factor = 0, factor_list[0]
+    for k, control in enumerate(control_list):
+        for row, quantity in enumerate(quantity_list[2:]):
+            scale = 1 if quantity is 'strain' else 1e-3
+            for level in range(level_num):
+                color = str(.6 - .15 * level)
+                simFiber = simFiberList[i][level][k]
+                axes = axs[row, k]
+                axes.plot(
+                    simFiber.traces[stim_num//2]['time'],
+                    simFiber.traces[stim_num//2][quantity]*scale, ls='-',
+                    c=color, label=quantile_label_list[level])
+    # Add axes labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Time (s)')
+    axs[0, 0].set_ylabel('Stress (kPa)')
+    axs[1, 0].set_ylabel('Strain')
+    axs[2, 0].set_ylabel(r'SED (kPa/$m^3$)')
+    # Set x and y lim
+    ymin_array = np.empty_like(axs, dtype=np.float)
+    ymax_array = np.empty_like(axs, dtype=np.float)
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)        
+    # Formatting
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.27, 1.12, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+        axes.set_xlim(-.5, 5.5)
+    # Legend
+    h, l = axs[0, 0].get_legend_handles_labels()
+    legend = fig.legend(h, l, bbox_to_anchor=(.05, 0.02, .9, .1),
+        loc=3, ncol=level_num, mode='expand', borderaxespad=0.,
+        frameon=True)
+    frame = legend.get_frame()
+    frame.set_linewidth(.5)    
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=.15)
+    fig.savefig('./plots/example_sim_force_traces.png', dpi=300)
+    #%% Calculating iqr for all
+    def calculate_iqr(simFiberLevelList):
+        iqr_dict = {}
+        for quantity in quantity_list:
+            iqr_dict[quantity] = \
+                np.abs(simFiberLevelList[-2].traces_mean[quantity][stim_num//2]\
+                - simFiberLevelList[1].traces_mean[quantity][stim_num//2])\
+                / simFiberLevelList[len(simFiberLevelList)//2].traces_mean[
+                quantity][stim_num//2]
+        return iqr_dict    
+    iqr_table = np.empty((3, 10))
+    for i, factor in enumerate(factor_list):
+        for k, control in enumerate(control_list):
+            iqr_dict = calculate_iqr(
+                [simFiberList[i][j][k] for j in range(level_num)])
+            for row, quantity in enumerate(quantity_list[2:]):
+                iqr_table[row, 2*i+k] = iqr_dict[quantity]
