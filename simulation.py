@@ -8,10 +8,11 @@ Created on Sun May  4 22:38:40 2014
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import dblquad
 import pickle
 from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     FIBER_MECH_ID, FIBER_FIT_ID_LIST, EVAL_DISPL, EVAL_FORCE, STATIC_START,
-    STATIC_END)
+    STATIC_END, LS_LIST)
 from fitlif import trans_param_to_predicted_fr
 
 BASE_CSV_PATH = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
@@ -29,6 +30,7 @@ percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
 stim_num = 6
 AREA = np.pi * 1e-3**2 / 4
+MAX_RADIUS = 1e-3
 
 
 class SimFiber:
@@ -65,8 +67,8 @@ class SimFiber:
         # Use the 2nd magnitude as example
         stim = 2
         self.dist = {}        
-        key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'mcncsener',
-                    'mcncstrain', 'mcncstress', 'mcncxnew', 'mcncxold',
+        key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
+                    'mstrain', 'mstress', 'mxnew', 'mxold',
                     'time']
         for key in key_list:
             self.dist[key] = np.loadtxt(
@@ -74,8 +76,26 @@ class SimFiber:
                 +key+'.csv', delimiter=',')
         argsort = self.dist['cxold'][-1].argsort()
         for key in key_list:
+            # Sort order in x
             if key.startswith('c'):
                 self.dist[key] = (self.dist[key].T[argsort]).T
+#            # Units in mm
+#            if 'x' in key or 'y' in key:
+#                self.dist[key] *= 1e3
+#            # Units in kPa
+#            if 'ress' in key:
+#                self.dist[key] *= 1e-3
+#             Calculate integration over area
+            if 'x' not in key and 'y' not in key and 'time' not in key:
+                def get_field(r):
+                    return np.interp(r, self.dist[key[0]+'xnew'][-1],
+                                     self.dist[key][-1])
+                self.dist[key+'int'] = dblquad(
+                    lambda r, theta: get_field(r) * r,
+                    0, 2 * np.pi,
+                    lambda r: 0,
+                    lambda r: MAX_RADIUS
+                    )[0]
         return
     
     def get_traces_mean(self):
@@ -247,6 +267,7 @@ if __name__ == '__main__':
     #%% 
     # Switches for the script
     plot_exp_flag = False                
+    """
     # Plotting the big figure
     fig_list = [[] for i in range(len(factor_list))]
     axs_list = [[] for i in range(len(factor_list))]                
@@ -376,7 +397,6 @@ if __name__ == '__main__':
                     simFiberList[i][level][0].predicted_fr[fiber_id][quantity]
                     [:, 1], c=color, mec=color, ms=MS, marker='o',
                     label=quantile_label_list[level])
-        """
         # Plot linear regression
         for i, axes in enumerate(axs[:, 0]):
             axes.plot(np.sort(prediction_list[i][0][quantity]['displ']), 
@@ -386,7 +406,6 @@ if __name__ == '__main__':
             axes.plot(np.sort(prediction_list[i][0][quantity]['force']), 
                 np.sort(prediction_list[i][0][quantity]['force_static']),
                 '-.k', label='Linear regression')
-        """
         # Formatting
         axs[-1, 0].set_xlabel(r'Static displ. ($\mu$m)')
         axs[-1, 1].set_xlabel(r'Static force (mN)')    
@@ -577,25 +596,36 @@ if __name__ == '__main__':
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
                 iqr_table[row, 2*i+k] = iqr_dict[quantity]
+    """
     #%% Plot distribution
-    fig, axs = plt.subplots(2, 1, figsize=(3.27, 5), sharex=True)
-    for level in range(level_num):
-        color = str(.6-.15 * level)
-        dist = simFiberList[0][level][1].dist
-        axs[0].plot(dist['cxnew'][-1, :], dist['cpress'][-1, :], 
-            ls='-', c=color, label=quantile_label_list[level])
-        axs[1].plot(dist['mcncxnew'][-1, :], dist['mcncstress'][-1, :], 
-            ls='-', c=color, label=quantile_label_list[level])
-    for axes in axs:
+    fig, axs = plt.subplots(2, 2, figsize=(6.83, 5), sharex=True)
+    cquantity_list = ['cy', 'cpress']
+    mquantity_list = ['mstrain', 'mstress']
+    for i, factor in enumerate(factor_list[:3]):
+        for j, control in enumerate(control_list):
+            cquantity = cquantity_list[j]
+            mquantity = mquantity_list[j]
+            for level in range(level_num):
+                color = str(.6-.15 * level)
+                ls = LS_LIST[i]
+                dist = simFiberList[i][level][j].dist
+                axs[0, j].plot(dist['cxnew'][-1, :], dist[cquantity][-1, :], 
+                    ls=ls, c=color, label=quantile_label_list[level])
+                axs[1, j].plot(dist['mxnew'][-1, :], dist[mquantity][-1,
+                    :], ls=ls, c=color, label=quantile_label_list[level])
+    for axes in axs.ravel():
         axes.set_xlim(0, 1e-3)
-    #%% Plot distribution
-    fig, axs = plt.subplots(2, 1, figsize=(3.27, 5), sharex=True)
-    for level in range(level_num):
-        color = str(.6-.15 * level)
-        dist = simFiberList[0][level][0].dist
-        axs[0].plot(dist['cxnew'][-1, :], dist['cy'][-1, :], 
-            ls='-', c=color, label=quantile_label_list[level])
-        axs[1].plot(dist['mcncxnew'][-1, :], dist['mcncstrain'][-1, :], 
-            ls='-', c=color, label=quantile_label_list[level])
-    for axes in axs:
-        axes.set_xlim(0, 1e-3)
+    #%% Generate table for integration
+    int_table = np.empty([6, 3])
+    for i, factor in enumerate(factor_list[:3]):
+        for j, control in enumerate(control_list):
+            for k, quantity in enumerate(quantity_list[2:]):
+                int_table[3*j+k, i] = np.abs(simFiberList[i][3][j].dist[
+                    'm%sint'%quantity] - simFiberList[i][1][j].dist[
+                    'm%sint'%quantity]) / simFiberList[i][2][j].dist[
+                    'm%sint'%quantity]
+    int_table_sum = np.sum(int_table, axis=1)
+                
+
+
+            
