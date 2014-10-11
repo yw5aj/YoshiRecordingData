@@ -72,6 +72,10 @@ class SimFiber:
             self.dist[key] = np.loadtxt(
                 fpath+self.factor+str(self.level)+str(stim)+self.control+'_'
                 +key+'.csv', delimiter=',')
+        argsort = self.dist['cxold'][-1].argsort()
+        for key in key_list:
+            if key.startswith('c'):
+                self.dist[key] = (self.dist[key].T[argsort]).T
         return
     
     def get_traces_mean(self):
@@ -573,3 +577,25 @@ if __name__ == '__main__':
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
                 iqr_table[row, 2*i+k] = iqr_dict[quantity]
+    #%% Plot distribution
+    fig, axs = plt.subplots(2, 1, figsize=(3.27, 5), sharex=True)
+    for level in range(level_num):
+        color = str(.6-.15 * level)
+        dist = simFiberList[0][level][1].dist
+        axs[0].plot(dist['cxnew'][-1, :], dist['cpress'][-1, :], 
+            ls='-', c=color, label=quantile_label_list[level])
+        axs[1].plot(dist['mcncxnew'][-1, :], dist['mcncstress'][-1, :], 
+            ls='-', c=color, label=quantile_label_list[level])
+    for axes in axs:
+        axes.set_xlim(0, 1e-3)
+    #%% Plot distribution
+    fig, axs = plt.subplots(2, 1, figsize=(3.27, 5), sharex=True)
+    for level in range(level_num):
+        color = str(.6-.15 * level)
+        dist = simFiberList[0][level][0].dist
+        axs[0].plot(dist['cxnew'][-1, :], dist['cy'][-1, :], 
+            ls='-', c=color, label=quantile_label_list[level])
+        axs[1].plot(dist['mcncxnew'][-1, :], dist['mcncstrain'][-1, :], 
+            ls='-', c=color, label=quantile_label_list[level])
+    for axes in axs:
+        axes.set_xlim(0, 1e-3)
