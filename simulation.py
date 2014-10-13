@@ -14,6 +14,9 @@ from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     FIBER_MECH_ID, FIBER_FIT_ID_LIST, EVAL_DISPL, EVAL_FORCE, STATIC_START,
     STATIC_END, LS_LIST)
 from fitlif import trans_param_to_predicted_fr
+from mpl_toolkits.mplot3d import Axes3D
+
+
 
 BASE_CSV_PATH = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
 factor_list = ['SkinThick', 'SkinAlpha', 'SkinGinf', 'SylgardThick',
@@ -75,17 +78,15 @@ class SimFiber:
                 fpath+self.factor+str(self.level)+str(stim)+self.control+'_'
                 +key+'.csv', delimiter=',')
         argsort = self.dist['cxold'][-1].argsort()
+        # Sort order in x
         for key in key_list:
-            # Sort order in x
             if key.startswith('c'):
                 self.dist[key] = (self.dist[key].T[argsort]).T
-#            # Units in mm
-#            if 'x' in key or 'y' in key:
-#                self.dist[key] *= 1e3
-#            # Units in kPa
-#            if 'ress' in key:
-#                self.dist[key] *= 1e-3
-#             Calculate integration over area
+        # Propagate time
+        self.dist['time'] = np.tile(self.dist['time'][:, np.newaxis],
+                                    self.dist['cxnew'].shape[1])
+        # Calculate integration over area
+        for key in key_list:
             if 'x' not in key and 'y' not in key and 'time' not in key:
                 def get_field(r):
                     return np.interp(r, self.dist[key[0]+'xnew'][-1],
@@ -615,6 +616,31 @@ if __name__ == '__main__':
                     :], ls=ls, c=color, label=quantile_label_list[level])
     for axes in axs.ravel():
         axes.set_xlim(0, 1e-3)
+    #%% Plot 3D distribution
+    fig = plt.figure()
+    axs = np.array([[fig.add_subplot(221, projection='3d'),
+                     fig.add_subplot(222, projection='3d')],
+                    [fig.add_subplot(223, projection='3d'),
+                     fig.add_subplot(224, projection='3d')]])
+    cquantity_list = ['cy', 'cpress']
+    mquantity_list = ['mstrain', 'mstress']
+    for i, factor in enumerate([factor_list[0]]):
+        for j, control in enumerate(control_list):
+            cquantity = cquantity_list[j]
+            mquantity = mquantity_list[j]
+            for level in range(level_num):
+                color = str(.6-.15 * level)
+                ls = LS_LIST[i]
+                dist = simFiberList[i][level][j].dist
+                axs[0, j].plot_wireframe(dist['time'], dist['cxnew'],
+                    dist[cquantity],
+                    linestyles=ls, colors=color)
+                axs[1, j].plot_wireframe(dist['time'][:, :-1], dist['mxnew'],
+                    dist[mquantity],
+                    linestyles=ls, colors=color)
+    for axes in axs.ravel():
+        axes.set_ylim(0, 1e-3)
+        axes.set_xlim(0, .5)
     #%% Generate table for integration
     int_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
