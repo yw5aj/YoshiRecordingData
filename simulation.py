@@ -79,6 +79,7 @@ class SimFiber:
         argsort = self.dist['cxold'][-1].argsort()
         # Sort order in x
         for key in key_list:
+            # Calculate integration over area            
             if key.startswith('c'):
                 self.dist[key] = (self.dist[key].T[argsort]).T
         # Propagate time
@@ -598,23 +599,57 @@ if __name__ == '__main__':
                 iqr_table[row, 2*i+k] = iqr_dict[quantity]
     """
     #%% Plot distribution
-    fig, axs = plt.subplots(2, 2, figsize=(6.83, 5), sharex=True)
-    cquantity_list = ['cy', 'cpress']
-    mquantity_list = ['mstrain', 'mstress']
+    fig, axs = plt.subplots(3, 2, figsize=(6.83, 7), sharex=True)
+    mquantity_list = ['mstress', 'mstrain', 'msener']
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
-            cquantity = cquantity_list[j]
-            mquantity = mquantity_list[j]
-            for level in range(level_num):
-                color = str(.6-.15 * level)
-                ls = LS_LIST[i]
-                dist = simFiberList[i][level][j].dist
-                axs[0, j].plot(dist['cxnew'][-1, :], dist[cquantity][-1, :], 
-                    ls=ls, c=color, label=quantile_label_list[level])
-                axs[1, j].plot(dist['mxnew'][-1, :], dist[mquantity][-1,
-                    :], ls=ls, c=color, label=quantile_label_list[level])
-    for axes in axs.ravel():
-        axes.set_xlim(0, 1e-3)
+            for row, mquantity in enumerate(mquantity_list):
+                mquantity = mquantity_list[j]
+                # Scaling the axes
+                xscale = 1e3
+                if 'ress' in mquantity or 'sener' in mquantity:
+                    mscale = 1e-3
+                else:
+                    macale = 1
+                # Plotting
+                for level in range(level_num):
+                    color = str(.6-.15 * level)
+                    ls = LS_LIST[i]
+                    dist = simFiberList[i][level][j].dist
+                    axs[row, j].plot(dist['mxnew'][-1, :] * xscale, 
+                        dist[mquantity][-1, :] * cscale, 
+                        ls=ls, c=color, label=quantile_label_list[level])
+    # Formatting labels
+    for row, row_axs in enumerate(axs):
+        for col, axes in enumerate(row_axs):
+            axes.set_xlim(0, 1)
+            if row == 1:
+                axes.set_xlabel('Location (mm)')
+            if row == 0 and col == 0:
+                axes.set_ylabel(r'Deformation ($\mu$m)')
+            if row == 1 and col == 0:
+                axes.set_ylabel('Strain')
+            if row == 0 and col == 1:
+                axes.set_ylabel('Pressure (kPa)')
+            if row == 1 and col == 1:
+                axes.set_ylabel('Stress (kPa)')
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handles[::5], [factor_display[5:].capitalize() for
+        factor_display in factor_display_list[:3]], loc=2)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[:5], labels[:5], loc=1)
+    # Adding titles
+    axs[0, 0].set_title('Surface deformation vs. strain')
+    axs[0, 1].set_title('Surface pressure vs. stress')
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/spatial_distribution.png', dpi=300)
     #%% Generate table for integration
     int_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
@@ -625,7 +660,104 @@ if __name__ == '__main__':
                     'm%sint'%quantity]) / simFiberList[i][2][j].dist[
                     'm%sint'%quantity]
     int_table_sum = np.sum(int_table, axis=1)
-                
-
-
-            
+    #%% Plot rate distributions
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(3, 2, figsize=(6.83, 7))
+    for i, factor in enumerate(factor_list[:3]):
+        for k, control in enumerate(control_list):
+            for row, quantity in enumerate(quantity_list[2:]):
+                scale = 1 if quantity is 'strain' else 1e-3
+                for level in range(level_num):
+                    color = str(.6 - .15 * level)
+                    ls = LS_LIST[i]
+                    simFiber = simFiberList[i][level][k]
+                    axes = axs[row, k]
+                    axes.plot(
+                        simFiber.traces[stim_num//2]['time'],
+                        simFiber.traces[stim_num//2][quantity]*scale, ls=ls,
+                        c=color, label=quantile_label_list[level])
+    # Add axes labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Time (s)')
+    axs[0, 0].set_ylabel('Stress (kPa)')
+    axs[1, 0].set_ylabel('Strain')
+    axs[2, 0].set_ylabel(r'SED (kPa/$m^3$)')
+    # Set x and y lim
+    ymin_array = np.empty_like(axs, dtype=np.float)
+    ymax_array = np.empty_like(axs, dtype=np.float)
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)        
+    # Formatting
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.27, 1.12, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+        axes.set_xlim(-.5, 5.5)
+    # Legend
+    h, l = axs[0, 0].get_legend_handles_labels()
+    legend = fig.legend(h, l, bbox_to_anchor=(.05, 0.02, .9, .1),
+        loc=3, ncol=level_num, mode='expand', borderaxespad=0.,
+        frameon=True)
+    frame = legend.get_frame()
+    frame.set_linewidth(.5)    
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=.15)
+    fig.savefig('./plots/example_sim_traces.png', dpi=300)
+    #%% Plot rate distributions
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(3, 2, figsize=(6.83, 7))
+    for i, factor in enumerate(factor_list[:3]):
+        for k, control in enumerate(control_list):
+            for row, quantity in enumerate(quantity_list[2:]):
+                scale = 1 if quantity is 'strain' else 1e-3
+                for level in range(level_num):
+                    color = str(.6 - .15 * level)
+                    ls = LS_LIST[i]
+                    simFiber = simFiberList[i][level][k]
+                    axes = axs[row, k]
+                    axes.plot(
+                        simFiber.traces[stim_num//2]['time'][1:],
+                        np.diff(simFiber.traces[stim_num//2][quantity]*scale),
+                        ls=ls, c=color, label=quantile_label_list[level])
+    # Add axes labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Time (s)')
+    axs[0, 0].set_ylabel('Stress (kPa)')
+    axs[1, 0].set_ylabel('Strain')
+    axs[2, 0].set_ylabel(r'SED (kPa/$m^3$)')
+    # Set x and y lim
+    ymin_array = np.empty_like(axs, dtype=np.float)
+    ymax_array = np.empty_like(axs, dtype=np.float)
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)        
+    # Formatting
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.27, 1.12, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+        axes.set_xlim(-.0, 0.5)
+    # Legend
+    h, l = axs[0, 0].get_legend_handles_labels()
+    legend = fig.legend(h, l, bbox_to_anchor=(.05, 0.02, .9, .1),
+        loc=3, ncol=level_num, mode='expand', borderaxespad=0.,
+        frameon=True)
+    frame = legend.get_frame()
+    frame.set_linewidth(.5)    
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=.15)
+    fig.savefig('./plots/example_sim_rate_traces.png', dpi=300)
+    
