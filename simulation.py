@@ -582,15 +582,16 @@ if __name__ == '__main__':
     fig.savefig('./plots/example_sim_force_traces.png', dpi=300)
     """
     #%% Generate table for integration and plot distribution
-    int_table = np.empty([6, 3])
+    spatial_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
             for k, quantity in enumerate(quantity_list[2:]):
-                int_table[3*j+k, i] = np.abs(simFiberList[i][3][j].dist[
+                spatial_table[3*j+k, i] = np.abs(simFiberList[i][3][j].dist[
                     'm%sint'%quantity] - simFiberList[i][1][j].dist[
                     'm%sint'%quantity]) / simFiberList[i][2][j].dist[
                     'm%sint'%quantity]
-    int_table_mean = int_table.mean(axis=1)
+    spatial_table_mean = spatial_table.mean(axis=1)
+    np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
     # Plot distribution
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     mquantity_list = ['mstress', 'mstrain', 'msener']
@@ -623,7 +624,7 @@ if __name__ == '__main__':
 #    # Annotate
 #    for i, axes in enumerate(axs[1:].T.ravel()):
 #        axes.text(.95, .8,
-#                  r'$\overline{(\frac{IQR}{median})}$=%.3f'%int_table_mean[i],
+#                  r'$\overline{(\frac{IQR}{median})}$=%.3f'%spatial_table_mean[i],
 #                  ha='right', va='top', transform=axes.transAxes, fontsize=8)
     # Set x and y lim
     ymin_array = np.empty_like(axs[1:], dtype=np.float)
@@ -677,14 +678,15 @@ if __name__ == '__main__':
                 ) / simFiberLevelList[len(simFiberLevelList)//2].traces[
                 stim_num//2][quantity][-1]
         return iqr_dict    
-    iqr_table = np.empty((6, 3))
+    temporal_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
             iqr_dict = calculate_iqr(
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
-                iqr_table[3*k+row, i] = iqr_dict[quantity]
-    iqr_table_mean = iqr_table.mean(axis=1)
+                temporal_table[3*k+row, i] = iqr_dict[quantity]
+    temporal_table_mean = temporal_table.mean(axis=1)
+    np.savetxt('./csvs/temporal_table.csv', temporal_table, delimiter=',')
     # Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
@@ -750,23 +752,26 @@ if __name__ == '__main__':
     fig.savefig('./plots/example_sim_traces.png', dpi=300)
     #%% Calculating rate iqr for all and plot rate temporal traces
     # Calculate iqrs
-    def calculate_iqr(simFiberLevelList):
-        iqr_dict = {}
+    def calculate_rate_iqr(simFiberLevelList):
+        rate_iqr_dict = {}
         for quantity in quantity_list:
-            iqr_dict[quantity] = \
-                np.abs(simFiberLevelList[-2].traces[stim_num//2][quantity][-1]
-                - simFiberLevelList[1].traces[stim_num//2][quantity][-1]
+            rate_iqr_dict[quantity] = \
+                np.abs(simFiberLevelList[-2].traces[stim_num//2][quantity][
+                simFiberLevelList[-2].traces[stim_num//2]['max_index']]
+                - simFiberLevelList[1].traces[stim_num//2][quantity][
+                simFiberLevelList[1].traces[stim_num//2]['max_index']]
                 ) / simFiberLevelList[len(simFiberLevelList)//2].traces[
-                stim_num//2][quantity][-1]
-        return iqr_dict    
-    iqr_table = np.empty((6, 3))
+                stim_num//2][quantity][simFiberLevelList[len(simFiberLevelList
+                )//2].traces[stim_num//2]['max_index']]
+        return rate_iqr_dict
+    rate_iqr_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
             iqr_dict = calculate_iqr(
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
-                iqr_table[3*k+row, i] = iqr_dict[quantity]
-    iqr_table_mean = iqr_table.mean(axis=1)
+                rate_iqr_table[3*k+row, i] = iqr_dict[quantity]
+    rate_iqr_table_mean = rate_iqr_table.mean(axis=1)
     # Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
