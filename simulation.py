@@ -672,10 +672,10 @@ if __name__ == '__main__':
         iqr_dict = {}
         for quantity in quantity_list:
             iqr_dict[quantity] = \
-                np.abs(simFiberLevelList[-2].traces_mean[quantity][stim_num//2]\
-                - simFiberLevelList[1].traces_mean[quantity][stim_num//2])\
-                / simFiberLevelList[len(simFiberLevelList)//2].traces_mean[
-                quantity][stim_num//2]
+                np.abs(simFiberLevelList[-2].traces[stim_num//2][quantity][-1]
+                - simFiberLevelList[1].traces[stim_num//2][quantity][-1]
+                ) / simFiberLevelList[len(simFiberLevelList)//2].traces[
+                stim_num//2][quantity][-1]
         return iqr_dict    
     iqr_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
