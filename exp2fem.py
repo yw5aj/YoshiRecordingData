@@ -614,9 +614,12 @@ if __name__ == '__main__':
     #%% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting
     displ_list, force_list, static_fr_list, dynamic_fr_list = [], [], [], []
+    displ_rate_list, force_rate_list = [], []
     for fiber_id, fiber in enumerate(fiber_list):
         displ_list.extend(fiber.binned_exp['displ_mean'])
         force_list.extend(fiber.binned_exp['force_mean'])
+        displ_rate_list.extend(fiber.binned_exp['dynamic_displ_rate_mean'])
+        force_rate_list.extend(fiber.binned_exp['dynamic_force_rate_mean'])
         static_fr_list.extend(fiber.binned_exp['static_fr_mean'])
         dynamic_fr_list.extend(fiber.binned_exp['dynamic_fr_mean'])
 #        displ_list.extend(fiber.lumped_dict['displ'])
@@ -624,12 +627,12 @@ if __name__ == '__main__':
 #        static_fr_list.extend(fiber.lumped_dict['static_fr'])
 #        dynamic_fr_list.extend(fiber.lumped_dict['dynamic_fr'])
     # Perform fitting
-    displ_dynamic_fit_param = np.polyfit(displ_list, dynamic_fr_list, 1)
-    force_dynamic_fit_param = np.polyfit(force_list, dynamic_fr_list, 1)
+    displ_dynamic_fit_param = np.polyfit(displ_rate_list, dynamic_fr_list, 1)
+    force_dynamic_fit_param = np.polyfit(force_rate_list, dynamic_fr_list, 1)
     displ_static_fit_param = np.polyfit(displ_list, static_fr_list, 1)
     force_static_fit_param = np.polyfit(force_list, static_fr_list, 1)
-    displ_dynamic_predict = np.polyval(displ_dynamic_fit_param, displ_list)
-    force_dynamic_predict = np.polyval(force_dynamic_fit_param, force_list)
+    displ_dynamic_predict = np.polyval(displ_dynamic_fit_param, displ_rate_list)
+    force_dynamic_predict = np.polyval(force_dynamic_fit_param, force_rate_list)
     displ_static_predict = np.polyval(displ_static_fit_param, displ_list)
     force_static_predict = np.polyval(force_static_fit_param, force_list)
     # Calculate residual variance
@@ -685,5 +688,6 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
 #    print(force_static_fit_resvar, displ_static_fit_resvar)
+#    print(force_dynamic_fit_resvar, displ_dynamic_fit_resvar)
 
                       
