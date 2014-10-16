@@ -100,6 +100,12 @@ class Fiber:
             'dynamic_fr_mean': [],
             'dynamic_fr_std': [], 
             'dynamic_fr_all': [], 
+            'dynamic_displ_rate_mean': [],
+            'dynamic_displ_rate_std': [],
+            'dynamic_displ_rate_all': [],
+            'dynamic_force_rate_mean': [],
+            'dynamic_force_rate_std': [],
+            'dynamic_force_rate_all': [],
             }
         for i, stim_group in enumerate(self.stim_group_dict):
             self.binned_exp['displ_mean'].append(stim_group['static_displ'
@@ -124,6 +130,18 @@ class Fiber:
                 'dynamic_avg_fr'].std())
             self.binned_exp['dynamic_fr_all'].extend(stim_group[
                 'dynamic_avg_fr'])
+            self.binned_exp['dynamic_displ_rate_mean'].append(stim_group[
+                'dynamic_displ_rate'].mean())
+            self.binned_exp['dynamic_displ_rate_std'].append(stim_group[
+                'dynamic_displ_rate'].std())
+            self.binned_exp['dynamic_displ_rate_all'].extend(stim_group[
+                'dynamic_displ_rate'])
+            self.binned_exp['dynamic_force_rate_mean'].append(stim_group[
+                'dynamic_force_rate'].mean())
+            self.binned_exp['dynamic_force_rate_std'].append(stim_group[
+                'dynamic_force_rate'].std())
+            self.binned_exp['dynamic_force_rate_all'].extend(stim_group[
+                'dynamic_force_rate'])
         for key in self.binned_exp.keys():
             if not key.endswith('all') and key is not 'displ_mean':
                 self.binned_exp[key] = np.array(self.binned_exp[key])[
@@ -163,7 +181,8 @@ class Fiber:
                          delimiter=',')
         self.fiber_data = all_data[all_data[:, 0] == self.fiber_id][:, 1:]
         self.stim_num, self.static_displ, self.static_force, \
-            self.static_avg_fr, self.dynamic_avg_fr, self.ramp_time = \
+            self.static_avg_fr, self.dynamic_avg_fr, self.ramp_time, \
+            self.dynamic_displ_rate, self.dynamic_force_rate = \
             self.fiber_data.T
         self.stim_num = self.stim_num.astype(np.int)
         return
@@ -225,6 +244,8 @@ class Fiber:
                 'static_avg_fr': stim_group_list[i][:, 3],
                 'dynamic_avg_fr': stim_group_list[i][:, 4],
                 'ramp_time': stim_group_list[i][:, 5],
+                'dynamic_displ_rate': stim_group_list[i][:, 6],
+                'dynamic_force_rate': stim_group_list[i][:, 7],
                 }
         # To sort the stim groups
         displ_array = np.array([self.stim_group_dict[i]['static_displ'].mean()
@@ -641,13 +662,13 @@ if __name__ == '__main__':
         color = 'k'
         axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
             'force_mean'], fiber.binned_exp['force_std'], fmt=fmt, c=color,
-            mec=color, ms=MS, label='Fiber #%d' % i)        
+            mec=color, ms=MS, label='Fiber #%d' % (i+1))        
         axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
+            c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % i)
+            c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
     axs[1].plot(sorted(displ_list), np.sort(displ_static_predict), '-k',
         label='Linear regression')
     axs[2].plot(sorted(force_list), np.sort(force_static_predict), '-k',
@@ -659,36 +680,10 @@ if __name__ == '__main__':
     axs[1].set_ylabel('Mean static FR (Hz)')
     axs[2].set_ylabel('Mean static FR (Hz)')
     axs[0].legend(loc=2)
+    axs[1].legend(loc=2)
+    axs[2].legend(loc=2)
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
 #    print(force_static_fit_resvar, displ_static_fit_resvar)
-    #%% Plot fiber data in six separate plots
-    fig, axs = plt.subplots(2, 3, figsize=(6.28, 5))
-    axs_force = np.empty_like(axs)
-    for i, fiber in enumerate(fiber_list):
-        axes_displ = axs.ravel()[i]
-        axes_force = axes_displ.twiny()
-        axs_force.ravel()[i] = axes_force
-        axes_displ.errorbar(fiber.binned_exp['displ_mean'], 
-                            fiber.binned_exp['static_fr_mean'], 
-                            fiber.binned_exp['static_fr_std'],
-                            fmt='o-', c='k', mec='k', ms=MS,
-                            label='Fiber #%d'%(i+1))
-        axes_force.errorbar(fiber.binned_exp['force_mean'], 
-                            fiber.binned_exp['static_fr_mean'], 
-                            fiber.binned_exp['static_fr_std'],
-                            fmt='s--', c='k', mec='k', ms=MS,
-                            label='Fiber #%d'%(i+1))
-        axes_displ.plot(sorted(displ_list), np.sort(displ_static_predict),
-                        '-k', label='Displ regression')
-        axes_force.plot(sorted(force_list), np.sort(force_static_predict), 
-                        '--k', label='Force regression')
-        axes_displ.set_xlabel(r'Displacement ($\mu$m)')
-        axes_force.set_xlabel(r'Force (mN)')
-        axes_displ.set_ylabel('Mean firing (Hz)')
-    axs[0, 0].legend(loc=2)
-    axs_force[0, 1].legend(loc=2)      
-    # Save figure
-    fig.tight_layout()
-    fig.savefig('./plots/six_panel_fr.png', dpi=300)        
+
                       
