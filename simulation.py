@@ -845,7 +845,7 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/example_sim_rate_traces.png', dpi=300)
     #%% Plot all simulations together
-    #%% Fit all the variances and compare force vs. displ
+    # Fit all the variances and compare force vs. displ
     resvar_list = [[{} for k in range(len(control_list))]
         for i in range(len(factor_list))]
     prediction_list = [[{} for k in range(len(control_list))]
@@ -859,76 +859,61 @@ if __name__ == '__main__':
                     resvar_list[i][k][quantity], prediction_list[i][k][
                         quantity] = fit_sim_cluster(simFiberLevelList,
                         fiber_id, quantity)            
-    #%% Factors explaining the force-alignment - static
-    fid = FIBER_FIT_ID_LIST[0]
-    fig, axs = plt.subplots(3, 3, figsize=(3.27, 9.19))
+    # Factors explaining the force-alignment - static
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
     for i, factor in enumerate(factor_list[:3]):
-        factor_display = factor_display_list[i]
         for k, quantity in enumerate(quantity_list[-3:]):
-            fmt = 'o' + LS_LIST[k]
-            simFiberLevelList = [simFiberList[i][j][0] for j in 
-                                 range(level_num)]
-            axs[0, k].errorbar(
-                simFiberLevelList[2].static_displ_exp,
-                simFiberLevelList[2].static_force_exp,
-                np.array((simFiberLevelList[2].static_force_exp - 
-                          simFiberLevelList[1].static_force_exp,
-                          simFiberLevelList[3].static_force_exp -
-                          simFiberLevelList[2].static_force_exp)),
-                c='k', mec='k', ms=MS, fmt=fmt)
-            axs[1, k].errorbar(simFiberLevelList[2].static_displ_exp,
-                simFiberLevelList[2].predicted_fr[fid][quantity].T[1],
-                np.array((
-                    simFiberLevelList[2].predicted_fr[fid][quantity].T[1] - 
-                    simFiberLevelList[1].predicted_fr[fid][quantity].T[1],
-                    simFiberLevelList[3].predicted_fr[fid][quantity].T[1] -
-                    simFiberLevelList[2].predicted_fr[fid][quantity].T[1])),
-                c='k', mec='k', ms=MS, fmt=fmt)
-            axs[2, k].errorbar(simFiberLevelList[2].static_force_exp,
-                simFiberLevelList[2].predicted_fr[fid][quantity].T[1],
-                np.array((
-                    simFiberLevelList[2].predicted_fr[fid][quantity].T[1] - 
-                    simFiberLevelList[1].predicted_fr[fid][quantity].T[1],
-                    simFiberLevelList[3].predicted_fr[fid][quantity].T[1] -
-                    simFiberLevelList[2].predicted_fr[fid][quantity].T[1])),
-                c='k', mec='k', ms=MS, fmt=fmt)
-            # Plot linear regression
-            axs[1, k].plot(np.sort(prediction_list[i][0][quantity]['displ']), 
-                np.sort(prediction_list[i][0][quantity]['displ_static']),
-                '-.k', label='Displ regression')
-            axs[2, k].plot(np.sort(prediction_list[i][0][quantity]['force']), 
-                np.sort(prediction_list[i][0][quantity]['force_static']),
-                '-.k', label='Force regression')
-    # Formatting
-    axs[-1, 0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[-1, 1].set_xlabel(r'Static force (mN)')    
-    ymargin = 5
-    xmargin = 1
-    for i, axes in enumerate(axs.ravel()):
-        axes.set_ylim(bottom=axes.get_ylim()[0]-ymargin)
-        axes.set_ylim(top=axes.get_ylim()[1]+ymargin)
-        if i % 2 == 0:
-            axes.set_xlim(300, 600)
-            axes.set_xticks(np.arange(300, 700, 100))
-        elif i % 2 == 1:
-            xmargin = 2
-            axes.set_xlim(left=axes.get_xlim()[0]-xmargin)
-            axes.set_xlim(right=axes.get_xlim()[1]+xmargin) 
+            for j in range(level_num):
+                color = str(.6 - .15 * j)
+                fmt = LS_LIST[i]
+                label = quantile_label_list[j]
+                simFiber = simFiberList[i][j][0]
+                axs[0, k].plot(
+                    simFiber.static_displ_exp,
+                    simFiber.static_force_exp,
+                    c=color, mec=color, ms=MS, 
+                    ls=fmt, label=label)
+                axs[1, k].plot(
+                    simFiber.static_displ_exp,
+                    simFiber.predicted_fr[fiber_id][quantity].T[1],
+                    c=color, mec=color, ms=MS, 
+                    ls=fmt, label=label)
+                axs[2, k].plot(
+                    simFiber.static_force_exp,
+                    simFiber.predicted_fr[fiber_id][quantity].T[1],
+                    c=color, mec=color, ms=MS, 
+                    ls=fmt, label=label)
+    # X and Y limits
+    for axes in axs[0, :].ravel():
+        axes.set_ylim(0, 10)
+    for axes in axs[1:, :].ravel():
+        axes.set_ylim(0, 50)
+    for axes in axs[2, :].ravel():
+        axes.set_xlim(0, 10)
+    # Axes and panel labels
+    for axes in axs[0, :].ravel():
+        axes.set_title()
+    for axes in axs[:2, :].ravel():
+        axes.set_xlabel(r'Displacement ($\mu$m)')
+    for axes in axs[-1, :].ravel():
+        axes.set_xlabel('Force (mN)')
+    for axes in axs[1, :].ravel():
+        axes.set_ylabel('Force (mN)')
+    for axes in axs[1:, :].ravel():
+        axes.set_ylabel('Mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
-        xloc = -.27
-        axes.text(xloc, 1.15, chr(65+axes_id), transform=axes.transAxes,
+        xloc = -.2
+        axes.text(xloc, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')      
     # Legend
-    h, l = axs[0, 0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(.05, 0.02, .9, .1),
-        loc=3, ncol=level_num, mode='expand', borderaxespad=0.,
-        frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handles[4::5], [factor_display[5:].capitalize() for
+        factor_display in factor_display_list[:3]], loc=2)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[:5], labels[:5], loc=2)
     # Save
     fig.tight_layout()
-    fig.suptitle('Predicted by ' + quantity)
-    fig.subplots_adjust(top=.92, bottom=.15)
-    fig.savefig('./plots/paper_%s_align_force_static.png' % quantity,
-                dpi=300)    
+    fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
     
