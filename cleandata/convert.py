@@ -162,12 +162,15 @@ def plot_static_dynamic(cleanFiberList, fs=16e3, save_data=False,
     for cleanFiber in cleanFiberList:
         fiber_id = cleanFiber.fiber_id
         static_displ_list, static_force_list, static_avg_fr_list, dynamic_avg_fr_list, dynamic_ramp_time_list = [], [], [], [], []
+        dynamic_displ_rate_list, dynamic_force_rate_list = [], []
         for stim_id, stim_traces in enumerate(cleanFiber.traces):
             static_displ_list.append(stim_traces['static_displ'])
             static_force_list.append(stim_traces['static_force'])
             static_avg_fr_list.append(stim_traces['static_avg_fr'])
             dynamic_avg_fr_list.append(stim_traces['dynamic_avg_fr'])
             dynamic_ramp_time_list.append(stim_traces['ramp_time'])
+            dynamic_displ_rate_list.append(stim_traces['dynamic_displ_rate_list'])
+            dynamic_force_rate_list.append(stim_traces['dynamic_force_rate_list'])
         fmt, color = fmt_list[fiber_id], color_list[fiber_id]
 #        label_text = '#'+str(fiber_id)
         label_text = cleanFiber.animal_info['mat_filename'][4:-4]
@@ -178,7 +181,8 @@ def plot_static_dynamic(cleanFiberList, fs=16e3, save_data=False,
         static_dynamic_list[fiber_id] = np.c_[fiber_id*np.ones(len(
             static_displ_list)), range(len(static_displ_list)), 
             static_displ_list, static_force_list, static_avg_fr_list, 
-            dynamic_avg_fr_list, dynamic_ramp_time_list]
+            dynamic_avg_fr_list, dynamic_ramp_time_list,
+            dynamic_displ_rate_list, dynamic_force_rate_list]
     for axes in axs:
 #        axes.set_xlim(left=0.)
         axes.set_xlabel(r'Displ. ($\mu$m)')
