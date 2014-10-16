@@ -333,7 +333,7 @@ if __name__ == '__main__':
                     'm%sint'%quantity] - simFiberList[i][1][j].dist[
                     'm%sint'%quantity]) / simFiberList[i][2][j].dist[
                     'm%sint'%quantity]
-    spatial_table_mean = spatial_table.mean(axis=1)
+    spatial_table_sum = spatial_table.sum(axis=1)
     np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
     # Plot distribution
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
@@ -435,7 +435,7 @@ if __name__ == '__main__':
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
                 temporal_table[3*k+row, i] = iqr_dict[quantity]
-    temporal_table_mean = temporal_table.mean(axis=1)
+    temporal_table_sum = temporal_table.sum(axis=1)
     np.savetxt('./csvs/temporal_table.csv', temporal_table, delimiter=',')
     # Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
@@ -588,14 +588,39 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/example_sim_rate_traces.png', dpi=300)
     #%% Plot all simulations together
-    # Calculate all the IQRs and compare force vs. displ
     fiber_id = FIBER_FIT_ID_LIST[0]
+    # Calculate all the IQRs and compare force vs. displ
+    def get_slope_iqr(simFiberLevelList, quantity):
+        """
+        Returns
+        -------
+        slope_iqr : list
+            The 1st element for displ., 2nd for force.
+        """
+        slope_list_displ = [np.polyfit(
+            simFiber.static_displ_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[1], 1)[0]
+            for simFiber in simFiberLevelList]
+        slope_list_force = [np.polyfit(
+            simFiber.static_force_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[1], 1)[0]
+            for simFiber in simFiberLevelList]
+        slope_iqr = []
+        slope_iqr.append(np.abs(
+            (slope_list_displ[3] - slope_list_displ[1])/slope_list_displ[2]))
+        slope_iqr.append(np.abs(
+            (slope_list_force[3] - slope_list_force[1])/slope_list_force[2]))
+        return slope_iqr
     sim_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[2:]):
-            pass
-    spatial_table_mean = spatial_table.mean(axis=1)
-    np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
+            simFiberLevelList = [simFiberList[i][level][0] for level in
+                                 range(level_num)]
+            slope_iqr = get_slope_iqr(simFiberLevelList, quantity)
+            sim_table[k, i] = slope_iqr[0]
+            sim_table[3+k, i] = slope_iqr[1]
+    sim_table_sum = spatial_table.sum(axis=1)
+    np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
     # Factors explaining the force-alignment - static
     fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
     for i, factor in enumerate(factor_list[:3]):
@@ -621,8 +646,8 @@ if __name__ == '__main__':
                     c=color, mec=color, ms=MS, 
                     ls=fmt, label=label)
     # X and Y limits
-    for axes in axs[0, :].ravel():
-        axes.set_ylim(0, 10)
+#    for axes in axs[0, :].ravel():
+#        axes.set_ylim(0, 10)
     for axes in axs[1:, :].ravel():
         axes.set_ylim(0, 50)
     for axes in axs[2, :].ravel():
