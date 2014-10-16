@@ -590,65 +590,6 @@ if __name__ == '__main__':
             fontsize=12, fontweight='bold', va='top')    
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
-    #%% Plot model figure for paper
-    # Plot force traces
-    fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
-    i = 2
-    fiber_mech.get_stim_block_trace_exp()
-    stim_group = fiber_mech.stim_group_dict[i]
-    for j, stim_num in enumerate(stim_group['stim_num']):
-        axs[0].plot(stim_group['traces_exp'][j]['time'], 
-            stim_group['traces_exp'][j]['force'], '.', color='.5')
-    axs[0].plot(stim_group['traces_fem']['time'], stim_group['traces_fem'][
-        'force']*1e3, '-k')
-    axs[0].set_xlabel('Time (s)')
-    axs[0].set_ylabel('Force (mN)')
-    axs[0].set_xlim(-.5, 6.5)
-    # Get raw firing data, from group 1, picking the 0th trace - arbitrarily
-    # picked
-    group_num = 2
-    run_num = 0
-    # Get raw spike data
-    raw_spike = fiber_mech.stim_group_dict[group_num]['traces_exp'][run_num
-        ]['raw_spike']
-#    raw_spike = (raw_spike - raw_spike.mean()) / raw_spike.max() / 2
-    scale = 250.
-    raw_spike /= scale
-    raw_spike_time = np.arange(raw_spike.size) / 16e3
-    # Start plotting
-    axs[1].plot(raw_spike_time, raw_spike, '-k')
-    axs[1].set_frame_on(False)
-    axs[1].get_yaxis().set_ticks([])
-    axs[1].get_xaxis().set_ticks([])
-    axs[1].set_ylim(-1., 1.)
-    axs[1].set_xlim(-.5, 6.5)
-    # Draw the static / dynamic phase bars
-    ypos = .75
-    start_time = raw_spike_time[(raw_spike>.25).nonzero()[0][0]]
-    max_time = fiber_mech.stim_group_dict[group_num]['traces_exp'][run_num][
-        'force'].argmax()/16e3
-    axs[1].plot([start_time, max_time], [ypos, ypos], '-k', lw=4.)
-    axs[1].plot([max_time+STATIC_START, max_time+STATIC_END], [ypos, ypos],
-        '-k', lw=4.)
-    axs[1].text(start_time+(max_time-start_time)/2, ypos+.1, 'Dynamic', 
-        transform=axs[1].transData, fontsize=10, ha='center')
-    axs[1].text(max_time+STATIC_START+(STATIC_END-STATIC_START)/2, ypos+.1, 
-        'Static', transform=axs[1].transData, fontsize=10, ha='center')        
-    # Draw a scale bar
-    xpos = 5
-    ypos = -0.8
-    ylen = 0.3
-    axs[1].plot([xpos, xpos+1], [ypos, ypos], '-k', lw=4.)
-    axs[1].plot([xpos, xpos], [ypos, ypos+ylen], '-k', lw=4.)
-    axs[1].text(xpos+0.5, ypos-.15, '1 s', transform=axs[1].transData, 
-        fontsize=10, ha='center')
-    axs[1].text(xpos-.5, ypos, '%d mV'%int(ylen*scale), transform=axs[1].
-        transData, fontsize=10, rotation='vertical', va='bottom')
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')    
-    fig.tight_layout()
-    fig.savefig('./plots/paper_plot_time_series.png', dpi=300)
     #%% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting
     displ_list, force_list, static_fr_list, dynamic_fr_list = [], [], [], []
