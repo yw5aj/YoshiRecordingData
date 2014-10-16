@@ -8,7 +8,7 @@ Created on Sun May  4 22:38:40 2014
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import dblquad
+from scipy.integrate import quad, dblquad
 import pickle
 from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     FIBER_MECH_ID, FIBER_FIT_ID_LIST, EVAL_DISPL, EVAL_FORCE, STATIC_START,
@@ -670,13 +670,20 @@ if __name__ == '__main__':
     #%% Calculating iqr for all and plot temporal traces
     # Calculate iqrs
     def calculate_iqr(simFiberLevelList):
+        def integrate(simFiber, quantity):
+            time = simFiber.traces[stim_num//2]['time']
+            trace = simFiber.traces[stim_num//2][quantity]
+            integration = quad(
+                lambda t: np.interp(t, time, trace),
+                time[0], time[-1])
+            return integration
         iqr_dict = {}
         for quantity in quantity_list:
             iqr_dict[quantity] = \
-                np.abs(simFiberLevelList[-2].traces[stim_num//2][quantity][-1]
-                - simFiberLevelList[1].traces[stim_num//2][quantity][-1]
-                ) / simFiberLevelList[len(simFiberLevelList)//2].traces[
-                stim_num//2][quantity][-1]
+                np.abs(integrate(simFiberLevelList[-2], quantity)
+                - integrate(simFiberLevelList[1], quantity)
+                ) / integrate(simFiberLevelList[len(simFiberLevelList)//2],
+                quantity)
         return iqr_dict    
     temporal_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
