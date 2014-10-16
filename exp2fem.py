@@ -662,3 +662,33 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
 #    print(force_static_fit_resvar, displ_static_fit_resvar)
+    #%% Plot fiber data in six separate plots
+    fig, axs = plt.subplots(2, 3, figsize=(6.28, 5))
+    axs_force = np.empty_like(axs)
+    for i, fiber in enumerate(fiber_list):
+        axes_displ = axs.ravel()[i]
+        axes_force = axes_displ.twiny()
+        axs_force.ravel()[i] = axes_force
+        axes_displ.errorbar(fiber.binned_exp['displ_mean'], 
+                            fiber.binned_exp['static_fr_mean'], 
+                            fiber.binned_exp['static_fr_std'],
+                            fmt='o-', c='k', mec='k', ms=MS,
+                            label='Fiber #%d'%(i+1))
+        axes_force.errorbar(fiber.binned_exp['force_mean'], 
+                            fiber.binned_exp['static_fr_mean'], 
+                            fiber.binned_exp['static_fr_std'],
+                            fmt='s--', c='k', mec='k', ms=MS,
+                            label='Fiber #%d'%(i+1))
+        axes_displ.plot(sorted(displ_list), np.sort(displ_static_predict),
+                        '-k', label='Displ regression')
+        axes_force.plot(sorted(force_list), np.sort(force_static_predict), 
+                        '--k', label='Force regression')
+        axes_displ.set_xlabel(r'Displacement ($\mu$m)')
+        axes_force.set_xlabel(r'Force (mN)')
+        axes_displ.set_ylabel('Mean firing (Hz)')
+    axs[0, 0].legend(loc=2)
+    axs_force[0, 1].legend(loc=2)      
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/six_panel_fr.png', dpi=300)        
+                      
