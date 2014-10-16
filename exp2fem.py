@@ -7,7 +7,7 @@ Created on Sun Feb 16 21:10:47 2014
 
 #%%
 
-import numpy as np
+import numpy as np, pandas as pd
 import matplotlib.pyplot as plt
 
 import os
@@ -509,6 +509,7 @@ if __name__ == '__main__':
                     return static_r2, dynamic_r2
                 fiber.lif_r2[quantity_name] = get_lif_r2(target_fr_array,
                     fiber.lif_fr[quantity_name])
+                fiber.df_lif_r2 = pd.DataFrame(fiber.lif_r2)
     #%% Plot fitting figure for paper
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -564,7 +565,7 @@ if __name__ == '__main__':
         axs[0].plot(fiber.abq_displ_scaled, fiber.abq_force, ls='-', c=color,
             label='Model')
         # Plot force trace
-        group_id = 2
+        group_id = 1
         fiber_mech.get_stim_block_trace_exp()
         stim_group = fiber_mech.stim_group_dict[group_id]
         for i, stim_num in enumerate(stim_group['stim_num']):
@@ -580,9 +581,9 @@ if __name__ == '__main__':
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
     # Setting the range
-    axs[0].set_xlim(300, 600)    
-    axs[0].set_ylim(0, 12)    
-    axs[1].set_ylim(-1, 8)
+    axs[0].set_xlim(375, 575)    
+    axs[0].set_ylim(0, 10)
+    axs[1].set_ylim(-1, 5)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
