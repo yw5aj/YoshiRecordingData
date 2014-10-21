@@ -1,0 +1,24 @@
+# Figures
+*.png
+*.pdf
+
+# Archive
+*archive*
+
+# Temp files
+*.rpy*
+*.pyc
+*.pkl
+*.log
+
+# Matlab files
+*.mat
+
+# Office files
+*.vsd*
+*.doc*
+*.xls*
+
+# Text files
+*.txt
+*.csv

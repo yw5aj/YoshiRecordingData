@@ -147,33 +147,6 @@ def fit_trans_param(quantity_dict_list, target_fr_array):
     return trans_param
 
 
-#def get_lstsq_fit(quantity_dict_list, target_fr_array):
-#    """
-#    Note: this is only calculating the static phase.
-#    """
-#    # Get the mean of all firing rates at different indentation depth
-#    target_fr_vector = np.empty(1*(target_fr_array[:, 0].max().astype(np.int)
-#        +1))
-#    for i in range(target_fr_vector.size):
-#        target_fr_vector[i] = target_fr_array[:, 1][target_fr_array[:, 0]==i
-#            ].mean()
-#    # Get the corresponding current vector
-#    target_current_vector = np.empty_like(target_fr_vector)
-#    for i, fr in enumerate(target_fr_vector):
-#        target_current_vector[i] = fr2current(fr)
-#    # Get the quantity and rate matrix
-#    (static_mean_quantity_array, static_mean_quantity_rate_array,
-#        dynamic_mean_quantity_array, dynamic_mean_quantity_rate_array
-#        ) = get_mean_quantity_and_rate(quantity_dict_list)
-#    quantity_and_rate_matrix = np.c_[
-#        np.r_[static_mean_quantity_array],
-#        np.r_[static_mean_quantity_rate_array],
-#        np.ones(target_fr_vector.size)]
-#    trans_param = np.linalg.lstsq(quantity_and_rate_matrix, 
-#        target_current_vector)[0]
-#    return trans_param
-
-
 def get_lstsq_fit(quantity_dict_list, target_fr_array):
     # Get the mean of all firing rates at different indentation depth
     target_fr_vector = np.empty(2*(target_fr_array[:, 0].max().astype(np.int)

@@ -169,8 +169,8 @@ def plot_static_dynamic(cleanFiberList, fs=16e3, save_data=False,
             static_avg_fr_list.append(stim_traces['static_avg_fr'])
             dynamic_avg_fr_list.append(stim_traces['dynamic_avg_fr'])
             dynamic_ramp_time_list.append(stim_traces['ramp_time'])
-            dynamic_displ_rate_list.append(stim_traces['dynamic_displ_rate_list'])
-            dynamic_force_rate_list.append(stim_traces['dynamic_force_rate_list'])
+            dynamic_displ_rate_list.append(stim_traces['dynamic_displ_rate'])
+            dynamic_force_rate_list.append(stim_traces['dynamic_force_rate'])
         fmt, color = fmt_list[fiber_id], color_list[fiber_id]
 #        label_text = '#'+str(fiber_id)
         label_text = cleanFiber.animal_info['mat_filename'][4:-4]
