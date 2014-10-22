@@ -47,7 +47,7 @@ class SimFiber:
             Which part of the mechanics was changed. Options are 'SkinThick',
             'SkinAlpha', 'SylgardThick', 'SylgardC10'
         level : int
-            An int in [0, 4]. Corresponds to min., lower-quartile, median, 
+            An int in [0, 5]. Corresponds to min., lower-quartile, median, 
             upper-quartile and max.
         control : str
             The applied control in simulation, either force or displacement,
@@ -500,93 +500,6 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/example_sim_traces.png', dpi=300)
-    #%% Calculating rate iqr for all and plot rate temporal traces
-    # Calculate iqrs
-    def calculate_rate_iqr(simFiberLevelList):
-        rate_iqr_dict = {}
-        for quantity in quantity_list:
-            rate_iqr_dict[quantity] = \
-                np.abs(simFiberLevelList[-2].traces[stim_num//2][quantity][
-                simFiberLevelList[-2].traces[stim_num//2]['max_index']]
-                - simFiberLevelList[1].traces[stim_num//2][quantity][
-                simFiberLevelList[1].traces[stim_num//2]['max_index']]
-                ) / simFiberLevelList[len(simFiberLevelList)//2].traces[
-                stim_num//2][quantity][simFiberLevelList[len(simFiberLevelList
-                )//2].traces[stim_num//2]['max_index']]
-        return rate_iqr_dict
-    rate_iqr_table = np.empty((6, 3))
-    for i, factor in enumerate(factor_list[:3]):
-        for k, control in enumerate(control_list):
-            iqr_dict = calculate_iqr(
-                [simFiberList[i][j][k] for j in range(level_num)])
-            for row, quantity in enumerate(quantity_list[2:]):
-                rate_iqr_table[3*k+row, i] = iqr_dict[quantity]
-    rate_iqr_table_mean = rate_iqr_table.mean(axis=1)
-    # Plot temporal traces
-    fiber_id = FIBER_FIT_ID_LIST[0]
-    fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
-    for i, factor in enumerate(factor_list[:3]):
-        for k, control in enumerate(control_list):
-            control = control.lower()
-            for level in range(level_num):
-                color = str(.6 - .15 * level)
-                ls = LS_LIST[i]
-                simFiber = simFiberList[i][level][k]
-                cscale = 1e6 if control == 'displ' else 1e3
-                cscale *= 1e5 # compensate for frequency
-                axs[0, k].plot(
-                    simFiber.traces[stim_num//2]['time'][1:],
-                    np.diff(simFiber.traces[stim_num//2][control]) * cscale,
-                    ls=ls, c=color, label=quantile_label_list[level])
-                for row, quantity in enumerate(quantity_list[2:]):
-                    scale = 1 if quantity is 'strain' else 1e-3
-                    scale *= 1e5 # compensate for frequency
-                    axes = axs[row+1, k]
-                    axes.plot(
-                        simFiber.traces[stim_num//2]['time'][1:],
-                        np.diff(simFiber.traces[stim_num//2][quantity])*scale,
-                        ls=ls, c=color, label=quantile_label_list[level])
-    # Add axes labels
-    for axes in axs[-1, :]:
-        axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Displacement rate ($\mu$m/s)')
-    axs[0, 1].set_ylabel(r'Force rate (mN/s)')
-    axs[1, 0].set_ylabel('Stress rate (kPa/s)')
-    axs[1, 1].set_ylabel('Stress rate (kPa/s)')
-    axs[2, 0].set_ylabel(r'Strain rate (s$^{-1}$)')
-    axs[2, 1].set_ylabel(r'Strain rate (s$^{-1}$)')
-    axs[3, 0].set_ylabel(r'SED (kPa$\cdot m^{-3}s^{-1}$)')
-    axs[3, 1].set_ylabel(r'SED (kPa$\cdot m^{-3}s^{-1}$)')
-    # Set x and y lim
-    ymin_array = np.empty_like(axs[1:], dtype=np.float)
-    ymax_array = np.empty_like(axs[1:], dtype=np.float)
-    for row, axs_row in enumerate(axs[1:]):
-        for col, axes in enumerate(axs_row):
-            # Y-lim record
-            ymin_array[row, col] = axes.get_ylim()[0]                        
-            ymax_array[row, col] = axes.get_ylim()[1]
-    for row, axs_row in enumerate(axs[1:]):
-        for col, axes in enumerate(axs_row):
-            ymin = ymin_array[row, :].min()
-            ymax = ymax_array[row, :].max()
-            axes.set_ylim(ymin, ymax)
-#    axs[0, 0].set_ylim(0, 150)
-#    axs[0, 1].set_ylim(0, 6)
-    # Formatting
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')
-        axes.set_xlim(-.05, 0.35)
-    # Add legends
-    # The line type labels
-    handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[4::5], [factor_display[5:].capitalize() for
-        factor_display in factor_display_list[:3]], loc=1)
-    # The 5 quantile labels
-    axs[0, 1].legend(handles[:5], labels[:5], loc=1)
-    # Save figure
-    fig.tight_layout()
-    fig.savefig('./plots/example_sim_rate_traces.png', dpi=300)
     #%% Plot all simulations together
     fiber_id = FIBER_FIT_ID_LIST[0]
     # Calculate all the IQRs and compare force vs. displ
