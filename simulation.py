@@ -651,8 +651,8 @@ if __name__ == '__main__':
             ymin = ymin_array[row, :].min()
             ymax = ymax_array[row, :].max()
             axes.set_ylim(ymin, ymax)        
-#    axs[0, 0].set_ylim(0, 150)
-#    axs[0, 1].set_ylim(0, 6)
+    axs[0, 0].set_ylim(bottom=axs[0, 0].get_lines()[0].get_data()[1][0])
+    axs[0, 1].set_ylim(0, 6)
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -661,40 +661,14 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    ls_legend = axs.ravel()[-1].legend(handles[8::10], [factor_display[5:
-        ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
+    axs[0, 0].legend(handles[8::10], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=4)
     # The 5 quantile labels
-    axs.ravel()[-1].add_artist(ls_legend)
-    color_legend = axs.ravel()[-1].legend(handles[0:10:2], labels[0:10:2], 
-        loc=2)
-    # Two color labels
-    displ_labels = [
-        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
-            ].static_displ_exp[3], 
-        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
-            ].static_displ_exp[4]]
-    axs[0, 0].annotate(displ_labels[0], xy=(2.5, simFiberList[0][2][0
-            ].static_displ_exp[3]), xytext=(2.5, simFiberList[0][2][0
-            ].static_displ_exp[3]*0.9), arrowprops=dict(facecolor='k', 
-            shrink=0.05))
-    axs[0, 0].annotate(displ_labels[0], xy=(2.5, simFiberList[0][2][0
-            ].static_displ_exp[4]), xytext=(2.5, simFiberList[0][2][0
-            ].static_displ_exp[4]*1.1), arrowprops=dict(facecolor='k', 
-            shrink=0.05))
-    force_labels = [
-        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[3], 
-        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[4]]                    
-    axs[0, 1].annotate(force_labels[0], xy=(2.5, simFiberList[0][2][1
-            ].static_force_exp[3]), xytext=(2.5, simFiberList[0][2][1
-            ].static_force_exp[3]*0.9), arrowprops=dict(facecolor='k', 
-            shrink=0.05))        
-    axs[0, 1].annotate(force_labels[0], xy=(2.5, simFiberList[0][2][1
-            ].static_force_exp[4]), xytext=(2.5, simFiberList[0][2][1
-            ].static_force_exp[4]*1.1), arrowprops=dict(facecolor='k', 
-            shrink=0.05))        
-#    axs[0, 0].legend(handles[8:10], displ_labels, loc=4)
-#    axs[0, 1].legend(handles[8:10], force_labels, loc=4)
+    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=4)
+    # Add subtitles
+    axs[0, 0].set_title('Displacement controlled')
+    axs[0, 1].set_title('Force controlled')
     # Save figure
     fig.tight_layout()
-    fig.savefig('./plots/example_sim_traces_overlap.png', dpi=300)    
+    fig.savefig('./plots/temporal_distribution.png', dpi=300)    
     plt.close(fig)
