@@ -78,7 +78,7 @@ class SimFiber:
                 # Change unit to experiment ones
                 if 'y' in key:
                     self.dist[stim][key] = displcoeff[0] + displcoeff[1] *\
-                        self.dist[stim][key]*1e6
+                        self.dist[stim][key]*(-1e6)
             argsort = self.dist[stim]['cxold'][-1].argsort()
             # Sort order in x
             for key in key_list:
@@ -153,10 +153,8 @@ class SimFiber:
             self.traces[i]['displ'] = displcoeff[0] * 1e-6 + displcoeff[1
                 ] * self.traces[i]['displ']
         # Get the FEM and corresponding displ / force
-        self.static_displ_fem = np.array([self.traces[i]['displ'][-1]
-            for i in range(stim_num)])
-        self.static_displ_exp = displcoeff[0] + self.static_displ_fem *\
-            1e6 * displcoeff[1]
+        self.static_displ_exp = np.array([self.traces[i]['displ'][-1]
+            for i in range(stim_num)]) * 1e6
         self.static_force_fem = np.array([self.traces[i]['force'][-1]
             for i in range(stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
@@ -249,9 +247,8 @@ if __name__ == '__main__':
         for j, control in enumerate(control_list):
             for level in range(level_num):
                 for stim in [2, 3]:
-                    color = str(.6-.15 * level)
-                    alpha = .4 + .15 * level
-                    color = (0, 0, 0, alpha) if stim == 3 else (1, 0, 0, alpha)
+                    alpha = .2 + .2 * level
+                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     dist = simFiberList[i][level][j].dist[stim]
                     xscale = 1e3
@@ -307,10 +304,13 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[4::5], [factor_display[5:].capitalize() for
-        factor_display in factor_display_list[:3]], loc=2)
+    axs[0, 0].legend(handles[8::10], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[:5], labels[:5], loc=1)
+    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    # Add subtitles
+    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 1].set_title('Pressure controlled')    
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/spatial_distribution.png', dpi=300)
@@ -350,9 +350,8 @@ if __name__ == '__main__':
             control = control.lower()
             for level in range(level_num):
                 for stim in [2, 3]:
-#                    color = str(.6 - .15 * level)
-                    alpha = .4 + .15 * level
-                    color = (0, 0, 0, alpha) if stim == 3 else (1, 0, 0, alpha)
+                    alpha = .2 + .2 * level
+                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
                     cscale = 1e6 if control == 'displ' else 1e3
@@ -392,7 +391,7 @@ if __name__ == '__main__':
             ymax = ymax_array[row, :].max()
             axes.set_ylim(ymin, ymax)        
     axs[0, 0].set_ylim(bottom=axs[0, 0].get_lines()[0].get_data()[1][0])
-    axs[0, 1].set_ylim(0, 6)
+    axs[0, 1].set_ylim(0, 4)
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -447,46 +446,37 @@ if __name__ == '__main__':
     sim_table_sum = spatial_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
     # Factors explaining the force-alignment - static
-    fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
+    fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
             for j in range(level_num):
-                color = str(.6 - .15 * j)
+                color = str(.8 - .2 * j)
                 fmt = LS_LIST[i]
                 label = quantile_label_list[j]
                 simFiber = simFiberList[i][j][0]
                 axs[0, k].plot(
                     simFiber.static_displ_exp,
-                    simFiber.static_force_exp,
-                    c=color, mec=color, ms=MS, 
-                    ls=fmt, label=label)
-                axs[1, k].plot(
-                    simFiber.static_displ_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
                     c=color, mec=color, ms=MS, 
                     ls=fmt, label=label)
-                axs[2, k].plot(
+                axs[1, k].plot(
                     simFiber.static_force_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
                     c=color, mec=color, ms=MS, 
                     ls=fmt, label=label)
     # X and Y limits
-#    for axes in axs[0, :].ravel():
-#        axes.set_ylim(0, 10)
-    for axes in axs[1:, :].ravel():
+    for axes in axs.ravel():
         axes.set_ylim(0, 50)
-    for axes in axs[2, :].ravel():
+    for axes in axs[-1, :].ravel():
         axes.set_xlim(0, 10)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s model' % quantity_list[-3:][i].capitalize())
-    for axes in axs[:2, :].ravel():
+    for axes in axs[0, :].ravel():
         axes.set_xlabel(r'Displacement ($\mu$m)')
-    for axes in axs[-1, :].ravel():
-        axes.set_xlabel('Force (mN)')
     for axes in axs[1, :].ravel():
-        axes.set_ylabel('Force (mN)')
-    for axes in axs[1:, :].ravel():
+        axes.set_xlabel('Force (mN)')
+    for axes in axs.ravel():
         axes.set_ylabel('Mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
         xloc = -.2
@@ -495,11 +485,11 @@ if __name__ == '__main__':
     # Legend
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[4::5], [factor_display[5:].capitalize() for
-        factor_display in factor_display_list[:3]], loc=2)
+    ls_labels = ['Thickness', 'Modulus', 'Visco.']
+    axs[0, 2].legend(handles[4::5], ls_labels, loc=2)
     # The 5 quantile labels
     axs[0, 1].legend(handles[:5], labels[:5], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
-    plt.close(fig)    
+    plt.close(fig)
