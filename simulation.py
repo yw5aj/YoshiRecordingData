@@ -70,12 +70,16 @@ class SimFiber:
         stim = 2
         self.dist = {}        
         key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
-                    'mstrain', 'mstress', 'mxnew', 'mxold',
+                    'mstrain', 'mstress', 'mxnew', 'mxold', 'my',
                     'time']
         for key in key_list:
             self.dist[key] = np.loadtxt(
                 fpath+self.factor+str(self.level)+str(stim)+self.control+'_'
                 +key+'.csv', delimiter=',')
+            # Change unit to experiment ones
+            if 'y' in key:
+                self.dist[key] = displcoeff[0] + displcoeff[1] * self.dist[
+                    key]*1e6
         argsort = self.dist['cxold'][-1].argsort()
         # Sort order in x
         for key in key_list:
@@ -215,7 +219,7 @@ if __name__ == '__main__':
     # Generate data
     simFiberList = [[[] for j in 
         range(level_num)] for i in range(len(factor_list))]
-    for i, factor in enumerate(factor_list):
+    for i, factor in enumerate(factor_list[:3]):
         for level in range(level_num):
             j = level
             for k, control in enumerate(control_list):
@@ -348,7 +352,7 @@ if __name__ == '__main__':
                 xscale = 1e3
                 cquantity = cquantity_list[j]
                 if 'y' in cquantity:
-                    cscale = 1e6
+                    cscale = 1
                 elif 'ress' in cquantity:
                     cscale = 1e-3
                 axs[0, j].plot(dist['cxnew'][-1, :] * xscale, 
@@ -383,8 +387,8 @@ if __name__ == '__main__':
             ymax = ymax_array[row, :].max()
             axes.set_ylim(ymin, ymax)
             axes.set_xlim(0, 1)
-    axs[0, 0].set_ylim(-150, 100)
-    axs[0, 1].set_ylim(axs[1, 1].get_ylim())
+#    axs[0, 1].set_ylim(axs[1, 1].get_ylim())
+    axs[0, 1].set_ylim(bottom=-1)
     # Formatting labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Location (mm)')
@@ -410,6 +414,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/spatial_distribution.png', dpi=300)
+    plt.close(fig)
     #%% Calculating iqr for all and plot temporal traces
     # Calculate iqrs
     def calculate_iqr(simFiberLevelList):
@@ -500,6 +505,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/example_sim_traces.png', dpi=300)
+    plt.close(fig)    
     #%% Plot all simulations together
     fiber_id = FIBER_FIT_ID_LIST[0]
     # Calculate all the IQRs and compare force vs. displ
@@ -590,4 +596,83 @@ if __name__ == '__main__':
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
-    
+    plt.close(fig)    
+    #%% Plot overlapping temporal traces
+    # Plot temporal traces
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
+    for i, factor in enumerate(factor_list[:3]):
+        for k, control in enumerate(control_list):
+            control = control.lower()
+            for level in range(level_num):
+                for stim in [3, 4]:
+#                    color = str(.6 - .15 * level)
+                    alpha = .4 + .15 * level
+                    color = (0, 0, 0, alpha) if stim == 3 else (1, 0, 0, alpha)
+                    ls = LS_LIST[i]
+                    simFiber = simFiberList[i][level][k]
+                    cscale = 1e6 if control == 'displ' else 1e3
+                    axs[0, k].plot(
+                        simFiber.traces[stim]['time'],
+                        simFiber.traces[stim][control] * cscale,
+                        ls=ls, c=color, label=quantile_label_list[level])
+                    for row, quantity in enumerate(quantity_list[2:]):
+                        scale = 1 if quantity is 'strain' else 1e-3
+                        axes = axs[row+1, k]
+                        axes.plot(
+                            simFiber.traces[stim]['time'],
+                            simFiber.traces[stim][quantity]*scale, 
+                            ls=ls, c=color, label=quantile_label_list[level])
+    # Add axes labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Time (s)')
+    axs[0, 0].set_ylabel(r'Displacement ($\mu$m)')
+    axs[0, 1].set_ylabel(r'Force (mN)')
+    axs[1, 0].set_ylabel('Stress (kPa)')
+    axs[1, 1].set_ylabel('Stress (kPa)')
+    axs[2, 0].set_ylabel('Strain')
+    axs[2, 1].set_ylabel('Strain')
+    axs[3, 0].set_ylabel(r'SED (kPa/$m^3$)')
+    axs[3, 1].set_ylabel(r'SED (kPa/$m^3$)')
+    # Set x and y lim
+    ymin_array = np.empty_like(axs[1:], dtype=np.float)
+    ymax_array = np.empty_like(axs[1:], dtype=np.float)
+    for row, axs_row in enumerate(axs[1:]):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs[1:]):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)        
+    axs[0, 0].set_ylim(0, 150)
+    axs[0, 1].set_ylim(0, 6)
+    # Formatting
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+        axes.set_xlim(-.25, 5.5)
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handles[8::10], [factor_display[5:].capitalize() for
+        factor_display in factor_display_list[:3]], loc=4)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=4)
+    # Two color labels
+#    displ_labels = [
+#        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
+#            ].static_displ_exp[3], 
+#        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
+#            ].static_displ_exp[4]]
+#    force_labels = [
+#        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[3], 
+#        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[4]]                    
+#    axs[0, 0].legend(handles[8:10], displ_labels, loc=4)
+#    axs[0, 1].legend(handles[8:10], force_labels, loc=4)
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/example_sim_traces_overlap.png', dpi=300)    
+    plt.close(fig)
