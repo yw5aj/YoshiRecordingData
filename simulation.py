@@ -9,6 +9,7 @@ Created on Sun May  4 22:38:40 2014
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
+from scipy.stats import pearsonr
 import pickle
 from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     FIBER_MECH_ID, FIBER_FIT_ID_LIST, EVAL_DISPL, EVAL_FORCE, STATIC_START,
@@ -239,6 +240,17 @@ if __name__ == '__main__':
                     3]['m%sint'%quantity]
     spatial_table_sum = spatial_table.sum(axis=1)
     np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
+    # Calculate Pearson correlation coefficients
+#    spatial_pearsonr_table = np.empty([3, 2])
+#    spatial_pearsonp_table = np.empty_like(spatial_pearsonr_table)
+#    for i, quantity in enumerate(quantity_list[2:]):
+#        for j, control in enumerate(control_list):
+#            dist = simFiberList[0][2][j].dist[3]
+#            end_index = (dist['time'] > 1).nonzero()[0][0]
+#            xdata = trace[control.lower()][:end_index]
+#            ydata = trace[quantity][:end_index]
+#            temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
+#                pearsonr(xdata, ydata)    
     # Plot distribution
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     mquantity_list = ['mstress', 'mstrain', 'msener']
@@ -342,6 +354,17 @@ if __name__ == '__main__':
                 temporal_table[3*k+row, i] = iqr_dict[quantity]
     temporal_table_sum = temporal_table.sum(axis=1)
     np.savetxt('./csvs/temporal_table.csv', temporal_table, delimiter=',')
+    # Calculate Pearson correlation coefficients
+    temporal_pearsonr_table = np.empty([3, 2])
+    temporal_pearsonp_table = np.empty_like(temporal_pearsonr_table)
+    for i, quantity in enumerate(quantity_list[2:]):
+        for j, control in enumerate(control_list):
+            trace = simFiberList[0][2][j].traces[3]
+            end_index = (trace['time'] > 1).nonzero()[0][0]
+            xdata = trace[control.lower()][:end_index]
+            ydata = trace[quantity][:end_index]
+            temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
+                pearsonr(xdata, ydata)
     # Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
@@ -412,6 +435,17 @@ if __name__ == '__main__':
     fig.savefig('./plots/temporal_distribution.png', dpi=300)    
     plt.close(fig)
     #%% Plot temporal trace rate
+    # Calculate Pearson correlation coefficients
+    temporal_rate_pearsonr_table = np.empty([3, 2])
+    temporal_rate_pearsonp_table = np.empty_like(temporal_rate_pearsonr_table)
+    for i, quantity in enumerate(quantity_list[2:]):
+        for j, control in enumerate(control_list):
+            trace = simFiberList[0][2][j].traces[3]
+            end_index = (trace['time'] > .3).nonzero()[0][0]
+            xdata = np.diff(trace[control.lower()][:end_index])
+            ydata = np.diff(trace[quantity][:end_index])
+            temporal_rate_pearsonr_table[i, j], \
+                temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata) 
     # Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
