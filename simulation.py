@@ -552,11 +552,11 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
-            for j in range(level_num):
-                color = str(.8 - .2 * j)
+            for level in range(level_num):
+                color = str(.8 - .2 * level)
                 fmt = LS_LIST[i]
-                label = quantile_label_list[j]
-                simFiber = simFiberList[i][j][0]
+                label = quantile_label_list[level]
+                simFiber = simFiberList[i][level][0]
                 axs[0, k].plot(
                     simFiber.static_displ_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
