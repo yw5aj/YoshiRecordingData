@@ -27,7 +27,7 @@ factor_display_list = ['skin thickness', 'skin modulus',
 level_num = 5
 control_list = ['Displ', 'Force']
 quantity_list = ['force', 'displ', 'stress', 'strain', 'sener']
-quantile_label_list = ['Min', 'LQ', 'Med', 'UQ', 'Max']
+quantile_label_list = ['Min', 'Lower-quartile', 'Median', 'Upper-quartile', 'Max']
 phase_list = ['dynamic', 'static']
 percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
@@ -257,9 +257,9 @@ if __name__ == '__main__':
     cquantity_list = ['cy', 'cpress']
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
-            for level in range(level_num):
+            for level in range(level_num)[1:-1]:
                 for stim in [2, 3]:
-                    alpha = .2 + .2 * level
+                    alpha = .25 + .25 * level
                     color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     dist = simFiberList[i][level][j].dist[stim]
@@ -316,10 +316,10 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[8::10], [factor_display[5:
+    axs[0, 0].legend(handles[4::6], [factor_display[5:
         ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    axs[0, 1].legend(handles[0:6:2], labels[0:6:2], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')    
@@ -371,9 +371,9 @@ if __name__ == '__main__':
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
             control = control.lower()
-            for level in range(level_num):
+            for level in range(level_num)[1:-1]:
                 for stim in [2, 3]:
-                    alpha = .2 + .2 * level
+                    alpha = .25 + .25 * level
                     color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
@@ -423,10 +423,10 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[8::10], [factor_display[5:
+    axs[0, 0].legend(handles[4::6], [factor_display[5:
         ].capitalize() for factor_display in factor_display_list[:3]], loc=4)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=4)
+    axs[0, 1].legend(handles[0:6:2], labels[0:6:2], loc=4)
     # Add subtitles
     axs[0, 0].set_title('Displacement controlled')
     axs[0, 1].set_title('Force controlled')
@@ -452,9 +452,9 @@ if __name__ == '__main__':
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
             control = control.lower()
-            for level in range(level_num):
+            for level in range(level_num)[1:-1]:
                 for stim in [2, 3]:
-                    alpha = .2 + .2 * level
+                    alpha = .25 + .25 * level
                     color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
@@ -503,10 +503,10 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[8::10], [factor_display[5:
+    axs[0, 0].legend(handles[4::6], [factor_display[5:
         ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    axs[0, 1].legend(handles[0:6:2], labels[0:6:2], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Displacement controlled')
     axs[0, 1].set_title('Force controlled')
@@ -552,8 +552,8 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
-            for level in range(level_num):
-                color = str(.8 - .2 * level)
+            for level in range(level_num)[1:-1]:
+                color = (0, 0, 0, .25 + .25 * level)
                 fmt = LS_LIST[i]
                 label = quantile_label_list[level]
                 simFiber = simFiberList[i][level][0]
@@ -588,10 +588,10 @@ if __name__ == '__main__':
     # Legend
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    ls_labels = ['Thickness', 'Modulus', 'Visco.']
-    axs[0, 2].legend(handles[4::5], ls_labels, loc=2)
+    axs[0, 0].legend(handles[2::3], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[:5], labels[:5], loc=2)
+    axs[0, 1].legend(handles[:3], labels[:3], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
@@ -603,9 +603,9 @@ if __name__ == '__main__':
     cquantity_list = ['cy', 'cpress']
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
-            for level in range(level_num):
+            for level in range(level_num)[1:-1]:
                 for stim in [2, 3]:
-                    alpha = .2 + .2 * level
+                    alpha = .25 + .25 * level
                     color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
                     ls = LS_LIST[i]
                     dist = simFiberList[i][level][j].dist[stim]
@@ -656,10 +656,10 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[8::10], [factor_display[5:
+    axs[0, 0].legend(handles[4::6], [factor_display[5:
         ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    axs[0, 1].legend(handles[0:6:2], labels[0:6:2], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')    
