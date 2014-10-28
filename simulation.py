@@ -396,7 +396,7 @@ if __name__ == '__main__':
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
-        axes.set_xlim(-.25, 5.5)
+        axes.set_xlim(-.0, .5)
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
@@ -411,6 +411,75 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/temporal_distribution.png', dpi=300)    
     plt.close(fig)
+    #%% Plot temporal trace rate
+    # Plot temporal traces
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
+    for i, factor in enumerate(factor_list[:3]):
+        for k, control in enumerate(control_list):
+            control = control.lower()
+            for level in range(level_num):
+                for stim in [2, 3]:
+                    alpha = .2 + .2 * level
+                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
+                    ls = LS_LIST[i]
+                    simFiber = simFiberList[i][level][k]
+                    dt = np.diff(simFiber.traces[stim]['time'])[0]
+                    cscale = 1e6 if control == 'displ' else 1e3
+                    axs[0, k].plot(
+                        simFiber.traces[stim]['time'][:-1],
+                        np.diff(simFiber.traces[stim][control])/dt * cscale,
+                        ls=ls, c=color, label=quantile_label_list[level])
+                    for row, quantity in enumerate(quantity_list[2:]):
+                        scale = 1 if quantity is 'strain' else 1e-3
+                        axes = axs[row+1, k]
+                        axes.plot(
+                            simFiber.traces[stim]['time'][:-1],
+                            np.diff(simFiber.traces[stim][quantity])/dt*scale, 
+                            ls=ls, c=color, label=quantile_label_list[level])
+    # Add axes labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Time (s)')
+    axs[0, 0].set_ylabel(r'Velocity ($\mu$m/s)')
+    axs[0, 1].set_ylabel(r'Force (mN/s)')
+    axs[1, 0].set_ylabel(r'Stress (kPa/s)')
+    axs[1, 1].set_ylabel(r'Stress (kPa/s)')
+    axs[2, 0].set_ylabel(r'Strain (s$^{-1}$)')
+    axs[2, 1].set_ylabel(r'Strain (s$^{-1}$)')
+    axs[3, 0].set_ylabel(r'SED (kPa$\cdot m^3s^{-1}$)')
+    axs[3, 1].set_ylabel(r'SED (kPa$\cdot m^3s^{-1}$)')
+    # Set x and y lim
+    ymin_array = np.empty_like(axs[1:], dtype=np.float)
+    ymax_array = np.empty_like(axs[1:], dtype=np.float)
+    for row, axs_row in enumerate(axs[1:]):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs[1:]):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)        
+    # Formatting
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+        axes.set_xlim(-.0, .3)
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handles[8::10], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    # Add subtitles
+    axs[0, 0].set_title('Displacement controlled')
+    axs[0, 1].set_title('Force controlled')
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)    
+    plt.close(fig)    
     #%% Plot all simulations together
     fiber_id = FIBER_FIT_ID_LIST[0]
     # Calculate all the IQRs and compare force vs. displ
@@ -493,3 +562,74 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
     plt.close(fig)
+    #%% The huge spatial figure
+    # Plot distribution
+    fig, axs = plt.subplots(6, 2, figsize=(6.83, 12), sharex=True)
+    mquantity_list = ['my', 'mstress', 'mstrain', 'msener']
+    cquantity_list = ['cy', 'cpress']
+    for i, factor in enumerate(factor_list[:3]):
+        for j, control in enumerate(control_list):
+            for level in range(level_num):
+                for stim in [2, 3]:
+                    alpha = .2 + .2 * level
+                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
+                    ls = LS_LIST[i]
+                    dist = simFiberList[i][level][j].dist[stim]
+                    xscale = 1e3
+                    axs[0, j].plot(dist['cxnew'][-1, :] * xscale, 
+                        dist['cy'][-1, :] * 1,
+                        ls=ls, c=color, label=quantile_label_list[level])
+                    axs[1, j].plot(dist['cxnew'][-1, :] * xscale, 
+                        dist['cpress'][-1, :] * 1e-3,
+                        ls=ls, c=color, label=quantile_label_list[level])
+                    for row, mquantity in enumerate(mquantity_list):
+                        # Scaling the axes
+                        if 'ress' in mquantity or 'sener' in mquantity:
+                            mscale = 1e-3
+                        else:
+                            mscale = 1
+                        # Plotting
+                        axs[row+2, j].plot(dist['mxnew'][-1, :] * xscale, 
+                            dist[mquantity][-1, :] * mscale, 
+                            ls=ls, c=color, label=quantile_label_list[level])
+    # Set x and y lim
+    ymin_array = np.empty_like(axs, dtype=np.float)
+    ymax_array = np.empty_like(axs, dtype=np.float)
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            # Y-lim record
+            ymin_array[row, col] = axes.get_ylim()[0]                        
+            ymax_array[row, col] = axes.get_ylim()[1]
+    for row, axs_row in enumerate(axs):
+        for col, axes in enumerate(axs_row):
+            ymin = ymin_array[row, :].min()
+            ymax = ymax_array[row, :].max()
+            axes.set_ylim(ymin, ymax)
+            axes.set_xlim(0, 1)
+    # Formatting labels
+    for axes in axs[-1, :]:
+        axes.set_xlabel('Location (mm)')
+    axs[0, 0].set_ylabel(r'Deformation ($\mu$m)')
+    axs[1, 0].set_ylabel('Pressure (kPa)')
+    axs[2, 0].set_ylabel(r'Displacement ($\mu$m)')
+    axs[3, 0].set_ylabel('Stress (kPa)')
+    axs[4, 0].set_ylabel('Strain')
+    axs[5, 0].set_ylabel(r'SED (kJ/m$^3$)')
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handles[8::10], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=1)
+    # Add subtitles
+    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 1].set_title('Pressure controlled')    
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/spatial_distribution_long.png', dpi=300)
+    plt.close(fig)    
