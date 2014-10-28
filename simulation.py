@@ -148,6 +148,10 @@ class SimFiber:
         self.traces[0]['stress'] = np.zeros_like(self.traces[0]['time'])
         self.traces[0]['strain'] = np.zeros_like(self.traces[0]['time'])
         self.traces[0]['sener'] = np.zeros_like(self.traces[0]['time'])
+        # Scale the displ
+        for i in range(stim_num):
+            self.traces[i]['displ'] = displcoeff[0] * 1e-6 + displcoeff[1
+                ] * self.traces[i]['displ']
         # Get the FEM and corresponding displ / force
         self.static_displ_fem = np.array([self.traces[i]['displ'][-1]
             for i in range(stim_num)])
@@ -647,8 +651,8 @@ if __name__ == '__main__':
             ymin = ymin_array[row, :].min()
             ymax = ymax_array[row, :].max()
             axes.set_ylim(ymin, ymax)        
-    axs[0, 0].set_ylim(0, 150)
-    axs[0, 1].set_ylim(0, 6)
+#    axs[0, 0].set_ylim(0, 150)
+#    axs[0, 1].set_ylim(0, 6)
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -657,19 +661,37 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[8::10], [factor_display[5:].capitalize() for
-        factor_display in factor_display_list[:3]], loc=4)
+    ls_legend = axs.ravel()[-1].legend(handles[8::10], [factor_display[5:
+        ].capitalize() for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[0:10:2], labels[0:10:2], loc=4)
+    axs.ravel()[-1].add_artist(ls_legend)
+    color_legend = axs.ravel()[-1].legend(handles[0:10:2], labels[0:10:2], 
+        loc=2)
     # Two color labels
-#    displ_labels = [
-#        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
-#            ].static_displ_exp[3], 
-#        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
-#            ].static_displ_exp[4]]
-#    force_labels = [
-#        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[3], 
-#        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[4]]                    
+    displ_labels = [
+        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
+            ].static_displ_exp[3], 
+        r'Displacement = %.2f $\mu$m' % simFiberList[0][2][0
+            ].static_displ_exp[4]]
+    axs[0, 0].annotate(displ_labels[0], xy=(2.5, simFiberList[0][2][0
+            ].static_displ_exp[3]), xytext=(2.5, simFiberList[0][2][0
+            ].static_displ_exp[3]*0.9), arrowprops=dict(facecolor='k', 
+            shrink=0.05))
+    axs[0, 0].annotate(displ_labels[0], xy=(2.5, simFiberList[0][2][0
+            ].static_displ_exp[4]), xytext=(2.5, simFiberList[0][2][0
+            ].static_displ_exp[4]*1.1), arrowprops=dict(facecolor='k', 
+            shrink=0.05))
+    force_labels = [
+        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[3], 
+        r'Force = %.2f mN' % simFiberList[0][2][1].static_force_exp[4]]                    
+    axs[0, 1].annotate(force_labels[0], xy=(2.5, simFiberList[0][2][1
+            ].static_force_exp[3]), xytext=(2.5, simFiberList[0][2][1
+            ].static_force_exp[3]*0.9), arrowprops=dict(facecolor='k', 
+            shrink=0.05))        
+    axs[0, 1].annotate(force_labels[0], xy=(2.5, simFiberList[0][2][1
+            ].static_force_exp[4]), xytext=(2.5, simFiberList[0][2][1
+            ].static_force_exp[4]*1.1), arrowprops=dict(facecolor='k', 
+            shrink=0.05))        
 #    axs[0, 0].legend(handles[8:10], displ_labels, loc=4)
 #    axs[0, 1].legend(handles[8:10], force_labels, loc=4)
     # Save figure
