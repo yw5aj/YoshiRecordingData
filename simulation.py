@@ -258,9 +258,14 @@ if __name__ == '__main__':
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
             for level in range(level_num)[1:-1]:
-                for stim in [2, 3]:
+                for stim in [1, 2, 3]:
                     alpha = .25 + .25 * level
-                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
+                    if stim == 2:
+                        color = (0, 0, 0, alpha)
+                    elif stim == 1:
+                        color = (1, 0, 0, alpha)
+                    elif stim == 3:
+                        color = (0, 0, 1, alpha)
                     ls = LS_LIST[i]
                     dist = simFiberList[i][level][j].dist[stim]
                     xscale = 1e3
@@ -372,9 +377,14 @@ if __name__ == '__main__':
         for k, control in enumerate(control_list):
             control = control.lower()
             for level in range(level_num)[1:-1]:
-                for stim in [2, 3]:
+                for stim in [1, 2, 3]:
                     alpha = .25 + .25 * level
-                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
+                    if stim == 2:
+                        color = (0, 0, 0, alpha)
+                    elif stim == 1:
+                        color = (1, 0, 0, alpha)
+                    elif stim == 3:
+                        color = (0, 0, 1, alpha)
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
                     cscale = 1e6 if control == 'displ' else 1e3
@@ -453,9 +463,14 @@ if __name__ == '__main__':
         for k, control in enumerate(control_list):
             control = control.lower()
             for level in range(level_num)[1:-1]:
-                for stim in [2, 3]:
+                for stim in [1, 2, 3]:
                     alpha = .25 + .25 * level
-                    color = (0, 0, 0, alpha) if stim == 2 else (1, 0, 0, alpha)
+                    if stim == 2:
+                        color = (0, 0, 0, alpha)
+                    elif stim == 1:
+                        color = (1, 0, 0, alpha)
+                    elif stim == 3:
+                        color = (0, 0, 1, alpha)
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
                     dt = np.diff(simFiber.traces[stim]['time'])[0]
