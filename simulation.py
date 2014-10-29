@@ -570,8 +570,10 @@ if __name__ == '__main__':
     # X and Y limits
     for axes in axs.ravel():
         axes.set_ylim(0, 50)
-    for axes in axs[-1, :].ravel():
-        axes.set_xlim(0, 10)
+    for axes in axs[0, :].ravel():
+        axes.set_xlim(300, 550)
+    for axes in axs[1, :].ravel():
+        axes.set_xlim(0, 7)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s model' % quantity_list[-3:][i].capitalize())
