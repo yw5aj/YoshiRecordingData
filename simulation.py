@@ -260,7 +260,7 @@ if __name__ == '__main__':
         for j, control in enumerate(control_list):
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = .2 + .2 * level
+                    alpha = 1. - .5 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -322,12 +322,13 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[len(level_plot_list)-1::len(stim_plot_list)*len(
+    axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
+        +len(stim_plot_list)//2::len(stim_plot_list)*len(
         level_plot_list)], [factor_display[5:].capitalize() 
         for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], labels[
-        1:3*len(level_plot_list)+1:3], loc=1)
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+        'Quartile', 'Median'], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')    
@@ -381,7 +382,7 @@ if __name__ == '__main__':
             control = control.lower()
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = .2 + .2 * level
+                    alpha = 1. - .5 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -438,12 +439,13 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[len(level_plot_list)-1::len(stim_plot_list)*len(
+    axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)+
+        len(stim_plot_list)//2::len(stim_plot_list)*len(
         level_plot_list)], [factor_display[5:].capitalize() 
         for factor_display in factor_display_list[:3]], loc=4)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], labels[
-        1:3*len(level_plot_list)+1:3], loc=4)
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+        'Quartile', 'Median'], loc=4)
     # Add subtitles
     axs[0, 0].set_title('Displacement controlled')
     axs[0, 1].set_title('Force controlled')
@@ -471,7 +473,7 @@ if __name__ == '__main__':
             control = control.lower()
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = .2 + .2 * level
+                    alpha = 1. - .5 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -525,12 +527,13 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[len(level_plot_list)-1::len(stim_plot_list)*len(
+    axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
+        +len(stim_plot_list)//2::len(stim_plot_list)*len(
         level_plot_list)], [factor_display[5:].capitalize() 
         for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], labels[
-        1:3*len(level_plot_list)+1:3], loc=1)
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+        'Quartile', 'Median'], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Displacement controlled')
     axs[0, 1].set_title('Force controlled')
@@ -577,7 +580,8 @@ if __name__ == '__main__':
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
             for level in level_plot_list:
-                color = (0, 0, 0, .2 + .2 * level)
+                alpha = 1. - .4 * abs(level-2)
+                color = (0, 0, 0, alpha)
                 fmt = LS_LIST[i]
                 label = quantile_label_list[level]
                 simFiber = simFiberList[i][level][0]
@@ -617,8 +621,8 @@ if __name__ == '__main__':
     axs[0, 0].legend(handles[2::3], [factor_display[5:
         ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[:len(level_plot_list)], labels[:len(
-        level_plot_list)], loc=2)
+    axs[0, 1].legend(handles[:len(level_plot_list)], [ 'Quartile', 
+        'Median'], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
