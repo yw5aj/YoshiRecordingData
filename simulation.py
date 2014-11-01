@@ -33,7 +33,9 @@ percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
 stim_num = 6
 AREA = np.pi * 1e-3**2 / 4
-MAX_RADIUS = 1e-3
+MAX_RADIUS = .6e-3
+MAX_TIME = 5.
+MAX_RATE_TIME = .3
 stim_plot_list = [1, 2, 3] # Stims to be plotted
 level_plot_list = range(level_num)[1:-1]
 
@@ -254,8 +256,7 @@ if __name__ == '__main__':
     for i, quantity in enumerate(quantity_list[2:]):
         for j, control in enumerate(control_list):
             dist = simFiberList[0][2][j].dist[3]
-            xmax = 1e-3
-            xcoord = np.linspace(0, xmax, 100)
+            xcoord = np.linspace(0, MAX_RADIUS, 100)
             # Get surface data
             if control == 'Force':
                 surface_quantity = 'cpress'
@@ -320,7 +321,7 @@ if __name__ == '__main__':
             ymin = ymin_array[row, :].min()
             ymax = ymax_array[row, :].max()
             # axes.set_ylim(ymin, ymax)
-            axes.set_xlim(0, 1)
+            axes.set_xlim(0, MAX_RADIUS*1e3)
 #    axs[0, 1].set_ylim(axs[1, 1].get_ylim())
     axs[0, 1].set_ylim(bottom=-1)
     # Formatting labels
@@ -357,7 +358,7 @@ if __name__ == '__main__':
     plt.close(fig)
     #%% Calculating iqr for all temporal traces
     # Calculate iqrs
-    def calculate_iqr(simFiberLevelList, end_time=5.):
+    def calculate_iqr(simFiberLevelList, end_time=MAX_TIME):
         def integrate(simFiber, quantity, stim):
             time = simFiber.traces[stim]['time']
             trace = simFiber.traces[stim][quantity]
@@ -391,7 +392,7 @@ if __name__ == '__main__':
     for i, quantity in enumerate(quantity_list[2:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
-            end_index = (trace['time'] > 5.).nonzero()[0][0]
+            end_index = (trace['time'] > MAX_TIME).nonzero()[0][0]
             xdata = trace[control.lower()][:end_index]
             ydata = trace[quantity][:end_index]
             temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
@@ -459,7 +460,7 @@ if __name__ == '__main__':
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
-        axes.set_xlim(-.0, 5.)
+        axes.set_xlim(-.0, MAX_TIME)
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
@@ -479,7 +480,7 @@ if __name__ == '__main__':
     plt.close(fig)
     #%% Calculating iqr for all temporal rate traces
     # Calculate iqrs
-    def calculate_rate_iqr(simFiberLevelList, end_time=.3):
+    def calculate_rate_iqr(simFiberLevelList, end_time=MAX_RATE_TIME):
         def integrate_rate(simFiber, quantity, stim):
             time = simFiber.traces[stim]['time'][:-1]
             dt = time[1] - time[0]
@@ -516,7 +517,7 @@ if __name__ == '__main__':
     for i, quantity in enumerate(quantity_list[2:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
-            end_index = (trace['time'] > .3).nonzero()[0][0]
+            end_index = (trace['time'] > MAX_RATE_TIME).nonzero()[0][0]
             xdata = np.diff(trace[control.lower()][:end_index])
             ydata = np.diff(trace[quantity][:end_index])
             temporal_rate_pearsonr_table[i, j], \
@@ -581,7 +582,7 @@ if __name__ == '__main__':
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
-        axes.set_xlim(-.0, .3)
+        axes.set_xlim(-.0, MAX_RATE_TIME)
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
