@@ -573,6 +573,7 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.subplots_adjust(top=.9)
     fig.savefig('./plots/paper_plot_fitting.png', dpi=300)
+    plt.close(fig)
     #%% Plot force-displ fitting
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -611,6 +612,7 @@ if __name__ == '__main__':
             fontsize=12, fontweight='bold', va='top')    
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
+    plt.close(fig)
     #%% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting
     displ_list, force_list, static_fr_list, dynamic_fr_list = [], [], [], []
@@ -687,7 +689,8 @@ if __name__ == '__main__':
     axs[2].legend(loc=2)
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
-#    print(force_static_fit_resvar, displ_static_fit_resvar)
+    plt.close(fig)
+    print(force_static_fit_resvar, displ_static_fit_resvar)
 #    print(force_dynamic_fit_resvar, displ_dynamic_fit_resvar)
 
                       

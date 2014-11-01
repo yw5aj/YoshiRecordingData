@@ -345,10 +345,10 @@ if __name__ == '__main__':
     axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
         +len(stim_plot_list)//2::len(stim_plot_list)*len(
         level_plot_list)], [factor_display[5:].capitalize() 
-        for factor_display in factor_display_list[:3]], loc=1)
+        for factor_display in factor_display_list[:3]], loc=3)
     # The 5 quantile labels
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
-        'Quartile', 'Median'], loc=1)
+        'Quartile', 'Median'], loc=2)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')    
