@@ -230,29 +230,48 @@ if __name__ == '__main__':
                 simFiber = SimFiber(factor, level, control)
                 simFiberList[i][j].append(simFiber)
                 print(factor+str(level)+control+' is done.')
-    #%% Generate table for integration and plot distribution
+    #%% Generate table for integration
     spatial_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
             for k, quantity in enumerate(quantity_list[2:]):
-                spatial_table[3*j+k, i] = np.abs(simFiberList[i][3][j].dist[
-                    3]['m%sint'%quantity] - simFiberList[i][1][j].dist[
-                    3]['m%sint'%quantity]) / simFiberList[i][2][j].dist[
-                    3]['m%sint'%quantity]
+                iqr = np.abs(simFiberList[i][3][j].dist[
+                    2]['m%sint'%quantity] - simFiberList[i][1][j].dist[
+                    2]['m%sint'%quantity])
+                distance = .5 * np.abs(simFiberList[i][2][j].dist[
+                    3]['m%sint'%quantity] - simFiberList[i][2][j].dist[
+                    1]['m%sint'%quantity])
+                spatial_table[3*j+k, i] = iqr / distance
     spatial_table_sum = spatial_table.sum(axis=1)
     np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
-    # Calculate Pearson correlation coefficients
-#    spatial_pearsonr_table = np.empty([3, 2])
-#    spatial_pearsonp_table = np.empty_like(spatial_pearsonr_table)
-#    for i, quantity in enumerate(quantity_list[2:]):
-#        for j, control in enumerate(control_list):
-#            dist = simFiberList[0][2][j].dist[3]
-#            end_index = (dist['time'] > 1).nonzero()[0][0]
-#            xdata = trace[control.lower()][:end_index]
-#            ydata = trace[quantity][:end_index]
-#            temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
-#                pearsonr(xdata, ydata)    
-    # Plot distribution
+    #%% Calculate Pearson correlation coefficients
+    """    
+    Three rows stand for three quantities, two columns for two controls.
+    Ignore the effects for each factors since it wouldn't matter.
+    """
+    spatial_pearsonr_table = np.empty([3, 2])
+    spatial_pearsonp_table = np.empty_like(spatial_pearsonr_table)
+    for i, quantity in enumerate(quantity_list[2:]):
+        for j, control in enumerate(control_list):
+            dist = simFiberList[0][2][j].dist[3]
+            xmax = 1e-3
+            xcoord = np.linspace(0, xmax, 100)
+            # Get surface data
+            if control == 'Force':
+                surface_quantity = 'cpress'
+            elif control == 'Displ':
+                surface_quantity = 'cy'
+            surface_data = np.interp(xcoord, dist['cxnew'][-1], 
+                                     dist[surface_quantity][-1])
+            # Get mcnc data
+            mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
+                                  dist['m'+quantity][-1])                                     
+            # Calculate correlation                         
+            spatial_pearsonr_table[i, j], spatial_pearsonp_table[i, j] = \
+                pearsonr(surface_data, mcnc_data)
+    np.savetxt('./csvs/spatial_r2_table.csv', spatial_pearsonr_table**2,
+               delimiter=',')
+    #%% Plot distribution
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     mquantity_list = ['mstress', 'mstrain', 'msener']
     cquantity_list = ['cy', 'cpress']
@@ -336,45 +355,50 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/spatial_distribution.png', dpi=300)
     plt.close(fig)
-    #%% Calculating iqr for all and plot temporal traces
+    #%% Calculating iqr for all temporal traces
     # Calculate iqrs
-    def calculate_iqr(simFiberLevelList):
-        def integrate(simFiber, quantity):
-            time = simFiber.traces[stim_num//2]['time']
-            trace = simFiber.traces[stim_num//2][quantity]
+    def calculate_iqr(simFiberLevelList, end_time=5.):
+        def integrate(simFiber, quantity, stim):
+            time = simFiber.traces[stim]['time']
+            trace = simFiber.traces[stim][quantity]
             integration = quad(
                 lambda t: np.interp(t, time, trace),
-                time[0], time[-1])[0]
+                time[0], end_time)[0]
             return integration
-        iqr_dict = {}
+        iqr_dict, distance_dict = {}, {}
         for quantity in quantity_list:
             iqr_dict[quantity] = \
-                np.abs(integrate(simFiberLevelList[-2], quantity)
-                - integrate(simFiberLevelList[1], quantity)
-                ) / integrate(simFiberLevelList[len(simFiberLevelList)//2],
-                quantity)
-        return iqr_dict    
+                np.abs(integrate(simFiberLevelList[3], quantity, 2)
+                - integrate(simFiberLevelList[1], quantity, 2)
+                )
+            distance_dict[quantity] = \
+                .5 * np.abs(integrate(simFiberLevelList[2], quantity, 1)
+                - integrate(simFiberLevelList[2], quantity, 3))
+        return iqr_dict, distance_dict
     temporal_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
-            iqr_dict = calculate_iqr(
+            iqr_dict, distance_dict = calculate_iqr(
                 [simFiberList[i][j][k] for j in range(level_num)])
             for row, quantity in enumerate(quantity_list[2:]):
-                temporal_table[3*k+row, i] = iqr_dict[quantity]
+                temporal_table[3*k+row, i] = \
+                    iqr_dict[quantity] / distance_dict[quantity]
     temporal_table_sum = temporal_table.sum(axis=1)
     np.savetxt('./csvs/temporal_table.csv', temporal_table, delimiter=',')
-    # Calculate Pearson correlation coefficients
+    #%% Calculate Pearson correlation coefficients
     temporal_pearsonr_table = np.empty([3, 2])
     temporal_pearsonp_table = np.empty_like(temporal_pearsonr_table)
     for i, quantity in enumerate(quantity_list[2:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
-            end_index = (trace['time'] > 1).nonzero()[0][0]
+            end_index = (trace['time'] > 5.).nonzero()[0][0]
             xdata = trace[control.lower()][:end_index]
             ydata = trace[quantity][:end_index]
             temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
                 pearsonr(xdata, ydata)
-    # Plot temporal traces
+    np.savetxt('./csvs/temporal_r2_table.csv', temporal_pearsonr_table**2,
+               delimiter=',')                
+    #%% Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
@@ -429,13 +453,13 @@ if __name__ == '__main__':
             # axes.set_ylim(ymin, ymax)        
 #    axs[0, 0].set_ylim(bottom=axs[0, 0].get_lines()[0].get_data()[1][0])
     axs[0, 1].set_ylim(-.5, 4)
-    axs[2, 1].set_ylim(0, .3)
-    axs[3, 1].set_ylim(0, .22)
+#    axs[2, 1].set_ylim(0, .3)
+#    axs[3, 1].set_ylim(0, .22)
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
-        axes.set_xlim(-.0, .5)
+        axes.set_xlim(-.0, 5.)
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
@@ -453,6 +477,38 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/temporal_distribution.png', dpi=300)    
     plt.close(fig)
+    #%% Calculating iqr for all temporal rate traces
+    # Calculate iqrs
+    def calculate_rate_iqr(simFiberLevelList, end_time=.3):
+        def integrate_rate(simFiber, quantity, stim):
+            time = simFiber.traces[stim]['time'][:-1]
+            dt = time[1] - time[0]
+            trace = np.diff(simFiber.traces[stim][quantity])/dt
+            integration = quad(
+                lambda t: np.interp(t, time, trace),
+                time[0], time[-1])[0]
+            return integration
+        iqr_dict, distance_dict = {}, {}
+        for quantity in quantity_list:
+            iqr_dict[quantity] = \
+                np.abs(integrate_rate(simFiberLevelList[3], quantity, 2)
+                - integrate_rate(simFiberLevelList[1], quantity, 2)
+                )
+            distance_dict[quantity] = \
+                .5 * np.abs(integrate_rate(simFiberLevelList[2], quantity, 1)
+                - integrate_rate(simFiberLevelList[2], quantity, 3))
+        return iqr_dict, distance_dict
+    temporal_rate_table = np.empty((6, 3))
+    for i, factor in enumerate(factor_list[:3]):
+        for k, control in enumerate(control_list):
+            iqr_dict, distance_dict = calculate_rate_iqr(
+                [simFiberList[i][j][k] for j in range(level_num)])
+            for row, quantity in enumerate(quantity_list[2:]):
+                temporal_rate_table[3*k+row, i] = \
+                    iqr_dict[quantity] / distance_dict[quantity]
+    temporal_rate_table_sum = temporal_table.sum(axis=1)
+    np.savetxt('./csvs/temporal_rate_table.csv', temporal_rate_table, 
+               delimiter=',')
     #%% Plot temporal trace rate
     # Calculate Pearson correlation coefficients
     temporal_rate_pearsonr_table = np.empty([3, 2])
@@ -465,7 +521,9 @@ if __name__ == '__main__':
             ydata = np.diff(trace[quantity][:end_index])
             temporal_rate_pearsonr_table[i, j], \
                 temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata) 
-    # Plot temporal traces
+    np.savetxt('./csvs/temporal_rate_r2_table.csv', 
+               temporal_rate_pearsonr_table**2, delimiter=',')
+    #%% Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
