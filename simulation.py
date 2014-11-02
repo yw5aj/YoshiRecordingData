@@ -686,3 +686,73 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
     plt.close(fig)
+    #%% Plot surface displacement vs. mcnc displacement
+    # Calculate Pearson correlation coefficients
+    dist = simFiberList[0][2][0].dist[3]
+    xcoord = np.linspace(0, MAX_RADIUS, 100)
+    # Get surface data
+    surface_quantity = 'cy'
+    surface_data = np.interp(xcoord, dist['cxnew'][-1], 
+                             dist[surface_quantity][-1])
+    # Get mcnc data
+    mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
+                          dist['my'][-1])                                     
+    # Calculate correlation                         
+    spatial_y_pearsonr, spatial_y_pearsonp = pearsonr(surface_data, mcnc_data)
+    #%% Plot distribution
+    fig, axs = plt.subplots(2, 1, figsize=(3.27, 4), sharex=True)
+    for i, factor in enumerate(factor_list[:3]):
+        for level in level_plot_list:
+            j = 0
+            control = 'Displ'
+            for stim in stim_plot_list:
+                alpha = 1. - .5 * abs(level - 2)
+                if stim == 2:
+                    color = (0, 0, 0, alpha)
+                elif stim == 1:
+                    color = (1, 0, 0, alpha)
+                elif stim == 3:
+                    color = (0, 0, 1, alpha)
+                ls = LS_LIST[i]
+                dist = simFiberList[i][level][j].dist[stim]
+                xscale = 1e3
+                cquantity = 'cy'
+                cscale = 1
+                axs[0].plot(dist['cxnew'][-1, :] * xscale, 
+                    dist[cquantity][-1, :] * cscale,
+                    ls=ls, c=color, label=quantile_label_list[level])
+                # Scaling the axes
+                mquantity = 'my'
+                mscale = 1
+                # Plotting
+                axs[1].plot(dist['mxnew'][-1, :] * xscale, 
+                    dist[mquantity][-1, :] * mscale, 
+                    ls=ls, c=color, label=quantile_label_list[level])
+    # Set x and y lim
+    for axes in axs.ravel():
+        axes.set_xlim(0, MAX_RADIUS*1e3)
+        axes.set_ylim(300, 500)
+    # Formatting labels
+    axs[1].set_xlabel('Location (mm)')
+    axs[0].set_ylabel(r'Deformation ($\mu$m)')
+    axs[1].set_ylabel(r'MCNC displacement ($\mu$m)')
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0].get_legend_handles_labels()
+    axs[0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
+        +len(stim_plot_list)//2::len(stim_plot_list)*len(
+        level_plot_list)], [factor_display[5:].capitalize() 
+        for factor_display in factor_display_list[:3]], loc=3)
+    # The 5 quantile labels
+    axs[1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+        'Quartile', 'Median'], loc=3)
+    # Add subtitles
+    axs[0].set_title('Deformation controlled')
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/spatial_cy_my.png', dpi=300)
+    plt.close(fig)    
