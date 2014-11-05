@@ -687,6 +687,10 @@ if __name__ == '__main__':
     axs[0].legend(loc=2)
     axs[1].legend(loc=2)
     axs[2].legend(loc=2)
+    # Adding panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+            fontsize=12, fontweight='bold', va='top')   
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
     plt.close(fig)
