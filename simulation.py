@@ -632,13 +632,14 @@ if __name__ == '__main__':
             slope_iqr = get_slope_iqr(simFiberLevelList, quantity)
             sim_table[k, i] = slope_iqr[0]
             sim_table[3+k, i] = slope_iqr[1]
-    sim_table_sum = spatial_table.sum(axis=1)
+    sim_table_sum = sim_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
     # Factors explaining the force-alignment - static
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
-            for level in level_plot_list:
+#            for level in level_plot_list:
+            for level in range(level_num):
                 alpha = 1. - .4 * abs(level-2)
                 color = (0, 0, 0, alpha)
                 fmt = LS_LIST[i]
@@ -663,7 +664,7 @@ if __name__ == '__main__':
         axes.set_xlim(0, 7)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
-        axes.set_title('%s model' % quantity_list[-3:][i].capitalize())
+        axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
     for axes in axs[0, :].ravel():
         axes.set_xlabel(r'Displacement ($\mu$m)')
     for axes in axs[1, :].ravel():
@@ -677,10 +678,11 @@ if __name__ == '__main__':
     # Legend
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[2::3], [factor_display[5:
-        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
+    axs[0, 2].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
+#    axs[0, 0].legend(handles[2::5], [factor_display[5:
+#        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[:len(level_plot_list)], [ 'Quartile', 
+    axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile', 
         'Median'], loc=2)
     # Save
     fig.tight_layout()
