@@ -95,7 +95,7 @@ class SimFiber:
                 'cxnew'].shape[1])
             # Calculate integration over area
             for key in key_list:
-                if 'x' not in key and 'y' not in key and 'time' not in key:
+                if 'x' not in key and 'time' not in key:
                     def get_field(r):
                         return np.interp(r, self.dist[stim][key[0]+'xnew'][
                             -1], self.dist[stim][key][-1])
@@ -689,8 +689,22 @@ if __name__ == '__main__':
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
     plt.close(fig)
     #%% Plot surface displacement vs. mcnc displacement
+    spatial_y_table = np.empty([3])
+    for i, factor in enumerate(factor_list[:3]):
+        j = 0
+        control = 'Displ'
+        quantity = 'y'
+        iqr = np.abs(simFiberList[i][3][j].dist[
+            2]['m%sint'%quantity] - simFiberList[i][1][j].dist[
+            2]['m%sint'%quantity])
+        distance = .5 * np.abs(simFiberList[i][2][j].dist[
+            3]['m%sint'%quantity] - simFiberList[i][2][j].dist[
+            1]['m%sint'%quantity])
+        spatial_y_table[i] = iqr / distance
+    spatial_y_table_sum = spatial_y_table.sum()
     # Calculate Pearson correlation coefficients
     dist = simFiberList[0][2][0].dist[3]
+    # Calculate shape R^2
     xcoord = np.linspace(0, MAX_RADIUS, 100)
     # Get surface data
     surface_quantity = 'cy'
