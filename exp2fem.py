@@ -88,26 +88,34 @@ class Fiber:
     
     def generate_binned_exp(self):
         self.binned_exp = {
+            'bin_size': [],
             'displ_mean': [],
             'displ_std': [],
             'displ_all': [],
+            'displ_sem': [],
             'force_mean': [],
             'force_std': [],
             'force_all': [],
+            'force_sem': [],
             'static_fr_mean': [],
             'static_fr_std': [],
             'static_fr_all': [],
+            'static_fr_sem': [],
             'dynamic_fr_mean': [],
             'dynamic_fr_std': [], 
             'dynamic_fr_all': [], 
+            'dynamic_fr_sem': [], 
             'dynamic_displ_rate_mean': [],
             'dynamic_displ_rate_std': [],
             'dynamic_displ_rate_all': [],
+            'dynamic_displ_rate_sem': [],
             'dynamic_force_rate_mean': [],
             'dynamic_force_rate_std': [],
             'dynamic_force_rate_all': [],
+            'dynamic_force_rate_sem': [],
             }
         for i, stim_group in enumerate(self.stim_group_dict):
+            self.binned_exp['bin_size'].append(stim_group['static_displ'].size)
             self.binned_exp['displ_mean'].append(stim_group['static_displ'
                 ].mean())
             self.binned_exp['displ_std'].append(stim_group['static_displ'
@@ -142,6 +150,11 @@ class Fiber:
                 'dynamic_force_rate'].std(ddof=1))
             self.binned_exp['dynamic_force_rate_all'].extend(stim_group[
                 'dynamic_force_rate'])
+        binned_exp_key_list = ['displ', 'force', 'static_fr', 'dynamic_fr', 
+                               'dynamic_displ_rate', 'dynamic_force_rate']
+        for key in binned_exp_key_list:
+            self.binned_exp[key+'_sem'] = np.array(self.binned_exp[key+'_std']
+                )/np.sqrt((np.array(self.binned_exp['bin_size']) - 1.))
         for key in self.binned_exp.keys():
             if not key.endswith('all') and key is not 'displ_mean':
                 self.binned_exp[key] = np.array(self.binned_exp[key])[
@@ -666,13 +679,13 @@ if __name__ == '__main__':
         fmt = MARKER_LIST[i] + ':'
         color = 'k'
         axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'force_mean'], fiber.binned_exp['force_std'], fmt=fmt, c=color,
+            'force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
             mec=color, ms=MS, label='Fiber #%d' % (i+1))        
         axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
+            'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
-            'static_fr_mean'], fiber.binned_exp['static_fr_std'], fmt=fmt,
+            'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
     axs[1].plot(sorted(displ_list), np.sort(displ_static_predict), '-k',
         label='Linear regression')
