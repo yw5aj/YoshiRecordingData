@@ -111,35 +111,35 @@ class Fiber:
             self.binned_exp['displ_mean'].append(stim_group['static_displ'
                 ].mean())
             self.binned_exp['displ_std'].append(stim_group['static_displ'
-                ].std())
+                ].std(ddof=1))
             self.binned_exp['displ_all'].extend(stim_group['static_displ'])
             self.binned_exp['force_mean'].append(stim_group['static_force'
                 ].mean())
             self.binned_exp['force_std'].append(stim_group['static_force'
-                ].std())
+                ].std(ddof=1))
             self.binned_exp['force_all'].extend(stim_group['static_force'])
             self.binned_exp['static_fr_mean'].append(stim_group[
                 'static_avg_fr'].mean())
             self.binned_exp['static_fr_std'].append(stim_group[
-                'static_avg_fr'].std())
+                'static_avg_fr'].std(ddof=1))
             self.binned_exp['static_fr_all'].extend(stim_group[
                 'static_avg_fr'])
             self.binned_exp['dynamic_fr_mean'].append(stim_group[
                 'dynamic_avg_fr'].mean())
             self.binned_exp['dynamic_fr_std'].append(stim_group[
-                'dynamic_avg_fr'].std())
+                'dynamic_avg_fr'].std(ddof=1))
             self.binned_exp['dynamic_fr_all'].extend(stim_group[
                 'dynamic_avg_fr'])
             self.binned_exp['dynamic_displ_rate_mean'].append(stim_group[
                 'dynamic_displ_rate'].mean())
             self.binned_exp['dynamic_displ_rate_std'].append(stim_group[
-                'dynamic_displ_rate'].std())
+                'dynamic_displ_rate'].std(ddof=1))
             self.binned_exp['dynamic_displ_rate_all'].extend(stim_group[
                 'dynamic_displ_rate'])
             self.binned_exp['dynamic_force_rate_mean'].append(stim_group[
                 'dynamic_force_rate'].mean())
             self.binned_exp['dynamic_force_rate_std'].append(stim_group[
-                'dynamic_force_rate'].std())
+                'dynamic_force_rate'].std(ddof=1))
             self.binned_exp['dynamic_force_rate_all'].extend(stim_group[
                 'dynamic_force_rate'])
         for key in self.binned_exp.keys():
@@ -295,7 +295,7 @@ class Fiber:
             abq_displ_scaled = a[0] + a[1] * abq_displ 
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
-            sst = static_force.var() * static_force.shape[0]
+            sst = static_force.var(ddof=1) * static_force.shape[0]
             sse = np.linalg.norm(static_force - abq_force_interp) ** 2
             r2 = 1 - sse / sst
             return sign * r2
@@ -642,18 +642,18 @@ if __name__ == '__main__':
     force_dynamic_fit_res = force_dynamic_predict - np.asarray(dynamic_fr_list)
     displ_static_fit_res = displ_static_predict - np.asarray(static_fr_list)
     force_static_fit_res = force_static_predict - np.asarray(static_fr_list)
-    displ_dynamic_fit_resvar = displ_dynamic_fit_res.var()
-    force_dynamic_fit_resvar = force_dynamic_fit_res.var()
-    displ_static_fit_resvar = displ_static_fit_res.var()
-    force_static_fit_resvar = force_static_fit_res.var()
-    displ_dynamic_fit_resstd = displ_dynamic_fit_res.std()
-    force_dynamic_fit_resstd = force_dynamic_fit_res.std()
-    displ_static_fit_resstd = displ_static_fit_res.std()
-    force_static_fit_resstd = force_static_fit_res.std()
+    displ_dynamic_fit_resvar = displ_dynamic_fit_res.var(ddof=1)
+    force_dynamic_fit_resvar = force_dynamic_fit_res.var(ddof=1)
+    displ_static_fit_resvar = displ_static_fit_res.var(ddof=1)
+    force_static_fit_resvar = force_static_fit_res.var(ddof=1)
+    displ_dynamic_fit_resstd = displ_dynamic_fit_res.std(ddof=1)
+    force_dynamic_fit_resstd = force_dynamic_fit_res.std(ddof=1)
+    displ_static_fit_resstd = displ_static_fit_res.std(ddof=1)
+    force_static_fit_resstd = force_static_fit_res.std(ddof=1)
     def get_r2(exp, mod):
         exp = np.asarray(exp)
         ssres = ((exp - mod)**2).sum()
-        sstot = exp.var() * exp.size
+        sstot = exp.var(ddof=1) * exp.size
         r2 = 1. - ssres / sstot
         return r2
     displ_dynamic_fit_r2 = get_r2(dynamic_fr_list, displ_dynamic_predict)
