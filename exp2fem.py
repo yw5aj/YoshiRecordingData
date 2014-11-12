@@ -154,7 +154,7 @@ class Fiber:
                                'dynamic_displ_rate', 'dynamic_force_rate']
         for key in binned_exp_key_list:
             self.binned_exp[key+'_sem'] = np.array(self.binned_exp[key+'_std']
-                )/np.sqrt((np.array(self.binned_exp['bin_size']) - 1.))
+                )/np.sqrt((np.array(self.binned_exp['bin_size'])))
         for key in self.binned_exp.keys():
             if not key.endswith('all') and key is not 'displ_mean':
                 self.binned_exp[key] = np.array(self.binned_exp[key])[
@@ -637,10 +637,6 @@ if __name__ == '__main__':
         force_rate_list.extend(fiber.binned_exp['dynamic_force_rate_mean'])
         static_fr_list.extend(fiber.binned_exp['static_fr_mean'])
         dynamic_fr_list.extend(fiber.binned_exp['dynamic_fr_mean'])
-#        displ_list.extend(fiber.lumped_dict['displ'])
-#        force_list.extend(fiber.lumped_dict['force'])
-#        static_fr_list.extend(fiber.lumped_dict['static_fr'])
-#        dynamic_fr_list.extend(fiber.lumped_dict['dynamic_fr'])
     # Perform fitting
     displ_dynamic_fit_param = np.polyfit(displ_rate_list, dynamic_fr_list, 1)
     force_dynamic_fit_param = np.polyfit(force_rate_list, dynamic_fr_list, 1)
@@ -693,7 +689,7 @@ if __name__ == '__main__':
         label='Linear regression')
     axs[0].set_xlabel(r'Static displ. ($\mu$m)')
     axs[1].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[2].set_xlabel(r'Static force (mN)')    
+    axs[2].set_xlabel(r'Static force (mN)')
     axs[0].set_ylabel(r'Static force (mN)')
     axs[1].set_ylabel('Mean static FR (Hz)')
     axs[2].set_ylabel('Mean static FR (Hz)')

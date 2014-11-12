@@ -634,8 +634,9 @@ if __name__ == '__main__':
             sim_table[3+k, i] = slope_iqr[1]
     sim_table_sum = sim_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
+    #%% Start plotting
     # Factors explaining the force-alignment - static
-    fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
+    fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
     for i, factor in enumerate(factor_list[:3]):
         for k, quantity in enumerate(quantity_list[-3:]):
 #            for level in level_plot_list:
@@ -647,25 +648,32 @@ if __name__ == '__main__':
                 simFiber = simFiberList[i][level][0]
                 axs[0, k].plot(
                     simFiber.static_displ_exp,
-                    simFiber.predicted_fr[fiber_id][quantity].T[1],
+                    simFiber.static_force_exp,
                     c=color, mec=color, ms=MS, 
                     ls=fmt, label=label)
                 axs[1, k].plot(
+                    simFiber.static_displ_exp,
+                    simFiber.predicted_fr[fiber_id][quantity].T[1],
+                    c=color, mec=color, ms=MS, 
+                    ls=fmt, label=label)
+                axs[2, k].plot(
                     simFiber.static_force_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
                     c=color, mec=color, ms=MS, 
                     ls=fmt, label=label)
     # X and Y limits
-    for axes in axs.ravel():
+    for axes in axs[0:, :].ravel():
+        axes.set_ylim(0, 10)
+    for axes in axs[1:, :].ravel():
         axes.set_ylim(0, 50)
-    for axes in axs[0, :].ravel():
-        axes.set_xlim(300, 550)
     for axes in axs[1, :].ravel():
+        axes.set_xlim(300, 550)
+    for axes in axs[2, :].ravel():
         axes.set_xlim(0, 7)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
-    for axes in axs[0, :].ravel():
+    for axes in axs[:2, :].ravel():
         axes.set_xlabel(r'Displacement ($\mu$m)')
     for axes in axs[1, :].ravel():
         axes.set_xlabel('Force (mN)')
@@ -678,7 +686,7 @@ if __name__ == '__main__':
     # Legend
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 2].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
+    axs[0, 0].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
 #    axs[0, 0].legend(handles[2::5], [factor_display[5:
 #        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
     # The 5 quantile labels
