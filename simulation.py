@@ -674,10 +674,12 @@ if __name__ == '__main__':
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
     for axes in axs[:2, :].ravel():
-        axes.set_xlabel(r'Displacement ($\mu$m)')
-    for axes in axs[1, :].ravel():
-        axes.set_xlabel('Force (mN)')
-    for axes in axs.ravel():
+        axes.set_xlabel(r'Static displacement ($\mu$m)')
+    for axes in axs[2, :].ravel():
+        axes.set_xlabel('Static force (mN)')
+    for axes in axs[0, :].ravel():
+        axes.set_ylabel('Static force (mN)')
+    for axes in axs[1:, :].ravel():
         axes.set_ylabel('Mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
         xloc = -.2
@@ -696,7 +698,7 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
     plt.close(fig)
-    #%% Plot surface displacement vs. mcnc displacement
+    #%% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
     for i, factor in enumerate(factor_list[:3]):
         j = 0
