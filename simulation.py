@@ -337,7 +337,7 @@ if __name__ == '__main__':
     axs[3, 1].set_ylabel(r'SED (kJ/m$^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
@@ -458,7 +458,7 @@ if __name__ == '__main__':
 #    axs[3, 1].set_ylim(0, .22)
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
         axes.set_xlim(-.0, MAX_TIME)
     # Add legends
@@ -580,7 +580,7 @@ if __name__ == '__main__':
             # axes.set_ylim(ymin, ymax)        
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.13, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
         axes.set_xlim(-.0, MAX_RATE_TIME)
     # Add legends
@@ -680,10 +680,9 @@ if __name__ == '__main__':
     for axes in axs[0, :].ravel():
         axes.set_ylabel('Static force (mN)')
     for axes in axs[1:, :].ravel():
-        axes.set_ylabel('Mean firing (Hz)')
+        axes.set_ylabel('Predicted mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
-        xloc = -.2
-        axes.text(xloc, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')      
     # Legend
     # The line type labels
