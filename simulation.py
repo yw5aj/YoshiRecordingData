@@ -164,7 +164,7 @@ class SimFiber:
                 ] * self.traces[i]['displ']
         # Get the FEM and corresponding displ / force
         self.static_displ_exp = np.array([self.traces[i]['displ'][-1]
-            for i in range(stim_num)]) * 1e6
+            for i in range(stim_num)]) * 1e3
         self.static_force_fem = np.array([self.traces[i]['force'][-1]
             for i in range(stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
@@ -286,7 +286,7 @@ if __name__ == '__main__':
         for j, control in enumerate(control_list):
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = 1. - .5 * abs(level - 2)
+                    alpha = 1. - .65 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -299,7 +299,7 @@ if __name__ == '__main__':
                     for row, cquantity in enumerate(cquantity_list):
                         # Scaling the axes
                         if 'y' in cquantity:
-                            cscale = 1
+                            cscale = 1e-3
                         elif 'ress' in cquantity:
                             cscale = 1e-3
                         # Plotting
@@ -322,14 +322,20 @@ if __name__ == '__main__':
     # Formatting labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Location (mm)')
-    axs[0, 0].set_ylabel(r'Deformation ($\mu$m)')
+    axs[0, 0].set_ylabel(r'Deformation (mm)')
     axs[1, 0].set_ylabel(r'Pressure (kPa)')
     axs[2, 0].set_ylabel('Stress (kPa)')
     axs[3, 0].set_ylabel('Strain')
     axs[4, 0].set_ylabel(r'SED (kJ/m$^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.13, 1.1, chr(65+axes_id), transform=axes.transAxes,
+        if axes_id // 2 in [0]:
+            xloc = -.135
+        elif axes_id // 2 in [1, 2]:
+            xloc = -0.105
+        elif axes_id // 2 in [3, 4]:
+            xloc = -.12
+        axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
@@ -399,7 +405,7 @@ if __name__ == '__main__':
             control = control.lower()
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = 1. - .5 * abs(level - 2)
+                    alpha = 1. - .65 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -409,7 +415,7 @@ if __name__ == '__main__':
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
                     for row, surface in enumerate(surface_list):
-                        sscale = 1e6 if surface == 'displ' else 1e-3
+                        sscale = 1e3 if surface == 'displ' else 1e-3
                         axs[row, k].plot(
                             simFiber.traces[stim]['time'],
                             simFiber.traces[stim][surface] * sscale,
@@ -424,14 +430,18 @@ if __name__ == '__main__':
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Deformation ($\mu$m)')
+    axs[0, 0].set_ylabel(r'Deformation (mm)')
     axs[1, 0].set_ylabel(r'Pressure (kPa)')
     axs[2, 0].set_ylabel('Stress (kPa)')
     axs[3, 0].set_ylabel('Strain')
     axs[4, 0].set_ylabel(r'SED (kPa/$m^3$)')
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.13, 1.1, chr(65+axes_id), transform=axes.transAxes,
+        if axes_id // 2 in [0, 3, 4]:
+            xloc = -.135
+        else:
+            xloc = -0.12
+        axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
         axes.set_xlim(-.0, MAX_TIME)
     # Add legends
@@ -505,7 +515,7 @@ if __name__ == '__main__':
             control = control.lower()
             for level in level_plot_list:
                 for stim in stim_plot_list:
-                    alpha = 1. - .5 * abs(level - 2)
+                    alpha = 1. - .65 * abs(level - 2)
                     if stim == 2:
                         color = (0, 0, 0, alpha)
                     elif stim == 1:
@@ -515,7 +525,7 @@ if __name__ == '__main__':
                     ls = LS_LIST[i]
                     simFiber = simFiberList[i][level][k]
                     for row, surface in enumerate(surface_list):
-                        sscale = 1e6 if surface == 'displ' else 1e-3
+                        sscale = 1e3 if surface == 'displ' else 1e-3
                         axs[row, k].plot(
                             simFiber.traces_rate[stim]['time'],
                             simFiber.traces_rate[stim][surface] * sscale,
@@ -530,14 +540,20 @@ if __name__ == '__main__':
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Deformation rate ($\mu$m/s)')
+    axs[0, 0].set_ylabel(r'Deformation rate (mm/s)')
     axs[1, 0].set_ylabel(r'Pressure rate (kPa/s)')
     axs[2, 0].set_ylabel(r'Stress rate (kPa/s)')
     axs[3, 0].set_ylabel(r'Strain rate (s$^{-1}$)')
     axs[4, 0].set_ylabel(r'SED rate (kPa$\cdot m^3s^{-1}$)')
-    # Formatting
+    # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.13, 1.1, chr(65+axes_id), transform=axes.transAxes,
+        if axes_id // 2 in [0]:
+            xloc = -.135
+        elif axes_id // 2 in [1, 2]:
+            xloc = -0.105
+        elif axes_id // 2 in [3, 4]:
+            xloc = -.12
+        axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')
         axes.set_xlim(-.0, MAX_RATE_TIME)
     # Add legends
@@ -624,22 +640,22 @@ if __name__ == '__main__':
     for axes in axs[1:, :].ravel():
         axes.set_ylim(0, 50)
     for axes in axs[1, :].ravel():
-        axes.set_xlim(300, 550)
+        axes.set_xlim(.3, .55)
     for axes in axs[2, :].ravel():
         axes.set_xlim(0, 7)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
     for axes in axs[:2, :].ravel():
-        axes.set_xlabel(r'Static displacement ($\mu$m)')
+        axes.set_xlabel(r'Static displacement (mm)')
     for axes in axs[2, :].ravel():
         axes.set_xlabel('Static force (mN)')
-    for axes in axs[0, :].ravel():
+    for axes in axs[0, :1].ravel():
         axes.set_ylabel('Static force (mN)')
-    for axes in axs[1:, :].ravel():
+    for axes in axs[1:, 0].ravel():
         axes.set_ylabel('Predicted mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')      
     # Legend
     # The line type labels
@@ -688,7 +704,7 @@ if __name__ == '__main__':
             j = 0
             control = 'Displ'
             for stim in stim_plot_list:
-                alpha = 1. - .5 * abs(level - 2)
+                alpha = 1. - .65 * abs(level - 2)
                 if stim == 2:
                     color = (0, 0, 0, alpha)
                 elif stim == 1:
@@ -699,13 +715,13 @@ if __name__ == '__main__':
                 dist = simFiberList[i][level][j].dist[stim]
                 xscale = 1e3
                 cquantity = 'cy'
-                cscale = 1
+                cscale = 1e-3
                 axs[0].plot(dist['cxnew'][-1, :] * xscale, 
                     dist[cquantity][-1, :] * cscale,
                     ls=ls, c=color, label=quantile_label_list[level])
                 # Scaling the axes
                 mquantity = 'my'
-                mscale = 1
+                mscale = 1e-3
                 # Plotting
                 axs[1].plot(dist['mxnew'][-1, :] * xscale, 
                     dist[mquantity][-1, :] * mscale, 
@@ -713,11 +729,10 @@ if __name__ == '__main__':
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
-        axes.set_ylim(300, 500)
     # Formatting labels
     axs[1].set_xlabel('Location (mm)')
-    axs[0].set_ylabel(r'Deformation ($\mu$m)')
-    axs[1].set_ylabel(r'MCNC displacement ($\mu$m)')
+    axs[0].set_ylabel(r'Deformation (mm)')
+    axs[1].set_ylabel(r'MCNC displacement (mm)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,

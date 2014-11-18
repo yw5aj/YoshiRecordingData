@@ -552,26 +552,26 @@ if __name__ == '__main__':
 #        color = COLOR_LIST[fiber_id]
         color = 'k'
         # Plot experiment
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+        axs[0].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'],
             fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
-        axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+        axs[1].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_std'],
             fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
     # Plot fitting
     for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):            
         ls = LS_LIST[quantity_id]
         if fiber_id in FIBER_FIT_ID_LIST:
-            axs[0].plot(fiber.binned_exp['displ_mean'], fiber.lif_fr[
+            axs[0].plot(fiber.binned_exp['displ_mean']*1e-3, fiber.lif_fr[
                 quantity][:, 1], c=color, ls=ls, label='Predicted by ' + \
                 quantity)
-            axs[1].plot(fiber.binned_exp['displ_mean'], fiber.lif_fr[
+            axs[1].plot(fiber.binned_exp['displ_mean']*1e-3, fiber.lif_fr[
                 quantity][:, 0], c=color, ls=ls, label='Predicted by' + \
                 quantity)
     # Adjust formatting
     for axes in axs:
-        axes.set_xlim(390, 550)
-    axs[1].set_xlabel(r'Displacement ($\mu$m)')
+        axes.set_xlim(.390, .550)
+    axs[1].set_xlabel(r'Displacement (mm)')
     axs[0].set_ylabel('Dynamic mean firing (Hz)')
     axs[1].set_ylabel('Static mean firing (Hz)')
     h, l = axs[0].get_legend_handles_labels()
@@ -594,10 +594,10 @@ if __name__ == '__main__':
         fiber = fiber_list[fiber_id]
         fmt = MARKER_LIST[fiber_id]
         color = 'k'
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+        axs[0].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'force_mean'], fiber.binned_exp['force_std'],
             fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
-        axs[0].plot(fiber.abq_displ_scaled, fiber.abq_force, ls='-', c=color,
+        axs[0].plot(fiber.abq_displ_scaled*1e-3, fiber.abq_force, ls='-', c=color,
             label='Model')
         # Plot force trace
         group_id = 1
@@ -610,13 +610,13 @@ if __name__ == '__main__':
         axs[1].plot(stim_group['traces_fem']['time'], stim_group['traces_fem']
                 ['force']*1e3, '-k', label='Model')
     axs[0].legend(loc=2)
-    axs[0].set_xlabel(r'Static displacement ($\mu$m)')
+    axs[0].set_xlabel(r'Static displacement (mm)')
     axs[0].set_ylabel(r'Static force (mN)')
     axs[1].legend()
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
     # Setting the range
-    axs[0].set_xlim(375, 575)    
+    axs[0].set_xlim(.375, .575)    
     axs[0].set_ylim(0, 10)
     axs[1].set_ylim(-1, 5)
     # Adding panel labels
@@ -674,21 +674,22 @@ if __name__ == '__main__':
     for i, fiber in enumerate(fiber_list):
         fmt = MARKER_LIST[i] + ':'
         color = 'k'
-        axs[0].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+        axs[0].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
             mec=color, ms=MS, label='Fiber #%d' % (i+1))        
-        axs[1].errorbar(fiber.binned_exp['displ_mean'], fiber.binned_exp[
+        axs[1].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
-    axs[1].plot(sorted(displ_list), np.sort(displ_static_predict), '-k',
+    axs[1].plot(np.sort(displ_list)*1e-3, 
+        np.sort(displ_static_predict), '-k',
         label='Linear regression')
     axs[2].plot(sorted(force_list), np.sort(force_static_predict), '-k',
         label='Linear regression')
-    axs[0].set_xlabel(r'Static displ. ($\mu$m)')
-    axs[1].set_xlabel(r'Static displ. ($\mu$m)')
+    axs[0].set_xlabel(r'Static displ. (mm)')
+    axs[1].set_xlabel(r'Static displ. (mm)')
     axs[2].set_xlabel(r'Static force (mN)')
     axs[0].set_ylabel(r'Static force (mN)')
     axs[1].set_ylabel('Mean firing (Hz)')
@@ -698,7 +699,7 @@ if __name__ == '__main__':
     axs[2].legend(loc=2)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
             fontsize=12, fontweight='bold', va='top')   
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
