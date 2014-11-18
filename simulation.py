@@ -26,8 +26,9 @@ factor_display_list = ['skin thickness', 'skin modulus',
                        'substrate modulus']
 level_num = 5
 control_list = ['Displ', 'Force']
-quantity_list = ['force', 'displ', 'stress', 'strain', 'sener']
-quantile_label_list = ['Min', 'Lower-quartile', 'Median', 'Upper-quartile', 'Max']
+quantity_list = ['displ', 'force', 'press', 'stress', 'strain', 'sener']
+quantile_label_list = ['Min', 'Lower-quartile', 'Median', 
+                       'Upper-quartile', 'Max']
 phase_list = ['dynamic', 'static']
 percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
 displcoeff = np.loadtxt('./csvs/displcoeff.csv', delimiter=',')
@@ -60,11 +61,11 @@ class SimFiber:
         self.factor = factor
         self.level = level
         self.control = control
+        self.get_dist()
         self.load_traces()
         self.load_trans_params()
         self.get_predicted_fr()
         self.get_line_fit()
-        self.get_dist()
         return
     
     def get_dist(self):
@@ -104,6 +105,13 @@ class SimFiber:
                         lambda r: 0,
                         lambda r: MAX_RADIUS
                         )[0]
+        for key, value in self.dist[1].items():
+            if type(value) is float:
+                self.dist[0][key] = 0.
+            if type(value) is np.ndarray and not key == 'time':
+                self.dist[0][key] = np.zeros_like(value)
+            elif key == 'time':
+                self.dist[0][key] = value
         return
     
     def load_trans_params(self):
@@ -119,26 +127,36 @@ class SimFiber:
         fname_list = [self.factor + str(self.level) + str(stim) +\
             self.control + '.csv' for stim in range(stim_num-1)]
         self.traces = [{} for i in range(stim_num)]
+        self.traces_rate = [{} for i in range(stim_num)]
         # Read the non-zero output from FEM
         for i, fname in enumerate(fname_list):
+            # Get all quantities
             time, force, displ, stress, strain, sener = np.loadtxt(
                 fpath+fname, delimiter=',').T
+            press = self.dist[i+1]['cpress'][:, 0]
+            # Save absolute quantities
             fine_time = np.arange(0, time.max(), DT)
             self.traces[i+1]['time'] = fine_time
-            self.traces[i+1]['force'] = np.interp(fine_time, time, force)
-            self.traces[i+1]['displ'] = np.interp(fine_time, time, displ)
-            self.traces[i+1]['stress'] = np.interp(fine_time, time, stress)
-            self.traces[i+1]['strain'] = np.interp(fine_time, time, strain)
-            self.traces[i+1]['sener'] = np.interp(fine_time, time, sener)
+            for quantity in quantity_list:
+                self.traces[i+1][quantity] = np.interp(fine_time, time, 
+                    locals()[quantity])
             self.traces[i+1]['max_index'] = self.traces[i+1]['force'].argmax()
+            # Save rate quantities
+            fine_time = np.arange(0, time[-1], DT)
+            self.traces_rate[i+1]['time'] = fine_time
+            for quantity in quantity_list:
+                self.traces_rate[i+1][quantity] = np.interp(fine_time, 
+                    time[:-1], np.diff(locals()[quantity])/np.diff(time))
+            self.traces_rate[i+1]['max_index'] = self.traces[i+1]['max_index']
         # Fill the zero-stim trace
         self.traces[0]['max_index'] = self.traces[1]['max_index']
         self.traces[0]['time'] = self.traces[1]['time']
-        self.traces[0]['force'] = np.zeros_like(self.traces[0]['time'])
-        self.traces[0]['displ'] = np.zeros_like(self.traces[0]['time'])
-        self.traces[0]['stress'] = np.zeros_like(self.traces[0]['time'])
-        self.traces[0]['strain'] = np.zeros_like(self.traces[0]['time'])
-        self.traces[0]['sener'] = np.zeros_like(self.traces[0]['time'])
+        self.traces_rate[0]['max_index'] = self.traces_rate[1]['max_index']
+        self.traces_rate[0]['time'] = self.traces_rate[1]['time']
+        for quantity in quantity_list:
+            self.traces[0][quantity] = np.zeros_like(self.traces[0]['time'])
+            self.traces_rate[0][quantity] = np.zeros_like(
+                self.traces_rate[0]['time'])
         # Scale the displ
         for i in range(stim_num):
             self.traces[i]['displ'] = displcoeff[0] * 1e-6 + displcoeff[1
@@ -154,7 +172,7 @@ class SimFiber:
     def get_predicted_fr(self):
         self.predicted_fr = [{} for i in range(FIBER_TOT_NUM)]
         for fiber_id in FIBER_FIT_ID_LIST:
-            for quantity in quantity_list:
+            for quantity in quantity_list[-3:]:
                 # Get the quantity_dict_list
                 quantity_dict_list = [{
                     'quantity_array': self.traces[i][quantity], 
@@ -169,7 +187,7 @@ class SimFiber:
         self.line_fit = [{} for i in range(FIBER_TOT_NUM)]
         self.line_fit_median_predict = [{} for i in range(FIBER_TOT_NUM)]
         for fiber_id in FIBER_FIT_ID_LIST:
-            for quantity in quantity_list:
+            for quantity in quantity_list[-3:]:
                 self.line_fit[fiber_id][quantity] = {
                     'displ_dynamic': np.polyfit(self.static_displ_exp,
                         self.predicted_fr[fiber_id][quantity][:, 2], 1),
@@ -189,13 +207,13 @@ class SimFiber:
     
     def plot_predicted_fr(self, axs, fiber_id, **kwargs):
         if self.control is 'Displ':
-            for i, quantity in enumerate(quantity_list):
+            for i, quantity in enumerate(quantity_list[-3:]):
                 axs[i, 1].plot(self.static_displ_exp, 
                     self.predicted_fr[fiber_id][quantity][:, 1], **kwargs)
                 axs[i, 0].plot(self.static_displ_exp,
                     self.predicted_fr[fiber_id][quantity][:, 2], **kwargs)
         if self.control is 'Force':
-            for i, quantity in enumerate(quantity_list):
+            for i, quantity in enumerate(quantity_list[-3:]):
                 axs[i, 1].plot(self.static_force_exp, 
                     self.predicted_fr[fiber_id][quantity][:, 1], **kwargs)
                 axs[i, 0].plot(self.static_force_exp,
@@ -223,7 +241,7 @@ if __name__ == '__main__':
     spatial_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
-            for k, quantity in enumerate(quantity_list[2:]):
+            for k, quantity in enumerate(quantity_list[-3:]):
                 iqr = np.abs(simFiberList[i][3][j].dist[
                     2]['m%sint'%quantity] - simFiberList[i][1][j].dist[
                     2]['m%sint'%quantity])
@@ -240,7 +258,7 @@ if __name__ == '__main__':
     """
     spatial_pearsonr_table = np.empty([3, 2])
     spatial_pearsonp_table = np.empty_like(spatial_pearsonr_table)
-    for i, quantity in enumerate(quantity_list[2:]):
+    for i, quantity in enumerate(quantity_list[-3:]):
         for j, control in enumerate(control_list):
             dist = simFiberList[0][2][j].dist[3]
             xcoord = np.linspace(0, MAX_RADIUS, 100)
@@ -354,7 +372,7 @@ if __name__ == '__main__':
                 time[0], end_time)[0]
             return integration
         iqr_dict, distance_dict = {}, {}
-        for quantity in quantity_list:
+        for quantity in quantity_list[-3:]:
             iqr_dict[quantity] = \
                 np.abs(integrate(simFiberLevelList[3], quantity, 2)
                 - integrate(simFiberLevelList[1], quantity, 2)
@@ -368,7 +386,7 @@ if __name__ == '__main__':
         for k, control in enumerate(control_list):
             iqr_dict, distance_dict = calculate_iqr(
                 [simFiberList[i][j][k] for j in range(level_num)])
-            for row, quantity in enumerate(quantity_list[2:]):
+            for row, quantity in enumerate(quantity_list[-3:]):
                 temporal_table[3*k+row, i] = \
                     iqr_dict[quantity] / distance_dict[quantity]
     temporal_table_sum = temporal_table.sum(axis=1)
@@ -376,7 +394,7 @@ if __name__ == '__main__':
     #%% Calculate Pearson correlation coefficients
     temporal_pearsonr_table = np.empty([3, 2])
     temporal_pearsonp_table = np.empty_like(temporal_pearsonr_table)
-    for i, quantity in enumerate(quantity_list[2:]):
+    for i, quantity in enumerate(quantity_list[-3:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
             end_index = (trace['time'] > MAX_TIME).nonzero()[0][0]
@@ -408,7 +426,7 @@ if __name__ == '__main__':
                         simFiber.traces[stim]['time'],
                         simFiber.traces[stim][control] * cscale,
                         ls=ls, c=color, label=quantile_label_list[level])
-                    for row, quantity in enumerate(quantity_list[2:]):
+                    for row, quantity in enumerate(quantity_list[-3:]):
                         scale = 1 if quantity is 'strain' else 1e-3
                         axes = axs[row+1, k]
                         axes.plot(
@@ -477,7 +495,7 @@ if __name__ == '__main__':
                 time[0], time[-1])[0]
             return integration
         iqr_dict, distance_dict = {}, {}
-        for quantity in quantity_list:
+        for quantity in quantity_list[-3:]:
             iqr_dict[quantity] = \
                 np.abs(integrate_rate(simFiberLevelList[3], quantity, 2)
                 - integrate_rate(simFiberLevelList[1], quantity, 2)
@@ -491,7 +509,7 @@ if __name__ == '__main__':
         for k, control in enumerate(control_list):
             iqr_dict, distance_dict = calculate_rate_iqr(
                 [simFiberList[i][j][k] for j in range(level_num)])
-            for row, quantity in enumerate(quantity_list[2:]):
+            for row, quantity in enumerate(quantity_list[-3:]):
                 temporal_rate_table[3*k+row, i] = \
                     iqr_dict[quantity] / distance_dict[quantity]
     temporal_rate_table_sum = temporal_table.sum(axis=1)
@@ -501,7 +519,7 @@ if __name__ == '__main__':
     # Calculate Pearson correlation coefficients
     temporal_rate_pearsonr_table = np.empty([3, 2])
     temporal_rate_pearsonp_table = np.empty_like(temporal_rate_pearsonr_table)
-    for i, quantity in enumerate(quantity_list[2:]):
+    for i, quantity in enumerate(quantity_list[-3:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
             end_index = (trace['time'] > MAX_RATE_TIME).nonzero()[0][0]
@@ -511,7 +529,7 @@ if __name__ == '__main__':
                 temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata) 
     np.savetxt('./csvs/temporal_rate_r2_table.csv', 
                temporal_rate_pearsonr_table**2, delimiter=',')
-    #%% Plot temporal traces
+    #%% Plot temporal rate traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(4, 2, figsize=(6.83, 8), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
@@ -531,15 +549,15 @@ if __name__ == '__main__':
                     dt = np.diff(simFiber.traces[stim]['time'])[0]
                     cscale = 1e6 if control == 'displ' else 1e3
                     axs[0, k].plot(
-                        simFiber.traces[stim]['time'][:-1],
-                        np.diff(simFiber.traces[stim][control])/dt * cscale,
+                        simFiber.traces_rate[stim]['time'],
+                        simFiber.traces_rate[stim][control] * cscale,
                         ls=ls, c=color, label=quantile_label_list[level])
-                    for row, quantity in enumerate(quantity_list[2:]):
+                    for row, quantity in enumerate(quantity_list[-3:]):
                         scale = 1 if quantity is 'strain' else 1e-3
                         axes = axs[row+1, k]
                         axes.plot(
-                            simFiber.traces[stim]['time'][:-1],
-                            np.diff(simFiber.traces[stim][quantity])/dt*scale, 
+                            simFiber.traces_rate[stim]['time'],
+                            simFiber.traces_rate[stim][quantity] * scale, 
                             ls=ls, c=color, label=quantile_label_list[level])
     # Add axes labels
     for axes in axs[-1, :]:
@@ -613,7 +631,7 @@ if __name__ == '__main__':
         return slope_iqr
     sim_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
-        for k, quantity in enumerate(quantity_list[2:]):
+        for k, quantity in enumerate(quantity_list[-3:]):
             simFiberLevelList = [simFiberList[i][level][0] for level in
                                  range(level_num)]
             slope_iqr = get_slope_iqr(simFiberLevelList, quantity)
