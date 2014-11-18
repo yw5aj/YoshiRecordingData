@@ -61,7 +61,6 @@ class SimFiber:
         self.level = level
         self.control = control
         self.load_traces()
-        self.get_traces_mean()
         self.load_trans_params()
         self.get_predicted_fr()
         self.get_line_fit()
@@ -105,18 +104,6 @@ class SimFiber:
                         lambda r: 0,
                         lambda r: MAX_RADIUS
                         )[0]
-        return
-    
-    def get_traces_mean(self):
-        def get_mean(quantity_array, max_index):
-#            dynamic_window = range(int(max_index/DT))
-            static_window = np.arange(int(STATIC_START/DT), int(STATIC_END/DT))
-#            dynamic_mean = quantity_array[dynamic_window].mean()
-            static_mean = quantity_array[static_window].mean()
-            return static_mean
-        self.traces_mean = {quantity: np.asarray([get_mean(traces[quantity],
-            traces['max_index']) for traces in self.traces]) for quantity in
-            quantity_list}
         return
     
     def load_trans_params(self):
