@@ -5,7 +5,7 @@ Created on Sun Feb 16 21:10:47 2014
 @author: Yuxiang Wang
 """
 
-#%%
+# %%
 
 import numpy as np, pandas as pd
 import matplotlib.pyplot as plt
@@ -43,9 +43,9 @@ class Fiber:
         self.generate_binned_exp()
         self.get_lumped_dict()
         return
-    
+
     def get_lumped_dict(self):
-        """        
+        """
         Construct the target FR array
         """
         dynamic_fr_list, static_fr_list, stim_num_list, displ_list,\
@@ -70,22 +70,22 @@ class Fiber:
             'force': np.asarray(force_list),
             }
         self.lumped_dict_fit = {
-            'displ_dynamic': np.polyfit(self.lumped_dict['displ'], 
+            'displ_dynamic': np.polyfit(self.lumped_dict['displ'],
                 self.lumped_dict['dynamic_fr'], deg=1),
-            'displ_static': np.polyfit(self.lumped_dict['displ'], 
+            'displ_static': np.polyfit(self.lumped_dict['displ'],
                 self.lumped_dict['static_fr'], deg=1),
-            'force_dynamic': np.polyfit(self.lumped_dict['force'], 
+            'force_dynamic': np.polyfit(self.lumped_dict['force'],
                 self.lumped_dict['dynamic_fr'], deg=1),
-            'force_static': np.polyfit(self.lumped_dict['force'], 
+            'force_static': np.polyfit(self.lumped_dict['force'],
                 self.lumped_dict['static_fr'], deg=1),
             }
         self.lumped_median_predict = {
-            key: np.polyval(self.lumped_dict_fit[key], 
+            key: np.polyval(self.lumped_dict_fit[key],
             globals()['EVAL_'+key[:5].upper()])
             for key in iter(self.lumped_dict_fit)
             }
         return
-    
+
     def generate_binned_exp(self):
         self.binned_exp = {
             'bin_size': [],
@@ -102,9 +102,9 @@ class Fiber:
             'static_fr_all': [],
             'static_fr_sem': [],
             'dynamic_fr_mean': [],
-            'dynamic_fr_std': [], 
-            'dynamic_fr_all': [], 
-            'dynamic_fr_sem': [], 
+            'dynamic_fr_std': [],
+            'dynamic_fr_all': [],
+            'dynamic_fr_sem': [],
             'dynamic_displ_rate_mean': [],
             'dynamic_displ_rate_std': [],
             'dynamic_displ_rate_all': [],
@@ -150,7 +150,7 @@ class Fiber:
                 'dynamic_force_rate'].std(ddof=1))
             self.binned_exp['dynamic_force_rate_all'].extend(stim_group[
                 'dynamic_force_rate'])
-        binned_exp_key_list = ['displ', 'force', 'static_fr', 'dynamic_fr', 
+        binned_exp_key_list = ['displ', 'force', 'static_fr', 'dynamic_fr',
                                'dynamic_displ_rate', 'dynamic_force_rate']
         for key in binned_exp_key_list:
             self.binned_exp[key+'_sem'] = np.array(self.binned_exp[key+'_std']
@@ -166,13 +166,13 @@ class Fiber:
         with open('./pickles/binned_exp_%d.pkl' % self.fiber_id, 'wb') as f:
             pickle.dump(self.binned_exp, f)
         if self.make_plot:
-            self.fig_binned_exp, self.axs_binned_exp = plt.subplots(2, 2, 
+            self.fig_binned_exp, self.axs_binned_exp = plt.subplots(2, 2,
                 figsize=(6.83, 6.83))
-            self.axs_binned_exp[0, 0].errorbar(self.binned_exp['displ_mean'], 
-                self.binned_exp['static_fr_mean'], 
+            self.axs_binned_exp[0, 0].errorbar(self.binned_exp['displ_mean'],
+                self.binned_exp['static_fr_mean'],
                 self.binned_exp['static_fr_std'], fmt='-k')
-            self.axs_binned_exp[0, 1].errorbar(self.binned_exp['displ_mean'], 
-                self.binned_exp['dynamic_fr_mean'], 
+            self.axs_binned_exp[0, 1].errorbar(self.binned_exp['displ_mean'],
+                self.binned_exp['dynamic_fr_mean'],
                 self.binned_exp['dynamic_fr_std'], fmt='-k')
             self.axs_binned_exp[1, 0].plot(self.binned_exp['displ_all'],
                 self.binned_exp['static_fr_all'], '.k')
@@ -184,13 +184,13 @@ class Fiber:
             for axes in self.axs_binned_exp[:, 1]:
                 axes.set_xlabel(r'Displ ($mu$m)')
                 axes.set_ylabel('Dynamic FR (Hz)')
-            self.fig_binned_exp.savefig('./plots/binned_exp_%d.png' % 
+            self.fig_binned_exp.savefig('./plots/binned_exp_%d.png' %
                 self.fiber_id, dpi=300)
         return
-        
-    
+
+
     def load_fiber_data(self):
-        all_data = np.genfromtxt('./cleandata/csvs/static_dynamic.csv', 
+        all_data = np.genfromtxt('./cleandata/csvs/static_dynamic.csv',
                          delimiter=',')
         self.fiber_data = all_data[all_data[:, 0] == self.fiber_id][:, 1:]
         self.stim_num, self.static_displ, self.static_force, \
@@ -199,7 +199,7 @@ class Fiber:
             self.fiber_data.T
         self.stim_num = self.stim_num.astype(np.int)
         return
-    
+
     def get_stim_group_num_list(self):
         # Choose features to do the grouping
 #        feature_unscaled = np.c_[self.static_displ, self.static_force
@@ -209,9 +209,9 @@ class Fiber:
         feature = StandardScaler().fit_transform(feature_unscaled)
         db = DBSCAN(eps=.3, min_samples=2).fit(feature)
         self.stim_group_num_list = db.labels_.astype(np.int)
-        self.unique_labels = set(self.stim_group_num_list)                
+        self.unique_labels = set(self.stim_group_num_list)
         if self.make_plot: # Plot out the grouping
-            self.fig_grouping, self.axs_grouping = plt.subplots(2, 1, 
+            self.fig_grouping, self.axs_grouping = plt.subplots(2, 1,
                 figsize=(3.27, 6))
             colors = plt.cm.get_cmap('Spectral')(np.linspace(0, 1, len(
                 self.unique_labels)))
@@ -231,10 +231,10 @@ class Fiber:
             self.axs_grouping[1].set_xlabel(r'Force (mN)')
             self.axs_grouping[1].set_ylabel(r'Ramp time (ms)')
             self.fig_grouping.tight_layout()
-            self.fig_grouping.savefig('./plots/grouping_%d.png' % 
+            self.fig_grouping.savefig('./plots/grouping_%d.png' %
                 self.fiber_id, dpi=300)
         return
-    
+
     def get_stim_group(self):
         # Total amount of groups
         if -1 in self.unique_labels:
@@ -270,16 +270,16 @@ class Fiber:
                 displ_array.argsort()[i]]
         self.stim_group_dict = ordered_stim_group
         return
-    
+
     def get_fem_displ_by_force(self, force):
         return np.interp(force, self.abq_force, self.abq_displ) * 1e-3
-    
+
     def get_fem_displ_by_displ(self, displ):
         return (displ - self.displ_coeff[0]) / self.displ_coeff[1] * 1e-3
-    
+
     def get_fem_ramp_time(self, ramp_time):
         return ramp_time / self.displ_coeff[1]
-    
+
     def get_fem_displ_ramp_time(self, match='displ', stim_group_dict=None,
         ramp_time_match_experiment=False):
         # By default, refer to self
@@ -298,34 +298,34 @@ class Fiber:
                     self.get_fem_ramp_time(stim_group['ramp_time'])
             else:
                 fem_displ_ramp_time[i]['fem_ramp_time'] = \
-                    self.get_fem_ramp_time(np.polyval(self.ramp_time_coeff, 
+                    self.get_fem_ramp_time(np.polyval(self.ramp_time_coeff,
                         stim_group['static_displ']))
         return fem_displ_ramp_time
 
     def get_displ_coeff(self):
-        
+
         def get_r2(a, abq_force, abq_displ, static_force, exp_displ, sign=1.):
-            abq_displ_scaled = a[0] + a[1] * abq_displ 
+            abq_displ_scaled = a[0] + a[1] * abq_displ
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
             sst = static_force.var(ddof=1) * static_force.shape[0]
             sse = np.linalg.norm(static_force - abq_force_interp) ** 2
             r2 = 1 - sse / sst
             return sign * r2
-        
+
         self.abq_displ, self.abq_force = np.genfromtxt(
-            'x:/WorkFolder/AbaqusFolder/YoshiModel/csvs/FitFemDisplForce.csv', 
+            'x:/WorkFolder/AbaqusFolder/YoshiModel/csvs/FitFemDisplForce.csv',
             delimiter=',').T
         self.abq_displ *= 1e6
         self.abq_force *= 1e3
         bounds = ((0., 1000.), (0, 5))
-        res = minimize(get_r2, [250., 2.], args=(self.abq_force, 
-                       self.abq_displ, self.static_force, self.static_displ, 
+        res = minimize(get_r2, [250., 2.], args=(self.abq_force,
+                       self.abq_displ, self.static_force, self.static_displ,
                        -1.), method='L-BFGS-B', bounds=bounds)
         self.displ_coeff = res.x
         self.displ_coeff_r2 = -res.fun
         # Make the plot
-        self.abq_displ_scaled = res.x[0] + res.x[1] * self.abq_displ 
+        self.abq_displ_scaled = res.x[0] + res.x[1] * self.abq_displ
         if self.make_plot:
             self.fig_displ, self.axs_displ = plt.subplots()
             self.axs_displ.plot(self.static_displ, self.static_force, '.k')
@@ -334,12 +334,12 @@ class Fiber:
             self.axs_displ.set_ylim(top=self.static_force.max()*1.2)
             self.axs_displ.set_xlabel(r'Displ. ($\mu$m)')
             self.axs_displ.set_ylabel(r'Force (mN)')
-            self.fig_displ.savefig('./plots/displ_%d.png' % self.fiber_id, 
+            self.fig_displ.savefig('./plots/displ_%d.png' % self.fiber_id,
                                    dpi=300)
         return
-    
+
     def get_ramp_time_coeff(self):
-        self.ramp_time_coeff = np.polyfit(self.static_displ, self.ramp_time, 
+        self.ramp_time_coeff = np.polyfit(self.static_displ, self.ramp_time,
                                           1)
         if self.make_plot:
             self.fig_ramp_time, self.axs_ramp_time = plt.subplots()
@@ -349,22 +349,22 @@ class Fiber:
 #            self.axs_ramp_time.set_xlim(left=0)
             self.axs_ramp_time.set_xlabel(r'Displ. ($\mu$m)')
             self.axs_ramp_time.set_ylabel(r'Ramp time (s)')
-            self.fig_ramp_time.savefig('./plots/ramp_time_%d.png' % 
+            self.fig_ramp_time.savefig('./plots/ramp_time_%d.png' %
                 self.fiber_id, dpi=300)
         return
-    
+
     def generate_script(self):
         with open('x:/WorkFolder/AbaqusFolder/YoshiModel/fittemplate.py', 'r'
             ) as f:
             template_script = f.read()
-        self.abq_script = template_script.replace('CSVFILEPATH', 
+        self.abq_script = template_script.replace('CSVFILEPATH',
             '\'x:/WorkFolder/DataAnalysis/YoshiRecordingData/csvs/stim_block_'
             +str(self.fiber_id)+'.csv\'').replace('BASEMODELNAME', '\'Fiber'
             +str(self.fiber_id)+'\'')
         with open('./scripts/'+str(self.fiber_id)+'.py', 'w') as f:
             f.write(self.abq_script)
         return
-    
+
     def run_script(self):
         os.system('call \"C:/SIMULIA/Abaqus/Commands/abaqus.bat\" cae script=x:/WorkFolder/DataAnalysis/YoshiRecordingData/scripts/%d.py' % self.fiber_id)
         return
@@ -372,16 +372,16 @@ class Fiber:
     def generate_stim_block_array(self, stim_group_dict=None, fiber_id=None):
         fem_displ_ramp_time_list = self.get_fem_displ_ramp_time(
             stim_group_dict=stim_group_dict)
-        self.stim_block_array = [[fem_displ_ramp_time['fem_ramp_time'].mean(), 
-            fem_displ_ramp_time['fem_displ'].mean()] 
+        self.stim_block_array = [[fem_displ_ramp_time['fem_ramp_time'].mean(),
+            fem_displ_ramp_time['fem_displ'].mean()]
             for fem_displ_ramp_time in fem_displ_ramp_time_list]
         self.stim_block_array = np.array(self.stim_block_array)
         if fiber_id is None:
             fiber_id = self.fiber_id
-        np.savetxt('./csvs/stim_block_%d.csv' % fiber_id, 
+        np.savetxt('./csvs/stim_block_%d.csv' % fiber_id,
                    self.stim_block_array, delimiter=',')
         return
-    
+
     def plot_force_trace_fitting(self, axes):
         self.get_stim_block_trace_exp()
         self.get_stim_block_trace_fem()
@@ -392,12 +392,12 @@ class Fiber:
                     'force'], '.', color='.5')
         for i, stim_group in enumerate(self.stim_group_dict):
             axes.plot(self.stim_group_dict[i]['traces_fem'][
-                'time'], self.stim_group_dict[i]['traces_fem']['force']*1e3, 
+                'time'], self.stim_group_dict[i]['traces_fem']['force']*1e3,
                 '-k')
         axes.set_xlabel('Time (s)')
         axes.set_ylabel('Force (mN)')
         return
-    
+
     def get_stim_block_trace_exp(self):
         with open('./cleandata/finaldata/cleanFiberList.pkl', 'rb') as f:
             traces_exp = pickle.load(f)[self.fiber_id].traces
@@ -407,7 +407,7 @@ class Fiber:
                 self.stim_group_dict[i]['traces_exp'].append(
                     traces_exp[stim_num])
         return
-        
+
     def get_stim_block_trace_fem(self):
         for i, stim_group in enumerate(self.stim_group_dict):
             file_path = 'x:/WorkFolder/AbaqusFolder/YoshiModel/csvs/Fiber' +\
@@ -456,7 +456,7 @@ if __name__ == '__main__':
     plt.close('all')
     fiber_mech = fiber_list[FIBER_MECH_ID]
     # Save fiber_mech's fem displ - ramp_time coeff, and displcoeff.
-    displtimecoeff = np.polyfit(fiber_mech.stim_block_array[:, 1], 
+    displtimecoeff = np.polyfit(fiber_mech.stim_block_array[:, 1],
         fiber_mech.stim_block_array[:, 0], 1)
     np.savetxt('X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/displtimecoeff.csv'
         , displtimecoeff, delimiter=',')
@@ -501,10 +501,10 @@ if __name__ == '__main__':
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                 # Perform the fitting for diff-form
-                from fitlif import (fit_trans_param, 
+                from fitlif import (fit_trans_param,
                     trans_param_to_predicted_fr, get_lstsq_fit)
                 target_fr_array = np.c_[fiber.lumped_dict['stim_num'],
-                    fiber.lumped_dict['static_fr'], 
+                    fiber.lumped_dict['static_fr'],
                     fiber.lumped_dict['dynamic_fr'],
                     ]
                 if run_fitting:
@@ -544,7 +544,7 @@ if __name__ == '__main__':
                 fiber.lif_r2[quantity_name] = get_lif_r2(target_fr_array,
                     fiber.lif_fr[quantity_name])
                 fiber.df_lif_r2 = pd.DataFrame(fiber.lif_r2)
-    #%% Plot fitting figure for paper
+    # %% Plot fitting figure for paper
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
     for fiber_id in FIBER_FIT_ID_LIST:
         fiber = fiber_list[fiber_id]
@@ -559,7 +559,7 @@ if __name__ == '__main__':
             'static_fr_mean'], fiber.binned_exp['static_fr_std'],
             fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
     # Plot fitting
-    for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):            
+    for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
         ls = LS_LIST[quantity_id]
         if fiber_id in FIBER_FIT_ID_LIST:
             axs[0].plot(fiber.binned_exp['displ_mean']*1e-3, fiber.lif_fr[
@@ -587,7 +587,7 @@ if __name__ == '__main__':
     fig.subplots_adjust(top=.9)
     fig.savefig('./plots/paper_plot_fitting.png', dpi=300)
     plt.close(fig)
-    #%% Plot force-displ fitting
+    # %% Plot force-displ fitting
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
     for fiber_id in FIBER_FIT_ID_LIST:
         # Plot static force/displ
@@ -604,7 +604,7 @@ if __name__ == '__main__':
         fiber_mech.get_stim_block_trace_exp()
         stim_group = fiber_mech.stim_group_dict[group_id]
         for i, stim_num in enumerate(stim_group['stim_num']):
-            axs[1].plot(stim_group['traces_exp'][i]['time'], 
+            axs[1].plot(stim_group['traces_exp'][i]['time'],
                 stim_group['traces_exp'][i]['force'], '.', color='.5')
         axs[1].get_lines()[0].set_label('Experiment')
         axs[1].plot(stim_group['traces_fem']['time'], stim_group['traces_fem']
@@ -616,17 +616,17 @@ if __name__ == '__main__':
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
     # Setting the range
-    axs[0].set_xlim(.375, .575)    
+    axs[0].set_xlim(.375, .575)
     axs[0].set_ylim(0, 10)
     axs[1].set_ylim(-1, 5)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')    
+            fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
     plt.close(fig)
-    #%% Plot experiment data with displ / force aligned - static, separate
+    # %% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting
     displ_list, force_list, static_fr_list, dynamic_fr_list = [], [], [], []
     displ_rate_list, force_rate_list = [], []
@@ -676,14 +676,14 @@ if __name__ == '__main__':
         color = 'k'
         axs[0].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
-            mec=color, ms=MS, label='Fiber #%d' % (i+1))        
+            mec=color, ms=MS, label='Fiber #%d' % (i+1))
         axs[1].errorbar(fiber.binned_exp['displ_mean']*1e-3, fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
             c=color, mec=color, ms=MS, label='Fiber #%d' % (i+1))
-    axs[1].plot(np.sort(displ_list)*1e-3, 
+    axs[1].plot(np.sort(displ_list)*1e-3,
         np.sort(displ_static_predict), '-k',
         label='Linear regression')
     axs[2].plot(sorted(force_list), np.sort(force_static_predict), '-k',
@@ -700,11 +700,10 @@ if __name__ == '__main__':
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')   
+            fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
     fig.savefig('./plots/compare_variance.png', dpi=300)
     plt.close(fig)
     print(force_static_fit_resvar, displ_static_fit_resvar)
 #    print(force_dynamic_fit_resvar, displ_dynamic_fit_resvar)
 
-                      

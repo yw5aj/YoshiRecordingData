@@ -5,7 +5,7 @@ Created on Sun May  4 22:38:40 2014
 @author: Yuxiang Wang
 """
 
-#%%
+# %%
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
@@ -28,7 +28,7 @@ level_num = 5
 control_list = ['Displ', 'Force']
 surface_list = ['displ', 'press']
 quantity_list = ['displ', 'force', 'press', 'stress', 'strain', 'sener']
-quantile_label_list = ['Min', 'Lower-quartile', 'Median', 
+quantile_label_list = ['Min', 'Lower-quartile', 'Median',
                        'Upper-quartile', 'Max']
 phase_list = ['dynamic', 'static']
 percentage_label_list = ['%d%%' % i for i in range(50, 175, 25)]
@@ -42,18 +42,18 @@ stim_plot_list = [1, 2, 3] # Stims to be plotted
 level_plot_list = range(level_num)[1:-1]
 
 class SimFiber:
-    
+
     def __init__(self, factor, level, control):
         """
         Class for simulated model from Abaqus.
-        
+
         Parameters
         ----------
         factor : str
             Which part of the mechanics was changed. Options are 'SkinThick',
             'SkinAlpha', 'SylgardThick', 'SylgardC10'
         level : int
-            An int in [0, 5]. Corresponds to min., lower-quartile, median, 
+            An int in [0, 5]. Corresponds to min., lower-quartile, median,
             upper-quartile and max.
         control : str
             The applied control in simulation, either force or displacement,
@@ -68,7 +68,7 @@ class SimFiber:
         self.get_predicted_fr()
         self.get_line_fit()
         return
-    
+
     def get_dist(self):
         fpath = BASE_CSV_PATH
         self.dist = [{} for i in range(stim_num)]
@@ -87,7 +87,7 @@ class SimFiber:
             argsort = self.dist[stim]['cxold'][-1].argsort()
             # Sort order in x
             for key in key_list:
-                # Calculate integration over area            
+                # Calculate integration over area
                 if key.startswith('c'):
                     self.dist[stim][key] = (self.dist[stim][key].T[argsort]).T
             # Propagate time
@@ -114,14 +114,14 @@ class SimFiber:
             elif key == 'time':
                 self.dist[0][key] = value
         return
-    
+
     def load_trans_params(self):
         self.trans_params = []
         for fiber_id in range(FIBER_TOT_NUM):
             with open('./pickles/trans_params_%d.pkl' % fiber_id, 'rb') as f:
                 self.trans_params.append(pickle.load(f))
         return
-    
+
     def load_traces(self):
         fpath = BASE_CSV_PATH
         # Use stim_num - 1 to leave space for the zero-stim trace
@@ -139,14 +139,14 @@ class SimFiber:
             fine_time = np.arange(0, time.max(), DT)
             self.traces[i+1]['time'] = fine_time
             for quantity in quantity_list:
-                self.traces[i+1][quantity] = np.interp(fine_time, time, 
+                self.traces[i+1][quantity] = np.interp(fine_time, time,
                     locals()[quantity])
             self.traces[i+1]['max_index'] = self.traces[i+1]['force'].argmax()
             # Save rate quantities
             fine_time = np.arange(0, time[-1], DT)
             self.traces_rate[i+1]['time'] = fine_time
             for quantity in quantity_list:
-                self.traces_rate[i+1][quantity] = np.interp(fine_time, 
+                self.traces_rate[i+1][quantity] = np.interp(fine_time,
                     time[:-1], np.diff(locals()[quantity])/np.diff(time))
             self.traces_rate[i+1]['max_index'] = self.traces[i+1]['max_index']
         # Fill the zero-stim trace
@@ -169,21 +169,21 @@ class SimFiber:
             for i in range(stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
         return
-    
+
     def get_predicted_fr(self):
         self.predicted_fr = [{} for i in range(FIBER_TOT_NUM)]
         for fiber_id in FIBER_FIT_ID_LIST:
             for quantity in quantity_list[-3:]:
                 # Get the quantity_dict_list
                 quantity_dict_list = [{
-                    'quantity_array': self.traces[i][quantity], 
+                    'quantity_array': self.traces[i][quantity],
                     'max_index': self.traces[i]['max_index']}
                     for i in range(stim_num)]
                 self.predicted_fr[fiber_id][quantity] =\
                     trans_param_to_predicted_fr(quantity_dict_list,
                     self.trans_params[fiber_id][quantity])
         return
-    
+
     def get_line_fit(self):
         self.line_fit = [{} for i in range(FIBER_TOT_NUM)]
         self.line_fit_median_predict = [{} for i in range(FIBER_TOT_NUM)]
@@ -205,17 +205,17 @@ class SimFiber:
                         for key in iter(self.line_fit[fiber_id][quantity])
                     }
         return
-    
+
     def plot_predicted_fr(self, axs, fiber_id, **kwargs):
         if self.control is 'Displ':
             for i, quantity in enumerate(quantity_list[-3:]):
-                axs[i, 1].plot(self.static_displ_exp, 
+                axs[i, 1].plot(self.static_displ_exp,
                     self.predicted_fr[fiber_id][quantity][:, 1], **kwargs)
                 axs[i, 0].plot(self.static_displ_exp,
                     self.predicted_fr[fiber_id][quantity][:, 2], **kwargs)
         if self.control is 'Force':
             for i, quantity in enumerate(quantity_list[-3:]):
-                axs[i, 1].plot(self.static_force_exp, 
+                axs[i, 1].plot(self.static_force_exp,
                     self.predicted_fr[fiber_id][quantity][:, 1], **kwargs)
                 axs[i, 0].plot(self.static_force_exp,
                     self.predicted_fr[fiber_id][quantity][:, 2], **kwargs)
@@ -229,7 +229,7 @@ if __name__ == '__main__':
         with open('./pickles/binned_exp_%d.pkl' % i, 'rb') as f:
             binned_exp_list.append(pickle.load(f))
     # Generate data
-    simFiberList = [[[] for j in 
+    simFiberList = [[[] for j in
         range(level_num)] for i in range(len(factor_list))]
     for i, factor in enumerate(factor_list[:3]):
         for level in range(level_num):
@@ -238,7 +238,7 @@ if __name__ == '__main__':
                 simFiber = SimFiber(factor, level, control)
                 simFiberList[i][j].append(simFiber)
                 print(factor+str(level)+control+' is done.')
-    #%% Generate table for integration
+    # %% Generate table for integration
     spatial_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
         for j, control in enumerate(control_list):
@@ -252,8 +252,8 @@ if __name__ == '__main__':
                 spatial_table[3*j+k, i] = iqr / distance
     spatial_table_sum = spatial_table.sum(axis=1)
     np.savetxt('./csvs/spatial_table.csv', spatial_table, delimiter=',')
-    #%% Calculate Pearson correlation coefficients
-    """    
+    # %% Calculate Pearson correlation coefficients
+    """
     Three rows stand for three quantities, two columns for two controls.
     Ignore the effects for each factors since it wouldn't matter.
     """
@@ -268,17 +268,17 @@ if __name__ == '__main__':
                 surface_quantity = 'cpress'
             elif control == 'Displ':
                 surface_quantity = 'cy'
-            surface_data = np.interp(xcoord, dist['cxnew'][-1], 
+            surface_data = np.interp(xcoord, dist['cxnew'][-1],
                                      dist[surface_quantity][-1])
             # Get mcnc data
             mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
-                                  dist['m'+quantity][-1])                                     
-            # Calculate correlation                         
+                                  dist['m'+quantity][-1])
+            # Calculate correlation
             spatial_pearsonr_table[i, j], spatial_pearsonp_table[i, j] = \
                 pearsonr(surface_data, mcnc_data)
     np.savetxt('./csvs/spatial_r2_table.csv', spatial_pearsonr_table**2,
                delimiter=',')
-    #%% Plot distribution
+    # %% Plot distribution
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     mquantity_list = ['mstress', 'mstrain', 'msener']
     cquantity_list = ['cy', 'cpress']
@@ -303,7 +303,7 @@ if __name__ == '__main__':
                         elif 'ress' in cquantity:
                             cscale = 1e-3
                         # Plotting
-                        axs[row, j].plot(dist['cxnew'][-1, :] * xscale, 
+                        axs[row, j].plot(dist['cxnew'][-1, :] * xscale,
                             dist[cquantity][-1, :] * cscale,
                             ls=ls, c=color, label=quantile_label_list[level])
                     for row, mquantity in enumerate(mquantity_list):
@@ -313,8 +313,8 @@ if __name__ == '__main__':
                         else:
                             mscale = 1
                         # Plotting
-                        axs[row+2, j].plot(dist['mxnew'][-1, :] * xscale, 
-                            dist[mquantity][-1, :] * mscale, 
+                        axs[row+2, j].plot(dist['mxnew'][-1, :] * xscale,
+                            dist[mquantity][-1, :] * mscale,
                             ls=ls, c=color, label=quantile_label_list[level])
     # Set x and y lim
     for axes in axs.ravel():
@@ -322,11 +322,11 @@ if __name__ == '__main__':
     # Formatting labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Location (mm)')
-    axs[0, 0].set_ylabel(r'Deformation (mm)')
-    axs[1, 0].set_ylabel(r'Pressure (kPa)')
-    axs[2, 0].set_ylabel('Stress (kPa)')
-    axs[3, 0].set_ylabel('Strain')
-    axs[4, 0].set_ylabel(r'SED (kJ/m$^3$)')
+    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
+    axs[2, 0].set_ylabel('Internal stress (kPa)')
+    axs[3, 0].set_ylabel('Internal strain')
+    axs[4, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         if axes_id // 2 in [0]:
@@ -342,19 +342,19 @@ if __name__ == '__main__':
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
         +len(stim_plot_list)//2::len(stim_plot_list)*len(
-        level_plot_list)], [factor_display[5:].capitalize() 
+        level_plot_list)], [factor_display[5:].capitalize()
         for factor_display in factor_display_list[:3]], loc=3)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=3)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
-    axs[0, 1].set_title('Pressure controlled')    
+    axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/spatial_distribution.png', dpi=300)
     plt.close(fig)
-    #%% Calculating iqr for all temporal traces
+    # %% Calculating iqr for all temporal traces
     # Calculate iqrs
     def calculate_iqr(simFiberLevelList, end_time=MAX_TIME):
         def integrate(simFiber, quantity, stim):
@@ -384,20 +384,21 @@ if __name__ == '__main__':
                     iqr_dict[quantity] / distance_dict[quantity]
     temporal_table_sum = temporal_table.sum(axis=1)
     np.savetxt('./csvs/temporal_table.csv', temporal_table, delimiter=',')
-    #%% Calculate Pearson correlation coefficients
+    # %% Calculate Pearson correlation coefficients
     temporal_pearsonr_table = np.empty([3, 2])
     temporal_pearsonp_table = np.empty_like(temporal_pearsonr_table)
     for i, quantity in enumerate(quantity_list[-3:]):
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
             end_index = (trace['time'] > MAX_TIME).nonzero()[0][0]
-            xdata = trace[control.lower()][:end_index]
+            surface = 'press' if control == 'Force' else 'displ'
+            xdata = trace[surface][:end_index]
             ydata = trace[quantity][:end_index]
             temporal_pearsonr_table[i, j], temporal_pearsonp_table[i, j] = \
                 pearsonr(xdata, ydata)
     np.savetxt('./csvs/temporal_r2_table.csv', temporal_pearsonr_table**2,
-               delimiter=',')                
-    #%% Plot temporal traces
+               delimiter=',')
+    # %% Plot temporal traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
@@ -425,16 +426,16 @@ if __name__ == '__main__':
                         axes = axs[row+2, k]
                         axes.plot(
                             simFiber.traces[stim]['time'],
-                            simFiber.traces[stim][quantity]*scale, 
+                            simFiber.traces[stim][quantity]*scale,
                             ls=ls, c=color, label=quantile_label_list[level])
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Deformation (mm)')
-    axs[1, 0].set_ylabel(r'Pressure (kPa)')
-    axs[2, 0].set_ylabel('Stress (kPa)')
-    axs[3, 0].set_ylabel('Strain')
-    axs[4, 0].set_ylabel(r'SED (kPa/$m^3$)')
+    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
+    axs[2, 0].set_ylabel('Internal stress (kPa)')
+    axs[3, 0].set_ylabel('Internal strain')
+    axs[4, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # Formatting
     for axes_id, axes in enumerate(axs.ravel()):
         if axes_id // 2 in [0, 3, 4]:
@@ -449,19 +450,19 @@ if __name__ == '__main__':
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)+
         len(stim_plot_list)//2::len(stim_plot_list)*len(
-        level_plot_list)], [factor_display[5:].capitalize() 
+        level_plot_list)], [factor_display[5:].capitalize()
         for factor_display in factor_display_list[:3]], loc=4)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=4)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
-    fig.savefig('./plots/temporal_distribution.png', dpi=300)    
+    fig.savefig('./plots/temporal_distribution.png', dpi=300)
     plt.close(fig)
-    #%% Calculating iqr for all temporal rate traces
+    # %% Calculating iqr for all temporal rate traces
     # Calculate iqrs
     def calculate_rate_iqr(simFiberLevelList, end_time=MAX_RATE_TIME):
         def integrate_rate(simFiber, quantity, stim):
@@ -491,9 +492,9 @@ if __name__ == '__main__':
                 temporal_rate_table[3*k+row, i] = \
                     iqr_dict[quantity] / distance_dict[quantity]
     temporal_rate_table_sum = temporal_table.sum(axis=1)
-    np.savetxt('./csvs/temporal_rate_table.csv', temporal_rate_table, 
+    np.savetxt('./csvs/temporal_rate_table.csv', temporal_rate_table,
                delimiter=',')
-    #%% Plot temporal trace rate
+    # %% Plot temporal trace rate
     # Calculate Pearson correlation coefficients
     temporal_rate_pearsonr_table = np.empty([3, 2])
     temporal_rate_pearsonp_table = np.empty_like(temporal_rate_pearsonr_table)
@@ -501,13 +502,14 @@ if __name__ == '__main__':
         for j, control in enumerate(control_list):
             trace = simFiberList[0][2][j].traces[3]
             end_index = (trace['time'] > MAX_RATE_TIME).nonzero()[0][0]
-            xdata = np.diff(trace[control.lower()][:end_index])
+            surface = 'press' if control == 'Force' else 'displ'
+            xdata = np.diff(trace[surface][:end_index])
             ydata = np.diff(trace[quantity][:end_index])
             temporal_rate_pearsonr_table[i, j], \
-                temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata) 
-    np.savetxt('./csvs/temporal_rate_r2_table.csv', 
+                temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata)
+    np.savetxt('./csvs/temporal_rate_r2_table.csv',
                temporal_rate_pearsonr_table**2, delimiter=',')
-    #%% Plot temporal rate traces
+    # %% Plot temporal rate traces
     fiber_id = FIBER_FIT_ID_LIST[0]
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
@@ -535,16 +537,16 @@ if __name__ == '__main__':
                         axes = axs[row+2, k]
                         axes.plot(
                             simFiber.traces_rate[stim]['time'],
-                            simFiber.traces_rate[stim][quantity] * scale, 
+                            simFiber.traces_rate[stim][quantity] * scale,
                             ls=ls, c=color, label=quantile_label_list[level])
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Deformation rate (mm/s)')
-    axs[1, 0].set_ylabel(r'Pressure rate (kPa/s)')
-    axs[2, 0].set_ylabel(r'Stress rate (kPa/s)')
-    axs[3, 0].set_ylabel(r'Strain rate (s$^{-1}$)')
-    axs[4, 0].set_ylabel(r'SED rate (kPa$\cdot m^3s^{-1}$)')
+    axs[0, 0].set_ylabel(r'Surface velocity (mm/s)')
+    axs[1, 0].set_ylabel(r'Surface pressure rate (kPa/s)')
+    axs[2, 0].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs[3, 0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs[4, 0].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         if axes_id // 2 in [0]:
@@ -561,19 +563,19 @@ if __name__ == '__main__':
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
         +len(stim_plot_list)//2::len(stim_plot_list)*len(
-        level_plot_list)], [factor_display[5:].capitalize() 
+        level_plot_list)], [factor_display[5:].capitalize()
         for factor_display in factor_display_list[:3]], loc=1)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Deformation controlled')
     axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
-    fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)    
-    plt.close(fig)    
-    #%% Plot all simulations together
+    fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)
+    plt.close(fig)
+    # %% Plot all simulations together
     fiber_id = FIBER_FIT_ID_LIST[0]
     # Calculate all the IQRs and compare force vs. displ
     def get_slope_iqr(simFiberLevelList, quantity):
@@ -607,7 +609,7 @@ if __name__ == '__main__':
             sim_table[3+k, i] = slope_iqr[1]
     sim_table_sum = sim_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
-    #%% Start plotting
+    # %% Start plotting
     # Factors explaining the force-alignment - static
     fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
     for i, factor in enumerate(factor_list[:3]):
@@ -622,17 +624,17 @@ if __name__ == '__main__':
                 axs[0, k].plot(
                     simFiber.static_displ_exp,
                     simFiber.static_force_exp,
-                    c=color, mec=color, ms=MS, 
+                    c=color, mec=color, ms=MS,
                     ls=fmt, label=label)
                 axs[1, k].plot(
                     simFiber.static_displ_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
-                    c=color, mec=color, ms=MS, 
+                    c=color, mec=color, ms=MS,
                     ls=fmt, label=label)
                 axs[2, k].plot(
                     simFiber.static_force_exp,
                     simFiber.predicted_fr[fiber_id][quantity].T[1],
-                    c=color, mec=color, ms=MS, 
+                    c=color, mec=color, ms=MS,
                     ls=fmt, label=label)
     # X and Y limits
     for axes in axs[0:, :].ravel():
@@ -656,7 +658,7 @@ if __name__ == '__main__':
         axes.set_ylabel('Predicted mean firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
-            fontsize=12, fontweight='bold', va='top')      
+            fontsize=12, fontweight='bold', va='top')
     # Legend
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
@@ -664,13 +666,13 @@ if __name__ == '__main__':
 #    axs[0, 0].legend(handles[2::5], [factor_display[5:
 #        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile', 
+    axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile',
         'Median'], loc=2)
     # Save
     fig.tight_layout()
-    fig.savefig('./plots/sim_compare_variance.png', dpi=300)    
+    fig.savefig('./plots/sim_compare_variance.png', dpi=300)
     plt.close(fig)
-    #%% Calculate values for displacement vs. mcnc displacement
+    # %% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
     for i, factor in enumerate(factor_list[:3]):
         j = 0
@@ -690,14 +692,14 @@ if __name__ == '__main__':
     xcoord = np.linspace(0, MAX_RADIUS, 100)
     # Get surface data
     surface_quantity = 'cy'
-    surface_data = np.interp(xcoord, dist['cxnew'][-1], 
+    surface_data = np.interp(xcoord, dist['cxnew'][-1],
                              dist[surface_quantity][-1])
     # Get mcnc data
     mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
-                          dist['my'][-1])                                     
-    # Calculate correlation                         
+                          dist['my'][-1])
+    # Calculate correlation
     spatial_y_pearsonr, spatial_y_pearsonp = pearsonr(surface_data, mcnc_data)
-    #%% Plot distribution
+    # %% Plot distribution
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 4), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
         for level in level_plot_list:
@@ -716,23 +718,23 @@ if __name__ == '__main__':
                 xscale = 1e3
                 cquantity = 'cy'
                 cscale = 1e-3
-                axs[0].plot(dist['cxnew'][-1, :] * xscale, 
+                axs[0].plot(dist['cxnew'][-1, :] * xscale,
                     dist[cquantity][-1, :] * cscale,
                     ls=ls, c=color, label=quantile_label_list[level])
                 # Scaling the axes
                 mquantity = 'my'
                 mscale = 1e-3
                 # Plotting
-                axs[1].plot(dist['mxnew'][-1, :] * xscale, 
-                    dist[mquantity][-1, :] * mscale, 
+                axs[1].plot(dist['mxnew'][-1, :] * xscale,
+                    dist[mquantity][-1, :] * mscale,
                     ls=ls, c=color, label=quantile_label_list[level])
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
     # Formatting labels
     axs[1].set_xlabel('Location (mm)')
-    axs[0].set_ylabel(r'Deformation (mm)')
-    axs[1].set_ylabel(r'MCNC displacement (mm)')
+    axs[0].set_ylabel(r'Surface deformation (mm)')
+    axs[1].set_ylabel(r'Internal displacement (mm)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -742,14 +744,14 @@ if __name__ == '__main__':
     handles, labels = axs[0].get_legend_handles_labels()
     axs[0].legend(handles[len(stim_plot_list)*(len(level_plot_list)//2)
         +len(stim_plot_list)//2::len(stim_plot_list)*len(
-        level_plot_list)], [factor_display[5:].capitalize() 
+        level_plot_list)], [factor_display[5:].capitalize()
         for factor_display in factor_display_list[:3]], loc=3)
     # The 5 quantile labels
-    axs[1].legend(handles[1:3*len(level_plot_list)+1:3], [ 
+    axs[1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=3)
     # Add subtitles
     axs[0].set_title('Deformation controlled')
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
-    plt.close(fig)    
+    plt.close(fig)
