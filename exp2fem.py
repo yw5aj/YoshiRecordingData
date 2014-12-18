@@ -278,7 +278,8 @@ class Fiber:
         return (displ - self.displ_coeff[0]) / self.displ_coeff[1] * 1e-3
 
     def get_fem_ramp_time(self, ramp_time):
-        return ramp_time / self.displ_coeff[1]
+#        return ramp_time / self.displ_coeff[1]
+        return ramp_time / 1.5
 
     def get_fem_displ_ramp_time(self, match='displ', stim_group_dict=None,
         ramp_time_match_experiment=False):
@@ -600,25 +601,27 @@ if __name__ == '__main__':
         axs[0].plot(fiber.abq_displ_scaled*1e-3, fiber.abq_force, ls='-', c=color,
             label='Model')
         # Plot force trace
-        group_id = 1
         fiber_mech.get_stim_block_trace_exp()
-        stim_group = fiber_mech.stim_group_dict[group_id]
-        for i, stim_num in enumerate(stim_group['stim_num']):
-            axs[1].plot(stim_group['traces_exp'][i]['time'],
-                stim_group['traces_exp'][i]['force'], '.', color='.5')
-        axs[1].get_lines()[0].set_label('Experiment')
-        axs[1].plot(stim_group['traces_fem']['time'], stim_group['traces_fem']
-                ['force']*1e3, '-k', label='Model')
+        for stim_group in fiber_mech.stim_group_dict:
+            for i, stim_num in enumerate(stim_group['stim_num']):
+                axs[1].plot(stim_group['traces_exp'][i]['time'],
+                    stim_group['traces_exp'][i]['force'], '.', color='.5',
+                    label='Experiment')
+        # Wrote two separate loops so that the model traces always stay on top
+        for stim_group in fiber_mech.stim_group_dict:                    
+            axs[1].plot(stim_group['traces_fem']['time'], stim_group['traces_fem']
+                    ['force']*1e3, '-k', label='Model')
     axs[0].legend(loc=2)
     axs[0].set_xlabel(r'Static displacement (mm)')
     axs[0].set_ylabel(r'Static force (mN)')
-    axs[1].legend()
+    handles, labels = axs[1].get_legend_handles_labels()
+    handles = [handles[labels.index(label)] for label in set(labels)]
+    axs[1].legend(handles, set(labels))
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
     # Setting the range
     axs[0].set_xlim(.375, .575)
     axs[0].set_ylim(0, 10)
-    axs[1].set_ylim(-1, 5)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,

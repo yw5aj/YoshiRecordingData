@@ -10,6 +10,7 @@
 *.pyc
 *.pkl
 *.log
+*.dmp
 
 # Matlab files
 *.mat

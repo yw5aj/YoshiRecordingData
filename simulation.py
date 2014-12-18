@@ -640,7 +640,7 @@ if __name__ == '__main__':
     for axes in axs[0:, :].ravel():
         axes.set_ylim(0, 10)
     for axes in axs[1:, :].ravel():
-        axes.set_ylim(0, 50)
+        axes.set_ylim(0, 45)
     for axes in axs[1, :].ravel():
         axes.set_xlim(.3, .55)
     for axes in axs[2, :].ravel():
