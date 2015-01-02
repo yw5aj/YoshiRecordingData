@@ -22,15 +22,38 @@ _get_spike_trace_array_lif.argtypes = [ctypes.c_double, ctypes.c_double,
     ctypes.c_int, ctypes.c_double, np.ctypeslib.ndpointer(ctypes.c_int)]
 _get_spike_trace_array_lif.restype = None
 
+# Load dll for Lesniak model
+_get_spike_trace_array_lesniak = ctypes.cdll.LoadLibrary('./lesniakmodule.dll'
+    ).get_spike_trace_array_lesniak
+_get_spike_trace_array_lesniak.argtypes = [ctypes.c_double, ctypes.c_double,
+    ctypes.c_double, np.ctypeslib.ndpointer(np.uintp, ndim=1), 
+    ctypes.c_int, ctypes.c_double, np.ctypeslib.ndpointer(ctypes.c_int),
+    ctypes.c_int, np.ctypeslib.ndpointer(ctypes.c_int)]
+_get_spike_trace_array_lesniak.restype = None
 
-def current_array_to_spike_array(current_array):
+
+def current_array_to_spike_array(current_array, model='LIF',
+                                 mcnc_grouping=None):
+    # Make sure it is contiguous in C
+    if not current_array.flags['C_CONTIGUOUS']:
+        current_array = current_array.copy(order='C')
     # Initialize output array
-    spike_array = np.zeros_like(current_array, dtype=np.int)
+    spike_array = np.zeros(current_array.shape[0], dtype=np.int)
     # Call C function
-    _get_spike_trace_array_lif(RESISTANCE_LIF, CAPACITANCE_LIF,
-        VOLTAGE_THRESHOLD_LIF, current_array, current_array.size, DT, 
-        spike_array)
+    if model == 'LIF':
+        _get_spike_trace_array_lif(RESISTANCE_LIF, CAPACITANCE_LIF,
+            VOLTAGE_THRESHOLD_LIF, current_array, current_array.shape[0], DT, 
+            spike_array)
+    elif model == 'Lesniak':
+        assert not mcnc_grouping is None, 'mcnc_grouping undefined'
+        current_array_pp = (current_array.__array_interface__['data'][0]\
+            + np.arange(current_array.shape[0])*current_array.strides[0]
+            ).astype(np.uintp)
+        _get_spike_trace_array_lesniak(RESISTANCE_LIF, CAPACITANCE_LIF,
+            VOLTAGE_THRESHOLD_LIF, current_array_pp, current_array.shape[0], 
+            DT, spike_array, mcnc_grouping.size, mcnc_grouping)
     return spike_array
+
 
 def fr2current(fr):
     """
@@ -59,9 +82,11 @@ def current2fr(current):
     return fr
 
 
-def current_array_to_fr(current_array, max_index):
+def current_array_to_fr(current_array, max_index, model='LIF',
+                        mcnc_grouping=None):
     current_array[current_array<0] = 0.
-    spike_array = current_array_to_spike_array(current_array)
+    spike_array = current_array_to_spike_array(current_array, model=model,
+                                               mcnc_grouping=mcnc_grouping)
     # Get time windows
     static_window = np.arange(max_index+STATIC_START/DT,
                               max_index+STATIC_END/DT, dtype=np.int)

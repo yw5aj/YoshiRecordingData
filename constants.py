@@ -1,7 +1,7 @@
 import os
 
 # SI units
-DT = 1E-5 # sec
+DT = 1E-4 # sec
 RESISTANCE_LIF = 10 * 5e8 # ohm
 CAPACITANCE_LIF = 1e-11 # F
 VOLTAGE_THRESHOLD_LIF = 30e-3 # V
