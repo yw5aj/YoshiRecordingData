@@ -441,11 +441,11 @@ class Fiber:
 
 if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
-    run_calibration = False
+    run_calibration = True
     make_plot = False
-    run_fiber_mech = False
+    run_fiber_mech = True
     run_each_fiber = False
-    run_fitting = False
+    run_fitting = True
     # Run calibration
     if run_calibration:
         os.system('call \"C:/SIMULIA/Abaqus/Commands/abaqus.bat\" cae script=x:/WorkFolder/AbaqusFolder/YoshiModel/calibration.py')

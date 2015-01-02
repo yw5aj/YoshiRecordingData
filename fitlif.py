@@ -25,7 +25,7 @@ _get_spike_trace_array_lif.restype = None
 
 def current_array_to_spike_array(current_array):
     # Initialize output array
-    spike_array = np.empty_like(current_array, dtype=np.int)
+    spike_array = np.zeros_like(current_array, dtype=np.int)
     # Call C function
     _get_spike_trace_array_lif(RESISTANCE_LIF, CAPACITANCE_LIF,
         VOLTAGE_THRESHOLD_LIF, current_array, current_array.size, DT, 

@@ -641,10 +641,11 @@ if __name__ == '__main__':
         axes.set_ylim(0, 10)
     for axes in axs[1:, :].ravel():
         axes.set_ylim(0, 45)
-    for axes in axs[1, :].ravel():
-        axes.set_xlim(.3, .55)
+    for axes in axs[:2, :].ravel():
+        axes.set_xlim(.3, .7)
+        axes.set_xticks(np.arange(.3, .8, .1))
     for axes in axs[2, :].ravel():
-        axes.set_xlim(0, 7)
+        axes.set_xlim(0, 10)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
