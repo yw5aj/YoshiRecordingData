@@ -441,9 +441,9 @@ class Fiber:
 
 if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
-    run_calibration = True
+    run_calibration = False
     make_plot = False
-    run_fiber_mech = True
+    run_fiber_mech = False
     run_each_fiber = False
     run_fitting = True
     # Run calibration
@@ -490,7 +490,7 @@ if __name__ == '__main__':
             fiber.get_stim_block_trace_fem()
             # Construct the FEM output quantity data
             fiber.trans_param, fiber.lif_fr, fiber.lif_r2 = {}, {}, {}
-            for quantity_name in quantity_name_list:
+            for quantity_name in quantity_name_list[2:]:
                 quantity_array_list = [fiber.stim_group_dict[i]['traces_fem'][
                     quantity_name] for i in range(len(fiber.stim_group_dict))]
                 max_index_list = [fiber.stim_group_dict[i]['traces_fem'][

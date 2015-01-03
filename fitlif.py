@@ -107,17 +107,20 @@ def get_avg_fr(spike_array):
     return avg_fr
 
 
-def trans_param_to_fr(quantity_dict, trans_param):
+def trans_param_to_fr(quantity_dict, trans_param, model='LIF',
+                      mcnc_grouping=None):
     quantity_array = quantity_dict['quantity_array']
     max_index = quantity_dict['max_index']
     quantity_rate_array = np.abs(np.gradient(quantity_array)) / DT
     current_array = trans_param[0] * quantity_array +\
         trans_param[1] * quantity_rate_array + trans_param[2]
-    static_fr, dynamic_fr = current_array_to_fr(current_array, max_index)
+    static_fr, dynamic_fr = current_array_to_fr(current_array, max_index,
+        model=model, mcnc_grouping=mcnc_grouping)
     return static_fr, dynamic_fr
 
 
-def trans_param_to_predicted_fr(quantity_dict_list, trans_param):
+def trans_param_to_predicted_fr(quantity_dict_list, trans_param, model='LIF',
+                                mcnc_grouping=None):
     """
     Different between trans_param_to_predicted_fr and trans_param_to_fr:
     trans_param_to_fr is for one quantity trace
@@ -125,7 +128,8 @@ def trans_param_to_predicted_fr(quantity_dict_list, trans_param):
     """
     predicted_static_fr, predicted_dynamic_fr = [], []
     for quantity_dict in quantity_dict_list:
-        static_fr, dynamic_fr = trans_param_to_fr(quantity_dict, trans_param)
+        static_fr, dynamic_fr = trans_param_to_fr(quantity_dict, trans_param,
+            model=model, mcnc_grouping=mcnc_grouping)
         predicted_static_fr.append(static_fr)
         predicted_dynamic_fr.append(dynamic_fr)
     predicted_fr = np.c_[range(len(quantity_dict_list)),

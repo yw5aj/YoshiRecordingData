@@ -756,3 +756,28 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
+    # %% See how Lesniak model would say!
+    fiber_id = FIBER_FIT_ID_LIST[0]
+    fig, axs = plt.subplots()
+    quantity = 'stress'
+    control = 'Force'
+    # Resting
+    simFiber = SimFiber('SkinThick', 0, control)
+    axs.plot(simFiber.static_force_exp,
+             simFiber.predicted_fr[fiber_id][quantity][:, 1], label='Resting, {11, 7, 2}')
+    # Active, no skin change
+    simFiber = SimFiber('SkinThick', 1, control)
+    axs.plot(simFiber.static_force_exp,
+             simFiber.predicted_fr[fiber_id][quantity][:, 1], label='Active, {11, 7, 2}')
+    # Now use Daine's model
+    simFiber.trans_params[fiber_id][quantity][0] *= 13/11
+    simFiber.trans_params[fiber_id][quantity][1] *= 13/11
+    simFiber.get_predicted_fr()
+    axs.plot(simFiber.static_force_exp,
+             simFiber.predicted_fr[fiber_id][quantity][:, 1], label='Active, {13, 11, 4}')
+    axs.legend(loc=2)
+#    axs.set_xlim(0, 12)
+#    axs.set_ylim(0, 60)
+    axs.set_xlabel('Force (mN)')
+    axs.set_ylabel('Response (Hz)')
+    fig.savefig('./plots/quick_lesniak_remodeling.png', dpi=300)
