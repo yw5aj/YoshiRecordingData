@@ -24,8 +24,8 @@ FIBER_TOT_NUM, FIBER_MECH_ID = get_fiber_tot_num()
 FIBER_FIT_ID_LIST = [FIBER_MECH_ID]
 
 # Plotting constants
-MARKER_LIST = ['*', 'D', 'v', 's', '.', 'o', '.', 'x', 'h', '+']
-COLOR_LIST = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'r', 'g', 'b']
+MARKER_LIST = ['v', 'D', '*', 's', '.', 'o', '.', 'x', 'h', '+']
+COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':'] 
 MS = 6
 
