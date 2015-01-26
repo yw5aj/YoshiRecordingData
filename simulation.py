@@ -837,10 +837,13 @@ if __name__ == '__main__':
         grouping = dict(resting=resting_grouping, active=active_grouping)
         marker = MARKER_LIST[grouping_id]
         color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color)
+        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
         for i, quantity in enumerate(quantity_list[-3:]):
             # Plot different responses, from, say resting
             def plot_phase(groupphase, skinphase, axes, **kwargs):
+                kwargs['label'] = '%s skin, %s grouping' % (
+                    skinphase.capitalize(),
+                    groupphase)
                 if groupphase == 'resting' and skinphase == 'resting':
                     kwargs['ls'] = '-'
                 elif groupphase == 'resting' and skinphase == 'active':
@@ -867,65 +870,64 @@ if __name__ == '__main__':
                 plot_phase('resting', 'resting', axs2[1], **kwargs)
                 plot_phase('resting', 'active', axs2[2], **kwargs)
                 plot_phase('resting', 'resting', axs2[2], **kwargs)
+    # Add legends for fig 2
+    handles, labels = axs2[0].get_legend_handles_labels()
+    handle = [[] for i in range(3)]
+    label = [[] for i in range(3)]
+    import matplotlib.lines as mlines
+    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]] +\
+                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
+                               mec=h.get_mec(), mfc=h.get_mfc())
+                 for h in handles[1::2]]
+    label[0] = labels[:2] + [
+        'Fiber #%d' % (i + 1)
+        for i in range(len(resting_grouping_list))]
+    handles, labels = axs2[1].get_legend_handles_labels()
+    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[1] = labels[:2]
+    handles, labels = axs2[2].get_legend_handles_labels()
+    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[2] = labels[:2]
+    for axes_id, axes in enumerate(axs2):
+        axes.legend(handle[axes_id], label[axes_id], loc=2)
+        axes.set_ylim(0, 70)
+    # Add legends for fig 1
+    for axes_id, axes in enumerate(axs1[0]):
+        if axes_id == 0:
+            axes.legend(loc=2)
+        axes.set_ylim(0, 60)
+        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[0] + 1),
+                  transform=axes.transAxes, fontsize=8)
+    for axes_id, axes in enumerate(axs1[1]):
+        if axes_id == 0:
+            axes.legend(loc=2)
+        axes.set_ylim(0, 80)
+        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[1] + 1),
+                  transform=axes.transAxes, fontsize=8)
+    # Add labels
+    for axes in np.r_[axs1.T[0], axs2]:
+        axes.set_ylabel('Predicted mean firing (Hz)')
+    for axes in np.r_[axs1[-1], [axs2[-1]]]:
+        axes.set_xlabel('Force (mN)')
+    # Add titles
+    for axes_id, axes in enumerate(axs1[0]):
+        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'])
+    axs2[0].set_title('Both skin and grouping change')
+    axs2[1].set_title('Only grouping changes')
+    axs2[2].set_title('Only skin changes')
+    # Format and save
+    for axes_id, axes in enumerate(axs1.ravel()):
+        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    for axes_id, axes in enumerate(axs2.ravel()):
+        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    fig1.tight_layout()
+    fig2.tight_layout()
     fig1.savefig('./plots/grouping_typical.png')
     fig2.savefig('./plots/grouping_all.png')
-    plt.close(fig1)
-    plt.close(fig2)
-    """
-    for grouping_id in range(len(resting_grouping_list)):
-        fig, axs = plt.subplots(2, 3, figsize=(7.5, 5))
-        resting_grouping = resting_grouping_list[grouping_id]
-        active_grouping = active_grouping_list[grouping_id]
-        driver_ratio = np.max(active_grouping) / np.max(resting_grouping)
-        for i, quantity in enumerate(quantity_list[-3:]):
-            # level 0 is resting and level 1 is active
-            # What if compare skin change w/ and w/o neural change
-            simFiber = SimFiber('SkinThick', 0, control)
-            axs[0, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '-ok', label='Resting skin, %s'%resting_grouping)
-            # active but no neural remodeling
-            simFiber = SimFiber('SkinThick', 1, control)
-            axs[0, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '--^k', label='Active skin, %s'%resting_grouping)
-            # active and with neural remodeling
-            simFiber.trans_params[fiber_id][quantity][0] *= driver_ratio
-            simFiber.trans_params[fiber_id][quantity][1] *= driver_ratio
-            simFiber.get_predicted_fr()
-            axs[0, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '-^k', label='Active skin, %s'%active_grouping)
-            # Only neural change compared to neural plus skin
-            # Neural same
-            simFiber = SimFiber('SkinThick', 0, control)
-            axs[1, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '-ok', label='Resting skin, %s'%resting_grouping)
-            # still resting skin and with neural remodeling
-            simFiber.trans_params[fiber_id][quantity][0] *= driver_ratio
-            simFiber.trans_params[fiber_id][quantity][1] *= driver_ratio
-            simFiber.get_predicted_fr()
-            axs[1, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '--^k', label='Resting skin, %s'%active_grouping)
-            # Active skin and with neural remodeling
-            simFiber = SimFiber('SkinThick', 1, control)
-            simFiber.trans_params[fiber_id][quantity][0] *= driver_ratio
-            simFiber.trans_params[fiber_id][quantity][1] *= driver_ratio
-            simFiber.get_predicted_fr()
-            axs[1, i].plot(simFiber.static_force_exp,
-                           simFiber.predicted_fr[fiber_id][quantity][:, 1],
-                           '-^k', label='Active skin, %s'%active_grouping)
-        for axes in axs.ravel():
-            axes.set_xlabel('Force (mN)')
-            axes.set_ylabel('Response (Hz)')
-            axes.set_ylim(0, 70)
-        for axes_id, axes in enumerate(axs[0, :]):
-            axes.set_title(quantity_list[-3:][axes_id].capitalize()+
-                '-based model')
-        fig.tight_layout()
-        for axes in axs.ravel():
-            axes.legend(loc=2)
-        fig.savefig('./plots/lesniak_remodeling_%d.png'%grouping_id, dpi=300)
-    """
+#    plt.close(fig1)
+#    plt.close(fig2)
