@@ -455,10 +455,11 @@ class Fiber:
 if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
     run_calibration = False
-    make_plot = False
+    make_plot = True
     run_fiber_mech = False
     run_each_fiber = False
     run_fitting = False
+    use_single_mech = False
     # Run calibration
     if run_calibration:
         os.system(
@@ -496,11 +497,21 @@ if __name__ == '__main__':
     # Run the Abaqus model
     for fiber in fiber_list:
         if fiber.fiber_id in FIBER_FIT_ID_LIST:
-            fiber_mech.generate_stim_block_array(
-                stim_group_dict=fiber.stim_group_dict, fiber_id=fiber.fiber_id)
+            if use_single_mech:
+                fiber_mech.generate_stim_block_array(
+                    stim_group_dict=fiber.stim_group_dict,
+                    fiber_id=fiber.fiber_id)
+            else:
+                fiber.generate_stim_block_array(
+                    stim_group_dict=fiber.stim_group_dict,
+                    fiber_id=fiber.fiber_id)
             if run_each_fiber:
                 fiber.generate_script()
                 fiber.run_script()
+                fig, axs = plt.subplots()
+                fiber.plot_force_trace_fitting(axs)
+                fig.savefig('./plots/fitting_%d.png' % fiber.fiber_id)
+                plt.close(fig)
             # Read the FEM outputs
             fiber.get_stim_block_trace_fem()
             # Construct the FEM output quantity data
@@ -565,8 +576,8 @@ if __name__ == '__main__':
                     target_fr_array, fiber.lif_fr[quantity_name])
                 fiber.df_lif_r2 = pd.DataFrame(fiber.lif_r2)
     # %% Plot fitting figure for paper
-    fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
     for fiber_id in FIBER_FIT_ID_LIST:
+        fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
         fiber = fiber_list[fiber_id]
         fmt = MARKER_LIST[fiber_id]
 #        color = COLOR_LIST[fiber_id]
@@ -580,35 +591,38 @@ if __name__ == '__main__':
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_std'],
             fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
-    # Plot fitting
-    for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
-        ls = LS_LIST[quantity_id]
-        if fiber_id in FIBER_FIT_ID_LIST:
-            axs[0].plot(fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                quantity][:, 1], c=color, ls=ls, label='Predicted by ' +
-                quantity)
-            axs[1].plot(fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                quantity][:, 0], c=color, ls=ls, label='Predicted by' +
-                quantity)
-    # Adjust formatting
-    for axes in axs:
-        axes.set_xlim(.390, .550)
-    axs[1].set_xlabel(r'Displacement (mm)')
-    axs[0].set_ylabel('Dynamic mean firing (Hz)')
-    axs[1].set_ylabel('Static mean firing (Hz)')
-    h, l = axs[0].get_legend_handles_labels()
-    legend = fig.legend(h, l, bbox_to_anchor=(0.05, 0.85, 0.9, .14), ncol=2,
-                        mode='expand', frameon=True)
-    frame = legend.get_frame()
-    frame.set_linewidth(.5)
-    # Adding panel labels
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65 + axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    fig.tight_layout()
-    fig.subplots_adjust(top=.9)
-    fig.savefig('./plots/paper_plot_fitting.png', dpi=300)
-    plt.close(fig)
+        # Plot fitting
+        for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
+            ls = LS_LIST[quantity_id]
+            if fiber_id in FIBER_FIT_ID_LIST:
+                axs[0].plot(
+                    fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
+                        quantity][:, 1], c=color, ls=ls, label='Predicted by '
+                    + quantity)
+                axs[1].plot(
+                    fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
+                        quantity][:, 0], c=color, ls=ls, label='Predicted by'
+                    + quantity)
+        # Adjust formatting
+#        for axes in axs:
+#            axes.set_xlim(.390, .550)
+        axs[1].set_xlabel(r'Displacement (mm)')
+        axs[0].set_ylabel('Dynamic mean firing (Hz)')
+        axs[1].set_ylabel('Static mean firing (Hz)')
+        h, l = axs[0].get_legend_handles_labels()
+        legend = fig.legend(
+            h, l, bbox_to_anchor=(0.05, 0.85, 0.9, .14), ncol=2,
+            mode='expand', frameon=True)
+        frame = legend.get_frame()
+        frame.set_linewidth(.5)
+        # Adding panel labels
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.15, 1.05, chr(65 + axes_id), transform=axes.transAxes,
+                      fontsize=12, fontweight='bold', va='top')
+        fig.tight_layout()
+        fig.subplots_adjust(top=.9)
+        fig.savefig('./plots/paper_plot_fitting_%d.png' % fiber_id, dpi=300)
+        plt.close(fig)
     # %% Plot force-displ fitting
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
     for fiber_id in FIBER_FIT_ID_LIST:

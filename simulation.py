@@ -7,6 +7,7 @@ Created on Sun May  4 22:38:40 2014
 
 # %%
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from scipy.stats import pearsonr
@@ -808,10 +809,15 @@ if __name__ == '__main__':
     # %% See how Lesniak model would say!
     fiber_id = FIBER_FIT_ID_LIST[0]
     control = 'Force'
-    resting_grouping_list = [[8, 5, 3, 1], [5, 4, 3, 1], [7, 5, 2], [11, 7, 2]]
-    active_grouping_list = [[9, 8, 5, 2, 1], [6, 5, 4, 2, 1, 1], [8, 7, 4, 2],
-                            [13, 11, 4]]
-    typical_grouping_id_list = [0, 3]
+    resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
+    active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
+                            [8, 7, 4, 2]]
+    grouping_df = pd.DataFrame(
+        {'Resting': resting_grouping_list,
+         'Active': active_grouping_list},
+        index=['Group #%d' % (i+1) for i in range(len(active_grouping_list))])
+    grouping_df = grouping_df[['Resting', 'Active']]
+    typical_grouping_id_list = [0, 1]
     base_grouping = resting_grouping_list[0]
     # Convenenience function to get fiber response from different grouping
 
@@ -914,7 +920,7 @@ if __name__ == '__main__':
         axes.set_xlabel('Force (mN)')
     # Add titles
     for axes_id, axes in enumerate(axs1[0]):
-        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'])
+        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'][axes_id])
     axs2[0].set_title('Both skin and grouping change')
     axs2[1].set_title('Only grouping changes')
     axs2[2].set_title('Only skin changes')
@@ -929,5 +935,5 @@ if __name__ == '__main__':
     fig2.tight_layout()
     fig1.savefig('./plots/grouping_typical.png')
     fig2.savefig('./plots/grouping_all.png')
-#    plt.close(fig1)
-#    plt.close(fig2)
+    plt.close(fig1)
+    plt.close(fig2)

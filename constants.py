@@ -21,7 +21,8 @@ def get_fiber_tot_num():
             fiber_mech_id = fiber_tot_num - 1
     return fiber_tot_num, fiber_mech_id 
 FIBER_TOT_NUM, FIBER_MECH_ID = get_fiber_tot_num()
-FIBER_FIT_ID_LIST = [FIBER_MECH_ID]
+#FIBER_FIT_ID_LIST = [FIBER_MECH_ID]
+FIBER_FIT_ID_LIST = range(FIBER_TOT_NUM)
 
 # Plotting constants
 MARKER_LIST = ['v', 'D', '*', 's', '.', 'o', '.', 'x', 'h', '+']
