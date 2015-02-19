@@ -316,6 +316,13 @@ class Fiber:
             abq_displ_scaled = a[0] + a[1] * abq_displ
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
+            # Use log scale
+            log_scale = False
+            if log_scale:
+                static_force = np.log(static_force)
+                abq_force_interp = np.log(abq_force_interp)
+            else:
+                static_force = np.array(static_force)
             sst = static_force.var(ddof=1) * static_force.shape[0]
             sse = np.linalg.norm(static_force - abq_force_interp) ** 2
             r2 = 1 - sse / sst
@@ -327,10 +334,16 @@ class Fiber:
         self.abq_displ *= 1e6
         self.abq_force *= 1e3
         bounds = ((0., 1000.), (0, 5))
+        # Remove the static force / displ that are not grouped
+        static_displ, static_force = [], []
+        for i in range(self.static_displ.size):
+            if self.stim_group_num_list[i] >= 0:
+                static_displ.append(self.static_displ[i])
+                static_force.append(self.static_force[i])
         res = minimize(
             get_r2, [250., 2.], args=(
-                self.abq_force, self.abq_displ, self.static_force,
-                self.static_displ, -1.), method='L-BFGS-B', bounds=bounds)
+                self.abq_force, self.abq_displ, static_force,
+                static_displ, -1.), method='SLSQP', bounds=bounds)
         self.displ_coeff = res.x
         self.displ_coeff_r2 = -res.fun
         # Make the plot
@@ -455,10 +468,10 @@ class Fiber:
 if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
     run_calibration = False
-    make_plot = True
-    run_fiber_mech = False
+    make_plot = False
+    run_fiber_mech = True
     run_each_fiber = False
-    run_fitting = False
+    run_fitting = True
     use_single_mech = False
     # Run calibration
     if run_calibration:
@@ -604,8 +617,14 @@ if __name__ == '__main__':
                         quantity][:, 0], c=color, ls=ls, label='Predicted by'
                     + quantity)
         # Adjust formatting
-#        for axes in axs:
-#            axes.set_xlim(.390, .550)
+        if fiber_id == 2:
+            xmin, xmax = .39, .54
+        elif fiber_id == 0:
+            xmin, xmax = .35, .56
+        elif fiber_id == 1:
+            xmin, xmax = .40, .60
+        for axes in axs:
+            axes.set_xlim(xmin, xmax)
         axs[1].set_xlabel(r'Displacement (mm)')
         axs[0].set_ylabel('Dynamic mean firing (Hz)')
         axs[1].set_ylabel('Static mean firing (Hz)')
@@ -625,31 +644,32 @@ if __name__ == '__main__':
         plt.close(fig)
     # %% Plot force-displ fitting
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
-    for fiber_id in FIBER_FIT_ID_LIST:
-        # Plot static force/displ
-        fiber = fiber_list[fiber_id]
-        fmt = MARKER_LIST[fiber_id]
-        color = 'k'
-        axs[0].errorbar(
-            fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
-            ['force_mean'], fiber.binned_exp['force_std'],
-            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
-        axs[0].plot(
-            fiber.abq_displ_scaled * 1e-3, fiber.abq_force, ls='-', c=color,
-            label='Model')
-        # Plot force trace
-        fiber_mech.get_stim_block_trace_exp()
-        for stim_group in fiber_mech.stim_group_dict:
-            for i, stim_num in enumerate(stim_group['stim_num']):
-                axs[1].plot(
-                    stim_group['traces_exp'][i]['time'],
-                    stim_group['traces_exp'][i]['force'], '.', color='.5',
-                    label='Experiment')
-        # Wrote two separate loops so that the model traces always stay on top
-        for stim_group in fiber_mech.stim_group_dict:
+    fiber_id = FIBER_MECH_ID
+    # Plot static force/displ
+    fiber = fiber_list[fiber_id]
+    fmt = MARKER_LIST[fiber_id]
+    color = 'k'
+    axs[0].errorbar(
+        fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
+        ['force_mean'], fiber.binned_exp['force_std'],
+        fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+    axs[0].plot(
+        fiber.abq_displ_scaled * 1e-3, fiber.abq_force, ls='-', c=color,
+        label='Model')
+    # Plot force trace
+    fiber_mech.get_stim_block_trace_exp()
+    for stim_group in fiber_mech.stim_group_dict:
+        for i, stim_num in enumerate(stim_group['stim_num']):
             axs[1].plot(
-                stim_group['traces_fem']['time'], stim_group['traces_fem']
-                ['force'] * 1e3, '-k', label='Model')
+                stim_group['traces_exp'][i]['time'],
+                stim_group['traces_exp'][i]['force'], '.', color='.5',
+                label='Experiment')
+    # Wrote two separate loops so that the model traces always stay on top
+    for stim_group in fiber_mech.stim_group_dict:
+        axs[1].plot(
+            stim_group['traces_fem']['time'], stim_group['traces_fem']
+            ['force'] * 1e3, '-k', label='Model')
+    # Formatting
     axs[0].legend(loc=2)
     axs[0].set_xlabel(r'Static displacement (mm)')
     axs[0].set_ylabel(r'Static force (mN)')

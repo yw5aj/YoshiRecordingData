@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from scipy.stats import pearsonr
 import pickle
-from constants import (DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
-                       FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE)
+from constants import (
+    DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS, FIBER_MECH_ID,
+    FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE)
 from fitlif import trans_param_to_predicted_fr
 import copy
 
@@ -438,7 +439,7 @@ if __name__ == '__main__':
     np.savetxt('./csvs/temporal_r2_table.csv', temporal_pearsonr_table**2,
                delimiter=',')
     # %% Plot temporal traces
-    fiber_id = FIBER_FIT_ID_LIST[0]
+    fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
@@ -554,7 +555,7 @@ if __name__ == '__main__':
     np.savetxt('./csvs/temporal_rate_r2_table.csv',
                temporal_rate_pearsonr_table**2, delimiter=',')
     # %% Plot temporal rate traces
-    fiber_id = FIBER_FIT_ID_LIST[0]
+    fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
         for k, control in enumerate(control_list):
@@ -623,7 +624,7 @@ if __name__ == '__main__':
     fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)
     plt.close(fig)
     # %% Plot all simulations together
-    fiber_id = FIBER_FIT_ID_LIST[0]
+    fiber_id = FIBER_MECH_ID
     # Calculate all the IQRs and compare force vs. displ
 
     def get_slope_iqr(simFiberLevelList, quantity):
@@ -659,68 +660,69 @@ if __name__ == '__main__':
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
     # %% Start plotting
     # Factors explaining the force-alignment - static
-    fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
-    for i, factor in enumerate(factor_list[:3]):
-        for k, quantity in enumerate(quantity_list[-3:]):
-            # for level in level_plot_list:
-            for level in range(level_num):
-                alpha = 1. - .4 * abs(level-2)
-                color = (0, 0, 0, alpha)
-                fmt = LS_LIST[i]
-                label = quantile_label_list[level]
-                simFiber = simFiberList[i][level][0]
-                axs[0, k].plot(
-                    simFiber.static_displ_exp,
-                    simFiber.static_force_exp,
-                    c=color, mec=color, ms=MS,
-                    ls=fmt, label=label)
-                axs[1, k].plot(
-                    simFiber.static_displ_exp,
-                    simFiber.predicted_fr[fiber_id][quantity].T[1],
-                    c=color, mec=color, ms=MS,
-                    ls=fmt, label=label)
-                axs[2, k].plot(
-                    simFiber.static_force_exp,
-                    simFiber.predicted_fr[fiber_id][quantity].T[1],
-                    c=color, mec=color, ms=MS,
-                    ls=fmt, label=label)
-    # X and Y limits
-    for axes in axs[0:, :].ravel():
-        axes.set_ylim(0, 15)
-    for axes in axs[1:, :].ravel():
-        axes.set_ylim(0, 45)
-    for axes in axs[:2, :].ravel():
-        axes.set_xlim(.35, .75)
-        axes.set_xticks(np.arange(.35, .85, .1))
-    for axes in axs[2, :].ravel():
-        axes.set_xlim(0, 10)
-    # Axes and panel labels
-    for i, axes in enumerate(axs[0, :].ravel()):
-        axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
-    for axes in axs[:2, :].ravel():
-        axes.set_xlabel(r'Static displacement (mm)')
-    for axes in axs[2, :].ravel():
-        axes.set_xlabel('Static force (mN)')
-    for axes in axs[0, :1].ravel():
-        axes.set_ylabel('Static force (mN)')
-    for axes in axs[1:, 0].ravel():
-        axes.set_ylabel('Predicted mean firing (Hz)')
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    # Legend
-    # The line type labels
-    handles, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
-#    axs[0, 0].legend(handles[2::5], [factor_display[5:
-#        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
-    # The 5 quantile labels
-    axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile',
-                     'Median'], loc=2)
-    # Save
-    fig.tight_layout()
-    fig.savefig('./plots/sim_compare_variance.png', dpi=300)
-    plt.close(fig)
+    for fiber_id in FIBER_FIT_ID_LIST:
+        fig, axs = plt.subplots(3, 3, figsize=(6.83, 6))
+        for i, factor in enumerate(factor_list[:3]):
+            for k, quantity in enumerate(quantity_list[-3:]):
+                # for level in level_plot_list:
+                for level in range(level_num):
+                    alpha = 1. - .4 * abs(level-2)
+                    color = (0, 0, 0, alpha)
+                    fmt = LS_LIST[i]
+                    label = quantile_label_list[level]
+                    simFiber = simFiberList[i][level][0]
+                    axs[0, k].plot(
+                        simFiber.static_displ_exp,
+                        simFiber.static_force_exp,
+                        c=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    axs[1, k].plot(
+                        simFiber.static_displ_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[1],
+                        c=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    axs[2, k].plot(
+                        simFiber.static_force_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[1],
+                        c=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+        # X and Y limits
+        for axes in axs[0:, :].ravel():
+            axes.set_ylim(0, 15)
+        for axes in axs[1:, :].ravel():
+            axes.set_ylim(0, 45)
+        for axes in axs[:2, :].ravel():
+            axes.set_xlim(.35, .75)
+            axes.set_xticks(np.arange(.35, .85, .1))
+        for axes in axs[2, :].ravel():
+            axes.set_xlim(0, 10)
+        # Axes and panel labels
+        for i, axes in enumerate(axs[0, :].ravel()):
+            axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
+        for axes in axs[:2, :].ravel():
+            axes.set_xlabel(r'Static displacement (mm)')
+        for axes in axs[2, :].ravel():
+            axes.set_xlabel('Static force (mN)')
+        for axes in axs[0, :1].ravel():
+            axes.set_ylabel('Static force (mN)')
+        for axes in axs[1:, 0].ravel():
+            axes.set_ylabel('Predicted mean firing (Hz)')
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
+                      fontsize=12, fontweight='bold', va='top')
+        # Legend
+        # The line type labels
+        handles, labels = axs[0, 0].get_legend_handles_labels()
+        axs[0, 0].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
+    #    axs[0, 0].legend(handles[2::5], [factor_display[5:
+    #        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
+        # The 5 quantile labels
+        axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile',
+                         'Median'], loc=2)
+        # Save
+        fig.tight_layout()
+        fig.savefig('./plots/sim_compare_variance_%d.png' % fiber_id, dpi=300)
+        plt.close(fig)
     # %% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
     for i, factor in enumerate(factor_list[:3]):
@@ -807,7 +809,7 @@ if __name__ == '__main__':
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
     # %% See how Lesniak model would say!
-    fiber_id = FIBER_FIT_ID_LIST[0]
+    fiber_id = FIBER_MECH_ID
     control = 'Force'
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
     active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
