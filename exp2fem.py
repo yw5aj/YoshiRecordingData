@@ -469,7 +469,7 @@ if __name__ == '__main__':
     # Decide whether we want to run all the FEA this time!
     run_calibration = False
     make_plot = False
-    run_fiber_mech = True
+    run_fiber_mech = False
     run_each_fiber = False
     run_fitting = True
     use_single_mech = False
@@ -620,7 +620,7 @@ if __name__ == '__main__':
         if fiber_id == 2:
             xmin, xmax = .39, .54
         elif fiber_id == 0:
-            xmin, xmax = .35, .56
+            xmin, xmax = .40, .58
         elif fiber_id == 1:
             xmin, xmax = .40, .60
         for axes in axs:
