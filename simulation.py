@@ -714,9 +714,8 @@ if __name__ == '__main__':
         # Legend
         # The line type labels
         handles, labels = axs[0, 0].get_legend_handles_labels()
-        axs[0, 0].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'], loc=2)
-    #    axs[0, 0].legend(handles[2::5], [factor_display[5:
-    #        ].capitalize() for factor_display in factor_display_list[:3]], loc=2)
+        axs[0, 0].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'],
+                         loc=2)
         # The 5 quantile labels
         axs[0, 1].legend(handles[:3], ['Extreme', 'Quartile',
                          'Median'], loc=2)
@@ -724,6 +723,66 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.savefig('./plots/sim_compare_variance_%d.png' % fiber_id, dpi=300)
         plt.close(fig)
+    # %% Plot fiber 0 and 1, stress&force, strain&displ
+    fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
+    for i, factor in enumerate(factor_list[:3]):
+        for level in range(level_num):
+            alpha = 1. - .4 * abs(level-2)
+            color = (0, 0, 0, alpha)
+            fmt = LS_LIST[i]
+            label = quantile_label_list[level]
+            axs[0, 0].plot(
+                simFiberList[i][level][0].static_displ_exp,
+                simFiberList[i][level][0].predicted_fr[2]['strain'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+            axs[1, 0].plot(
+                simFiberList[i][level][0].static_force_exp,
+                simFiberList[i][level][0].predicted_fr[2]['stress'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+            axs[0, 1].plot(
+                simFiberList[i][level][0].static_displ_exp,
+                simFiberList[i][level][0].predicted_fr[0]['strain'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+            axs[1, 1].plot(
+                simFiberList[i][level][0].static_force_exp,
+                simFiberList[i][level][0].predicted_fr[0]['stress'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+            axs[0, 2].plot(
+                simFiberList[i][level][0].static_displ_exp,
+                simFiberList[i][level][0].predicted_fr[1]['strain'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+            axs[1, 2].plot(
+                simFiberList[i][level][0].static_force_exp,
+                simFiberList[i][level][0].predicted_fr[1]['stress'].T[1],
+                c=color, mec=color, ms=MS, ls=fmt, label=label)
+    # Formatting
+    for axes in axs[0, :].ravel():
+        axes.set_xlabel(r'Static displacement (mm)')
+    for axes in axs[1, :].ravel():
+        axes.set_xlabel(r'Static force (mN)')
+        axes.set_xlim(0, 10)
+    for row, axes in enumerate(axs[:, 0].ravel()):
+        axes.set_ylabel('Predicted mean firing (Hz)\n%s-based model' %
+                        ['Strain', 'Stress'][row])
+    for axes in axs.ravel():
+        axes.set_ylim(0, 45)
+    for i, axes in enumerate(axs[0, :].ravel()):
+        axes.set_title('Fiber #%d' % (i+1))
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Legend
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[1, 1].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'],
+                     loc=4)
+    # The 5 quantile labels
+    axs[1, 2].legend(handles[:3], ['Extreme', 'Quartile',
+                     'Median'], loc=4)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/sim_compare_variance_other_fibers.png', dpi=300)
+    plt.close(fig)
     # %% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
     for i, factor in enumerate(factor_list[:3]):
