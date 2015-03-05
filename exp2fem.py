@@ -470,7 +470,7 @@ if __name__ == '__main__':
     run_calibration = False
     make_plot = False
     run_fiber_mech = False
-    run_each_fiber = True
+    run_each_fiber = False
     run_fitting = True
     use_single_mech = False
     # Run calibration

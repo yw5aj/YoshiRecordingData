@@ -2,7 +2,7 @@ import os
 
 # SI units
 DT = 1E-4  # sec
-RESISTANCE_LIF = 40e8  # ohm
+RESISTANCE_LIF = 15e8  # ohm
 CAPACITANCE_LIF = 1e-11  # F
 VOLTAGE_THRESHOLD_LIF = 30e-3  # V
 
@@ -36,7 +36,7 @@ for key in FIBER_DICT:
             'r': 40e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
     elif FIBER_DICT[key] == '2012042001V_01.mat':
         FIBER_RCV[key] = {
-            'r': 50e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
+            'r': 60e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
     elif FIBER_DICT[key] == '2012042702V_01.mat':
         FIBER_RCV[key] = {
             'r': 15e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
