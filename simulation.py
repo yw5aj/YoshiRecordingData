@@ -659,6 +659,137 @@ if __name__ == '__main__':
             sim_table[3+k, i] = slope_iqr[1]
     sim_table_sum = sim_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
+    # %% See how Lesniak model would say!
+    fiber_id = FIBER_MECH_ID
+    control = 'Force'
+    resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
+    active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
+                            [8, 7, 4, 2]]
+    grouping_df = pd.DataFrame(
+        {'Resting': resting_grouping_list,
+         'Active': active_grouping_list},
+        index=['Group #%d' % (i+1) for i in range(len(active_grouping_list))])
+    grouping_df = grouping_df[['Resting', 'Active']]
+    typical_grouping_id_list = [0, 1]
+    base_grouping = resting_grouping_list[0]
+    # Convenenience function to get fiber response from different grouping
+    
+    def get_fr_from_hc_grouping(grouping, skinphase, quantity, fiber_id=fiber_id,
+                             base_grouping=base_grouping):
+        if skinphase == 'active':
+            simFiber = simFiberList[0][1][1]
+        elif skinphase == 'resting':
+            simFiber = simFiberList[0][0][1]
+        trans_params_fit = simFiberList[0][1][1].trans_params
+        dr = grouping[0] / base_grouping[0]
+        trans_params = copy.deepcopy(trans_params_fit)
+        trans_params[fiber_id][quantity][0] *= dr
+        trans_params[fiber_id][quantity][1] *= dr
+        predicted_fr = simFiber.get_predicted_fr(trans_params=trans_params)
+        static_force_exp = simFiber.static_force_exp
+        static_fr = predicted_fr[fiber_id][quantity][:, 1]
+        return static_force_exp, static_fr
+    fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
+    fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
+    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list[grouping_id]
+        grouping = dict(resting=resting_grouping, active=active_grouping)
+        marker = MARKER_LIST[grouping_id]
+        color = COLOR_LIST[grouping_id]
+        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
+        for i, quantity in enumerate(quantity_list[-3:]):
+            # Plot different responses, from, say resting
+            def plot_phase(groupphase, skinphase, axes, **kwargs):
+                kwargs['label'] = '%s skin, %s grouping' % (
+                    skinphase.capitalize(),
+                    groupphase)
+                if groupphase == 'resting' and skinphase == 'resting':
+                    kwargs['ls'] = '-'
+                elif groupphase == 'resting' and skinphase == 'active':
+                    kwargs['ls'] = '-.'
+                elif groupphase == 'active' and skinphase == 'resting':
+                    kwargs['ls'] = ':'
+                elif groupphase == 'active' and skinphase == 'active':
+                    kwargs['ls'] = '--'
+                force, response = get_fr_from_hc_grouping(grouping[groupphase],
+                                                       skinphase, quantity)
+                axes.plot(force, response, **kwargs)
+                return axes
+            # Do fig1, for two typical cases
+            if grouping_id in typical_grouping_id_list:
+                j = typical_grouping_id_list.index(grouping_id)
+                plot_phase('resting', 'resting', axs1[j, i], **kwargs)
+                plot_phase('resting', 'active', axs1[j, i], **kwargs)
+                plot_phase('active', 'active', axs1[j, i], **kwargs)
+            # Do fig2, for multiple sensitivities
+            if quantity == 'stress':
+                plot_phase('active', 'active', axs2[0], **kwargs)
+                plot_phase('resting', 'resting', axs2[0], **kwargs)
+                plot_phase('active', 'resting', axs2[1], **kwargs)
+                plot_phase('resting', 'resting', axs2[1], **kwargs)
+                plot_phase('resting', 'active', axs2[2], **kwargs)
+                plot_phase('resting', 'resting', axs2[2], **kwargs)
+    # Add legends for fig 2
+    handles, labels = axs2[0].get_legend_handles_labels()
+    handle = [[] for i in range(3)]
+    label = [[] for i in range(3)]
+    import matplotlib.lines as mlines
+    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]] +\
+                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
+                               mec=h.get_mec(), mfc=h.get_mfc())
+                 for h in handles[1::2]]
+    label[0] = labels[:2] + [
+        'Fiber #%d' % (i + 1)
+        for i in range(len(resting_grouping_list))]
+    handles, labels = axs2[1].get_legend_handles_labels()
+    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[1] = labels[:2]
+    handles, labels = axs2[2].get_legend_handles_labels()
+    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[2] = labels[:2]
+    for axes_id, axes in enumerate(axs2):
+        axes.legend(handle[axes_id], label[axes_id], loc=2)
+        axes.set_ylim(0, 70)
+    # Add legends for fig 1
+    for axes_id, axes in enumerate(axs1[0]):
+        if axes_id == 0:
+            axes.legend(loc=2)
+        axes.set_ylim(0, 60)
+        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[0] + 1),
+                  transform=axes.transAxes, fontsize=8)
+    for axes_id, axes in enumerate(axs1[1]):
+        if axes_id == 0:
+            axes.legend(loc=2)
+        axes.set_ylim(0, 80)
+        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[1] + 1),
+                  transform=axes.transAxes, fontsize=8)
+    # Add labels
+    for axes in np.r_[axs1.T[0], axs2]:
+        axes.set_ylabel('Predicted mean firing (Hz)')
+    for axes in np.r_[axs1[-1], [axs2[-1]]]:
+        axes.set_xlabel('Force (mN)')
+    # Add titles
+    for axes_id, axes in enumerate(axs1[0]):
+        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'][axes_id])
+    axs2[0].set_title('Both skin and grouping change')
+    axs2[1].set_title('Only grouping changes')
+    axs2[2].set_title('Only skin changes')
+    # Format and save
+    for axes_id, axes in enumerate(axs1.ravel()):
+        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    for axes_id, axes in enumerate(axs2.ravel()):
+        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    fig1.tight_layout()
+    fig2.tight_layout()
+    fig1.savefig('./plots/grouping_typical.png')
+    fig2.savefig('./plots/grouping_all.png')
+    plt.close(fig1)
+    plt.close(fig2)    
     # %% Start plotting
     # Factors explaining the force-alignment - static
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -723,7 +854,7 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.savefig('./plots/sim_compare_variance_%d.png' % fiber_id, dpi=300)
         plt.close(fig)
-    # %% Plot fiber 0 and 1, stress&force, strain&displ
+    # %% Plot the other two fibers, stress&force, strain&displ
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
     for i, factor in enumerate(factor_list[:3]):
         for level in range(level_num):
@@ -782,6 +913,67 @@ if __name__ == '__main__':
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance_other_fibers.png', dpi=300)
+    plt.close(fig)
+    # %% Plot the other two groupings, stress&force, strain&displ
+    fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
+    grouping_elif_list = [[8, 5, 3, 1], [10, 5, 1, 1], [6, 5, 3, 3]]
+    base_grouping = grouping_elif_list[0]
+
+    def get_fr_from_grouping(simFiber, grouping, quantity,
+                             fiber_id=FIBER_MECH_ID,
+                             base_grouping=base_grouping):
+        trans_params_fit = simFiber.trans_params
+        dr = grouping[0] / base_grouping[0]
+        trans_params = copy.deepcopy(trans_params_fit)
+        trans_params[fiber_id][quantity][0] *= dr
+        trans_params[fiber_id][quantity][1] *= dr
+        predicted_fr = simFiber.get_predicted_fr(trans_params=trans_params)
+        static_fr = predicted_fr[fiber_id][quantity][:, 1]
+        return static_fr
+    for i, factor in enumerate(factor_list[:3]):
+        for level in range(level_num):
+            alpha = 1. - .4 * abs(level-2)
+            color = (0, 0, 0, alpha)
+            fmt = LS_LIST[i]
+            label = quantile_label_list[level]
+            simFiber = simFiberList[i][level][0]
+            for col, grouping in enumerate(grouping_elif_list):
+                for row, quantity in enumerate(['strain', 'stress']):
+                    response = get_fr_from_grouping(
+                        simFiber, grouping, quantity)
+                    if row == 0:
+                        stimuli = simFiber.static_displ_exp
+                    elif row == 1:
+                        stimuli = simFiber.static_force_exp
+                    axs[row, col].plot(stimuli, response, c=color, mec=color,
+                                       ms=MS, ls=fmt, label=label)
+    # Formatting
+    for axes in axs[0, :].ravel():
+        axes.set_xlabel(r'Static displacement (mm)')
+    for axes in axs[1, :].ravel():
+        axes.set_xlabel(r'Static force (mN)')
+        axes.set_xlim(0, 10)
+    for row, axes in enumerate(axs[:, 0].ravel()):
+        axes.set_ylabel('Predicted mean firing (Hz)\n%s-based model' %
+                        ['Strain', 'Stress'][row])
+    for axes in axs.ravel():
+        axes.set_ylim(0, 45)
+    for i, axes in enumerate(axs[0, :].ravel()):
+        axes.set_title('Grouping: %s' % str(grouping_elif_list[i]))
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Legend
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[1, 1].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'],
+                     loc=4)
+    # The 5 quantile labels
+    axs[1, 2].legend(handles[:3], ['Extreme', 'Quartile',
+                     'Median'], loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/sim_compare_variance_groupings.png', dpi=300)
     plt.close(fig)
     # %% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
@@ -868,134 +1060,4 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
-    # %% See how Lesniak model would say!
-    fiber_id = FIBER_MECH_ID
-    control = 'Force'
-    resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
-    active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
-                            [8, 7, 4, 2]]
-    grouping_df = pd.DataFrame(
-        {'Resting': resting_grouping_list,
-         'Active': active_grouping_list},
-        index=['Group #%d' % (i+1) for i in range(len(active_grouping_list))])
-    grouping_df = grouping_df[['Resting', 'Active']]
-    typical_grouping_id_list = [0, 1]
-    base_grouping = resting_grouping_list[0]
-    # Convenenience function to get fiber response from different grouping
 
-    def get_fr_from_grouping(grouping, skinphase, quantity, fiber_id=fiber_id,
-                             base_grouping=base_grouping):
-        if skinphase == 'active':
-            simFiber = simFiberList[0][1][1]
-        elif skinphase == 'resting':
-            simFiber = simFiberList[0][0][1]
-        trans_params_fit = simFiberList[0][1][1].trans_params
-        dr = grouping[0] / base_grouping[0]
-        trans_params = copy.deepcopy(trans_params_fit)
-        trans_params[fiber_id][quantity][0] *= dr
-        trans_params[fiber_id][quantity][1] *= dr
-        predicted_fr = simFiber.get_predicted_fr(trans_params=trans_params)
-        static_force_exp = simFiber.static_force_exp
-        static_fr = predicted_fr[fiber_id][quantity][:, 1]
-        return static_force_exp, static_fr
-    fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
-    fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-        for i, quantity in enumerate(quantity_list[-3:]):
-            # Plot different responses, from, say resting
-            def plot_phase(groupphase, skinphase, axes, **kwargs):
-                kwargs['label'] = '%s skin, %s grouping' % (
-                    skinphase.capitalize(),
-                    groupphase)
-                if groupphase == 'resting' and skinphase == 'resting':
-                    kwargs['ls'] = '-'
-                elif groupphase == 'resting' and skinphase == 'active':
-                    kwargs['ls'] = '-.'
-                elif groupphase == 'active' and skinphase == 'resting':
-                    kwargs['ls'] = ':'
-                elif groupphase == 'active' and skinphase == 'active':
-                    kwargs['ls'] = '--'
-                force, response = get_fr_from_grouping(grouping[groupphase],
-                                                       skinphase, quantity)
-                axes.plot(force, response, **kwargs)
-                return axes
-            # Do fig1, for two typical cases
-            if grouping_id in typical_grouping_id_list:
-                j = typical_grouping_id_list.index(grouping_id)
-                plot_phase('resting', 'resting', axs1[j, i], **kwargs)
-                plot_phase('resting', 'active', axs1[j, i], **kwargs)
-                plot_phase('active', 'active', axs1[j, i], **kwargs)
-            # Do fig2, for multiple sensitivities
-            if quantity == 'stress':
-                plot_phase('active', 'active', axs2[0], **kwargs)
-                plot_phase('resting', 'resting', axs2[0], **kwargs)
-                plot_phase('active', 'resting', axs2[1], **kwargs)
-                plot_phase('resting', 'resting', axs2[1], **kwargs)
-                plot_phase('resting', 'active', axs2[2], **kwargs)
-                plot_phase('resting', 'resting', axs2[2], **kwargs)
-    # Add legends for fig 2
-    handles, labels = axs2[0].get_legend_handles_labels()
-    handle = [[] for i in range(3)]
-    label = [[] for i in range(3)]
-    import matplotlib.lines as mlines
-    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]] +\
-                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
-                               mec=h.get_mec(), mfc=h.get_mfc())
-                 for h in handles[1::2]]
-    label[0] = labels[:2] + [
-        'Fiber #%d' % (i + 1)
-        for i in range(len(resting_grouping_list))]
-    handles, labels = axs2[1].get_legend_handles_labels()
-    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[1] = labels[:2]
-    handles, labels = axs2[2].get_legend_handles_labels()
-    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[2] = labels[:2]
-    for axes_id, axes in enumerate(axs2):
-        axes.legend(handle[axes_id], label[axes_id], loc=2)
-        axes.set_ylim(0, 70)
-    # Add legends for fig 1
-    for axes_id, axes in enumerate(axs1[0]):
-        if axes_id == 0:
-            axes.legend(loc=2)
-        axes.set_ylim(0, 60)
-        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[0] + 1),
-                  transform=axes.transAxes, fontsize=8)
-    for axes_id, axes in enumerate(axs1[1]):
-        if axes_id == 0:
-            axes.legend(loc=2)
-        axes.set_ylim(0, 80)
-        axes.text(.1, .5, 'Group #%d' % (typical_grouping_id_list[1] + 1),
-                  transform=axes.transAxes, fontsize=8)
-    # Add labels
-    for axes in np.r_[axs1.T[0], axs2]:
-        axes.set_ylabel('Predicted mean firing (Hz)')
-    for axes in np.r_[axs1[-1], [axs2[-1]]]:
-        axes.set_xlabel('Force (mN)')
-    # Add titles
-    for axes_id, axes in enumerate(axs1[0]):
-        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'][axes_id])
-    axs2[0].set_title('Both skin and grouping change')
-    axs2[1].set_title('Only grouping changes')
-    axs2[2].set_title('Only skin changes')
-    # Format and save
-    for axes_id, axes in enumerate(axs1.ravel()):
-        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    for axes_id, axes in enumerate(axs2.ravel()):
-        axes.text(-.125, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    fig1.tight_layout()
-    fig2.tight_layout()
-    fig1.savefig('./plots/grouping_typical.png')
-    fig2.savefig('./plots/grouping_all.png')
-    plt.close(fig1)
-    plt.close(fig2)
