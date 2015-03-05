@@ -21,7 +21,7 @@ from cleandata.convert import CleanFiber
 from constants import (
     DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     STATIC_START, STATIC_END, FIBER_MECH_ID, FIBER_FIT_ID_LIST,
-    EVAL_DISPL, EVAL_FORCE, LS_LIST)
+    EVAL_DISPL, EVAL_FORCE, LS_LIST, FIBER_RCV)
 quantity_name_list = ['force', 'displ', 'stress', 'strain', 'sener']
 
 
@@ -317,7 +317,7 @@ class Fiber:
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
             # Use log scale
-            log_scale = False
+            log_scale = True
             if log_scale:
                 static_force = np.log(static_force)
                 abq_force_interp = np.log(abq_force_interp)
@@ -470,7 +470,7 @@ if __name__ == '__main__':
     run_calibration = False
     make_plot = False
     run_fiber_mech = False
-    run_each_fiber = False
+    run_each_fiber = True
     run_fitting = True
     use_single_mech = False
     # Run calibration
@@ -541,17 +541,17 @@ if __name__ == '__main__':
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                 # Perform the fitting for diff-form
-                from fitlif import (
-                    fit_trans_param, trans_param_to_predicted_fr,
-                    get_lstsq_fit)
+                from fitlif import LifModel
+                lifModel = LifModel(**FIBER_RCV[fiber.fiber_id])
                 target_fr_array = np.c_[fiber.lumped_dict['stim_num'],
                                         fiber.lumped_dict['static_fr'],
                                         fiber.lumped_dict['dynamic_fr'],
                                         ]
                 if run_fitting:
-                    fiber.trans_param[quantity_name] = fit_trans_param(
-                        quantity_dict_list, target_fr_array)
-#                    fiber.trans_param[quantity_name] = get_lstsq_fit(
+                    fiber.trans_param[quantity_name] = \
+                        lifModel.fit_trans_param(
+                            quantity_dict_list, target_fr_array)
+#                    fiber.trans_param[quantity_name] = lifModel.get_lstsq_fit(
 #                        quantity_dict_list, target_fr_array)
                     with open('./pickles/trans_params_%d.pkl' % fiber.fiber_id,
                               'wb') as f:
@@ -560,9 +560,10 @@ if __name__ == '__main__':
                     with open('./pickles/trans_params_%d.pkl' % fiber.fiber_id,
                               'rb') as f:
                         fiber.trans_param = pickle.load(f)
-                fiber.lif_fr[quantity_name] = trans_param_to_predicted_fr(
-                    quantity_dict_list, fiber.trans_param[quantity_name])[:,
-                                                                          1:]
+                fiber.lif_fr[quantity_name] = \
+                    lifModel.trans_param_to_predicted_fr(
+                        quantity_dict_list, fiber.trans_param[quantity_name])[
+                            :, 1:]
 
                 def get_lif_r2(target_fr_array, predicted_fr):
                     predicted_fr_array = np.empty_like(target_fr_array)

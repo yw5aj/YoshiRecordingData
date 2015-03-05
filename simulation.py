@@ -14,8 +14,8 @@ from scipy.stats import pearsonr
 import pickle
 from constants import (
     DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS, FIBER_MECH_ID,
-    FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE)
-from fitlif import trans_param_to_predicted_fr
+    FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE, FIBER_RCV)
+from fitlif import LifModel
 import copy
 
 
@@ -199,8 +199,9 @@ class SimFiber:
                     'max_index': self.traces[i]['max_index']}
                     for i in range(stim_num)]
                 # Calculate
+                lifModel = LifModel(**FIBER_RCV[fiber_id])
                 predicted_fr[fiber_id][quantity] =\
-                    trans_param_to_predicted_fr(
+                    lifModel.trans_param_to_predicted_fr(
                         quantity_dict_list, trans_params[fiber_id][quantity])
         # Update instance if needed
         if update_instance:
