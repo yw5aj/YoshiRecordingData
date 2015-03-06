@@ -619,13 +619,18 @@ if __name__ == '__main__':
                     + quantity)
         # Adjust formatting
         if fiber_id == 2:
-            xmin, xmax = .39, .54
+            xmin, xmax = .39, .55
+            ymin, ymax = -5, 50
         elif fiber_id == 0:
-            xmin, xmax = .40, .58
+            xmin, xmax = .40, .57
+            ymin, ymax = 0, 50
         elif fiber_id == 1:
             xmin, xmax = .40, .60
+            ymin, ymax = -5, 25
         for axes in axs:
             axes.set_xlim(xmin, xmax)
+        axs[1].set_ylim(ymin, ymax)
+        axs[0].set_ylim(bottom=-5)
         axs[1].set_xlabel(r'Displacement (mm)')
         axs[0].set_ylabel('Dynamic mean firing (Hz)')
         axs[1].set_ylabel('Static mean firing (Hz)')
@@ -680,7 +685,7 @@ if __name__ == '__main__':
     axs[1].set_xlabel(r'Time (s)')
     axs[1].set_ylabel(r'Force (mN)')
     # Setting the range
-    axs[0].set_xlim(.375, .575)
+    axs[0].set_xlim(.39, .55)
     axs[0].set_ylim(0, 10)
     # Adding panel labels
     for axes_id, axes in enumerate(axs.ravel()):

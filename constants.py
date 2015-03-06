@@ -42,7 +42,7 @@ for key in FIBER_DICT:
             'r': 15e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
 
 # Plotting constants
-MARKER_LIST = ['v', 'D', '*', 's', '.', 'o', '.', 'x', 'h', '+']
+MARKER_LIST = ['v', 'D', 'o', 's', '.', '*', '.', 'x', 'h', '+']
 COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':']
 MS = 6
