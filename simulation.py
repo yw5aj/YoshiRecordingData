@@ -673,7 +673,7 @@ if __name__ == '__main__':
     typical_grouping_id_list = [0, 1]
     base_grouping = resting_grouping_list[0]
     # Convenenience function to get fiber response from different grouping
-    
+
     def get_fr_from_hc_grouping(grouping, skinphase, quantity, fiber_id=fiber_id,
                              base_grouping=base_grouping):
         if skinphase == 'active':
@@ -789,7 +789,7 @@ if __name__ == '__main__':
     fig1.savefig('./plots/grouping_typical.png')
     fig2.savefig('./plots/grouping_all.png')
     plt.close(fig1)
-    plt.close(fig2)    
+    plt.close(fig2)
     # %% Start plotting
     # Factors explaining the force-alignment - static
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -1060,4 +1060,132 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
-
+    # %% The huge simulation figure in JN paper
+    fig, axs = plt.subplots(5, 3, figsize=(6.83, 9.19))
+    mquantity_list = ['mstress', 'mstrain', 'msener']
+    cquantity_list = ['cy', 'cpress']
+    for i, factor in enumerate(factor_list[:3]):
+        for level in level_plot_list:
+            for stim in stim_plot_list:
+                alpha = 1. - .65 * abs(level - 2)
+                if stim == 2:
+                    color = (0, 0, 0, alpha)
+                elif stim == 1:
+                    color = (1, 0, 0, alpha)
+                elif stim == 3:
+                    color = (0, 0, 1, alpha)
+                ls = LS_LIST[i]
+                kwargs = dict(ls=ls, c=color, label=quantile_label_list[level])
+                # First column, temporal progression
+                simFiber = simFiberList[i][level][0]
+                axs[0, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['displ'] * 1e3,
+                    **kwargs)
+                axs[1, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['strain'],
+                    **kwargs)
+                simFiber = simFiberList[i][level][1]
+                axs[2, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['press'] * 1e-3,
+                    **kwargs)
+                axs[3, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['stress'] * 1e-3,
+                    **kwargs)
+                axs[4, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['sener'] * 1e-3,
+                    **kwargs)
+                # Second column, temporal rate
+                simFiber = simFiberList[i][level][0]
+                axs[0, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['displ'] * 1e3,
+                    **kwargs)
+                axs[1, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['strain'],
+                    **kwargs)
+                simFiber = simFiberList[i][level][1]
+                axs[2, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['press'] * 1e-3,
+                    **kwargs)
+                axs[3, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['stress'] * 1e-3,
+                    **kwargs)
+                axs[4, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['sener'] * 1e-3,
+                    **kwargs)
+                # Third column, spatial distribution
+                xscale = 1e3
+                dist = simFiberList[i][level][0].dist[stim]
+                axs[0, 2].plot(
+                    dist['cxnew'][-1, :] * xscale,
+                    dist['cy'][-1, :] * 1e-3,
+                    **kwargs)
+                axs[1, 2].plot(
+                    dist['mxnew'][-1, :] * xscale,
+                    dist['mstrain'][-1, :],
+                    **kwargs)
+                dist = simFiberList[i][level][1].dist[stim]
+                axs[2, 2].plot(
+                    dist['cxnew'][-1, :] * xscale,
+                    dist['cpress'][-1, :] * 1e-3,
+                    **kwargs)
+                axs[3, 2].plot(
+                    dist['mxnew'][-1, :] * xscale,
+                    dist['mstress'][-1, :] * 1e-3,
+                    **kwargs)
+                axs[4, 2].plot(
+                    dist['mxnew'][-1, :] * xscale,
+                    dist['msener'][-1, :] * 1e-3,
+                    **kwargs)
+    # Set x and y lim
+    for axes in axs[:, 1].ravel():
+        axes.set_xlim(0, MAX_RATE_TIME)
+    for axes in axs[:, 2].ravel():
+        axes.set_xlim(0, MAX_RADIUS*1e3)
+    # Formatting labels
+    
+    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
+    axs[2, 0].set_ylabel('Internal stress (kPa)')
+    axs[3, 0].set_ylabel('Internal strain')
+    axs[4, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    """
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        if axes_id // 2 in [0]:
+            xloc = -.135
+        elif axes_id // 2 in [1, 2]:
+            xloc = -0.105
+        elif axes_id // 2 in [3, 4]:
+            xloc = -.12
+        axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2)
+                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+                level_plot_list)],
+        [factor_display[5:].capitalize()
+         for factor_display in factor_display_list[:3]], loc=3)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
+        'Quartile', 'Median'], loc=3)
+    # Add subtitles
+    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 1].set_title('Pressure controlled')
+    """
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/paper_simulation.png', dpi=300)
+    plt.close(fig)

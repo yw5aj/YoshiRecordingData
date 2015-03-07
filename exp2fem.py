@@ -631,7 +631,7 @@ if __name__ == '__main__':
             axes.set_xlim(xmin, xmax)
         axs[1].set_ylim(ymin, ymax)
         axs[0].set_ylim(bottom=-5)
-        axs[1].set_xlabel(r'Displacement (mm)')
+        axs[1].set_xlabel(r'Static displacement (mm)')
         axs[0].set_ylabel('Dynamic mean firing (Hz)')
         axs[1].set_ylabel('Static mean firing (Hz)')
         h, l = axs[0].get_legend_handles_labels()
