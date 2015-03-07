@@ -1061,9 +1061,7 @@ if __name__ == '__main__':
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
     # %% The huge simulation figure in JN paper
-    fig, axs = plt.subplots(5, 3, figsize=(7, 9.19))
-    mquantity_list = ['mstress', 'mstrain', 'msener']
-    cquantity_list = ['cy', 'cpress']
+    fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[:3]):
         for level in level_plot_list:
             for stim in stim_plot_list:
@@ -1086,16 +1084,20 @@ if __name__ == '__main__':
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['strain'],
                     **kwargs)
-                simFiber = simFiberList[i][level][1]
                 axs[2, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['sener'] * 1e-3,
+                    **kwargs)
+                simFiber = simFiberList[i][level][1]
+                axs[3, 0].plot(
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['press'] * 1e-3,
                     **kwargs)
-                axs[3, 0].plot(
+                axs[4, 0].plot(
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['stress'] * 1e-3,
                     **kwargs)
-                axs[4, 0].plot(
+                axs[5, 0].plot(
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['sener'] * 1e-3,
                     **kwargs)
@@ -1109,16 +1111,20 @@ if __name__ == '__main__':
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['strain'],
                     **kwargs)
-                simFiber = simFiberList[i][level][1]
                 axs[2, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['sener'] * 1e-3,
+                    **kwargs)
+                simFiber = simFiberList[i][level][1]
+                axs[3, 1].plot(
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['press'] * 1e-3,
                     **kwargs)
-                axs[3, 1].plot(
+                axs[4, 1].plot(
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['stress'] * 1e-3,
                     **kwargs)
-                axs[4, 1].plot(
+                axs[5, 1].plot(
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['sener'] * 1e-3,
                     **kwargs)
@@ -1133,16 +1139,20 @@ if __name__ == '__main__':
                     dist['mxnew'][-1, :] * xscale,
                     dist['mstrain'][-1, :],
                     **kwargs)
-                dist = simFiberList[i][level][1].dist[stim]
                 axs[2, 2].plot(
+                    dist['mxnew'][-1, :] * xscale,
+                    dist['msener'][-1, :] * 1e-3,
+                    **kwargs)
+                dist = simFiberList[i][level][1].dist[stim]
+                axs[3, 2].plot(
                     dist['cxnew'][-1, :] * xscale,
                     dist['cpress'][-1, :] * 1e-3,
                     **kwargs)
-                axs[3, 2].plot(
+                axs[4, 2].plot(
                     dist['mxnew'][-1, :] * xscale,
                     dist['mstress'][-1, :] * 1e-3,
                     **kwargs)
-                axs[4, 2].plot(
+                axs[5, 2].plot(
                     dist['mxnew'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
@@ -1161,24 +1171,27 @@ if __name__ == '__main__':
     # y-axis for the temporal progression
     axs[0, 0].set_ylabel(r'Surface deformation (mm)')
     axs[1, 0].set_ylabel('Internal strain')
-    axs[2, 0].set_ylabel(r'Surface pressure (kPa)')
-    axs[3, 0].set_ylabel('Internal stress (kPa)')
-    axs[4, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[3, 0].set_ylabel(r'Surface pressure (kPa)')
+    axs[4, 0].set_ylabel('Internal stress (kPa)')
+    axs[5, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # y-axis for the temporal rate
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
-    axs[2, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
-    axs[3, 1].set_ylabel(r'Internal stress rate (kPa/s)')
-    axs[4, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    axs[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    axs[3, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
+    axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     # y-axis for the spatial distribution
     axs[0, 2].set_ylabel(r'Surface deformation (mm)')
     axs[1, 2].set_ylabel('Internal strain')
-    axs[2, 2].set_ylabel(r'Surface pressure (kPa)')
-    axs[3, 2].set_ylabel('Internal stress (kPa)')
-    axs[4, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[3, 2].set_ylabel(r'Surface pressure (kPa)')
+    axs[4, 2].set_ylabel('Internal stress (kPa)')
+    axs[5, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.275, 1.13, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.375, 1.13, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
@@ -1387,6 +1400,16 @@ if __name__ == '__main__':
     fig2.savefig('./plots/paper_simulation_prss.png', dpi=300)
     plt.close('all')
     # %% The figure for substrate simulations
+    # Generate fibers needed
+    for i, factor in enumerate(factor_list[-2:]):
+        i = i + 3
+        for level in range(level_num):
+            j = level
+            for k, control in enumerate(control_list):
+                simFiber = SimFiber(factor, level, control)
+                simFiberList[i][j].append(simFiber)
+                print(factor+str(level)+control+' is done.')
+    # %% Do the plotting
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[-2:]):
         i = i + 3
@@ -1399,7 +1422,7 @@ if __name__ == '__main__':
                     color = (1, 0, 0, alpha)
                 elif stim == 3:
                     color = (0, 0, 1, alpha)
-                ls = LS_LIST[i]
+                ls = LS_LIST[i - 3]
                 kwargs = dict(ls=ls, c=color, label=quantile_label_list[level])
                 # First column, temporal progression
                 simFiber = simFiberList[i][level][0]
@@ -1527,8 +1550,8 @@ if __name__ == '__main__':
         handles[len(stim_plot_list)*(len(level_plot_list)//2)
                 + len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
-        [factor_display[5:].capitalize()
-         for factor_display in factor_display_list[:3]], loc=4)
+        [factor_display.capitalize()
+         for factor_display in factor_display_list[-2:]], loc=4)
     # The 5 quantile labels
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=1)
