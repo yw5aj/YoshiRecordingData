@@ -1061,7 +1061,7 @@ if __name__ == '__main__':
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
     # %% The huge simulation figure in JN paper
-    fig, axs = plt.subplots(5, 3, figsize=(6.83, 9.19))
+    fig, axs = plt.subplots(5, 3, figsize=(7, 9.19))
     mquantity_list = ['mstress', 'mstrain', 'msener']
     cquantity_list = ['cy', 'cpress']
     for i, factor in enumerate(factor_list[:3]):
@@ -1147,27 +1147,38 @@ if __name__ == '__main__':
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
     # Set x and y lim
+    for axes in axs[:, 0].ravel():
+        axes.set_xlim(0, MAX_TIME)
     for axes in axs[:, 1].ravel():
         axes.set_xlim(0, MAX_RATE_TIME)
     for axes in axs[:, 2].ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
     # Formatting labels
-    
+    # x-axis
+    axs[-1, 0].set_xlabel('Time (s)')
+    axs[-1, 1].set_xlabel('Time (s)')
+    axs[-1, 2].set_xlabel('Location (mm)')
+    # y-axis for the temporal progression
     axs[0, 0].set_ylabel(r'Surface deformation (mm)')
-    axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
-    axs[2, 0].set_ylabel('Internal stress (kPa)')
-    axs[3, 0].set_ylabel('Internal strain')
+    axs[1, 0].set_ylabel('Internal strain')
+    axs[2, 0].set_ylabel(r'Surface pressure (kPa)')
+    axs[3, 0].set_ylabel('Internal stress (kPa)')
     axs[4, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
-    """
+    # y-axis for the temporal rate
+    axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
+    axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs[2, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
+    axs[3, 1].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs[4, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    # y-axis for the spatial distribution
+    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 2].set_ylabel('Internal strain')
+    axs[2, 2].set_ylabel(r'Surface pressure (kPa)')
+    axs[3, 2].set_ylabel('Internal stress (kPa)')
+    axs[4, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        if axes_id // 2 in [0]:
-            xloc = -.135
-        elif axes_id // 2 in [1, 2]:
-            xloc = -0.105
-        elif axes_id // 2 in [3, 4]:
-            xloc = -.12
-        axes.text(xloc, 1.1, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.275, 1.13, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
@@ -1177,14 +1188,14 @@ if __name__ == '__main__':
                 + len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
-         for factor_display in factor_display_list[:3]], loc=3)
+         for factor_display in factor_display_list[:3]], loc=4)
     # The 5 quantile labels
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
-        'Quartile', 'Median'], loc=3)
+        'Quartile', 'Median'], loc=1)
     # Add subtitles
-    axs[0, 0].set_title('Deformation controlled')
-    axs[0, 1].set_title('Pressure controlled')
-    """
+    axs[0, 0].set_title('Temporal progression')
+    axs[0, 1].set_title('Temporal rate')
+    axs[0, 2].set_title('Spatial distribution')
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_simulation.png', dpi=300)
