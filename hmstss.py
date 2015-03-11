@@ -5,64 +5,90 @@ Created on Wed Mar 11 13:50:27 2015
 @author: Administrator
 """
 
-from constants import FIBER_MECH_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV
+from constants import (FIBER_MECH_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV,
+                       FIBER_FIT_ID_LIST)
 from simulation import SimFiber, quantity_list, stim_num
 from fitlif import LifModel
 import copy
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import pickle
+import os
 
 class HmstssFiber(SimFiber):
 
     def __init__(self, factor, level, control):
         SimFiber.__init__(self, factor, level, control)
+        self.get_fr_fsl_distribution()
 
     def get_fr_fsl_distribution(self, trans_params=None):
+        """
+        Calculate the predicted static, dynamic firing rate and fsl.
+        """
         # Determin whether this is a static call
         update_instance = False
         if trans_params is None:
             update_instance = True
             trans_params = self.trans_params
-        # Calculated predicted fr and fsl
-        # For now, only based on stress, static & dynamic
-        # Fix the fiber_id to 2
-        fiber_id = 2
-        lifModel = LifModel(**FIBER_RCV[fiber_id])
-        quantity = 'mstress'
-        num_mcnc = self.dist[0][quantity].shape[1]
-        # Initialize the arrays to store output
-        fslmat = np.empty((stim_num, num_mcnc))
-        frsmat = np.empty((stim_num, num_mcnc))
-        frdmat = np.empty((stim_num, num_mcnc))
-        for mcnc_id in range(num_mcnc):
-            quantity_dict_list = []
-            for stim_id, dist_dict in enumerate(self.dist):
-                max_index = self.traces[stim_id]['max_index']
-                time = dist_dict['time'].T[0]
-                time_fine = np.arange(0, time.max(), DT)
-                quantity_array = dist_dict[quantity].T[mcnc_id]
-                quantity_array = np.interp(time_fine, time, quantity_array)
-                quantity_dict_list.append({
-                    'quantity_array': quantity_array,
-                    'max_index': max_index})
-            frs, frd, fsl = lifModel.get_fr_fsl(
-                quantity_dict_list, trans_params[fiber_id][quantity[1:]])
-            fslmat[:, mcnc_id] = fsl
-            frsmat[:, mcnc_id] = frs
-            frdmat[:, mcnc_id] = frd
+        fsl_dict_list, frs_dict_list, frd_dict_list = [], [], []
+        for fiber_id in FIBER_FIT_ID_LIST:
+            lifModel = LifModel(**FIBER_RCV[fiber_id])
+            fsl_dict_list.append({})
+            frs_dict_list.append({})
+            frd_dict_list.append({})
+            for quantity in quantity_list[-3:]:
+                mquantity = 'm' + quantity
+                num_mcnc = self.dist[0][mquantity].shape[1]
+                # Initialize the arrays to store output
+                fslmat = np.empty((stim_num, num_mcnc))
+                frsmat = np.empty((stim_num, num_mcnc))
+                frdmat = np.empty((stim_num, num_mcnc))
+                for mcnc_id in range(num_mcnc):
+                    quantity_dict_list = []
+                    for stim_id, dist_dict in enumerate(self.dist):
+                        max_index = self.traces[stim_id]['max_index']
+                        time = dist_dict['time'].T[0]
+                        time_fine = np.arange(0, time.max(), DT)
+                        quantity_array = dist_dict[mquantity].T[mcnc_id]
+                        quantity_array = np.interp(
+                            time_fine, time, quantity_array)
+                        quantity_dict_list.append({
+                            'quantity_array': quantity_array,
+                            'max_index': max_index})
+                    frs, frd, fsl = lifModel.get_fr_fsl(
+                        quantity_dict_list,
+                        trans_params[fiber_id][quantity])
+                    fslmat[:, mcnc_id] = fsl
+                    frsmat[:, mcnc_id] = frs
+                    frdmat[:, mcnc_id] = frd
+                fsl_dict_list[-1][quantity] = fslmat
+                frs_dict_list[-1][quantity] = frsmat
+                frd_dict_list[-1][quantity] = frdmat
         if update_instance:
-            self.fslmat, self.frsmat, self.frdmat = fslmat, frsmat, frdmat
+            for key in ['fsl', 'frs', 'frd']:
+                varname = '%s_dict_list' % key
+                setattr(self, varname, locals()[varname])
+        return fsl_dict_list, frs_dict_list, frd_dict_list
 
 
 if __name__ == '__main__':
-    hmstssFiberList = dict(
-        active=HmstssFiber('SkinThick', 1, 'Force'),
-        resting=HmstssFiber('SkinThick', 0, 'Force'))
+    run_fiber = True
+    if run_fiber:
+        hmstssFiberDict = {
+            'active': {
+                'force': HmstssFiber('SkinThick', 1, 'Force'),
+                'displ': HmstssFiber('SkinThick', 1, 'Displ')},
+            'resting': {
+                'force': HmstssFiber('SkinThick', 0, 'Force'),
+                'displ': HmstssFiber('SkinThick', 0, 'Displ')}}
+        with open('./pickles/hmstss.pkl', 'wb') as f:
+            pickle.dump(hmstssFiberDict, f)
+    else:
+        with open('./pickles/hmstss.pkl', 'rb') as f:
+            hmstssFiberDict = pickle.load(f)
     # %% See how Lesniak model would say!
     fiber_id = FIBER_MECH_ID
-    control = 'Force'
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
     active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
                             [8, 7, 4, 2]]
@@ -73,12 +99,67 @@ if __name__ == '__main__':
     grouping_df = grouping_df[['Resting', 'Active']]
     typical_grouping_id_list = [0, 1]
     base_grouping = resting_grouping_list[0]
-    # Convenenience function to get fiber response from different grouping
+    # %% Define the calculation for other grouping cases and save / load
+
+    def calculate_response_from_hc_grouping(
+            grouping, skinphase, control, base_grouping=base_grouping,
+            savedata=True, updatedata=False):
+        """
+        By default, will first detect whether data got saved, then save if no
+        previous file exists.
+        If savedata = False, then only do the calculations and return outputs.
+        If savedata = True and updatedata = True, then overwrite.
+        """
+        hmstssFiber = hmstssFiberDict[skinphase][control]
+        trans_params_fit = hmstssFiber.trans_params
+        dr = grouping[0] / base_grouping[0]
+        trans_params = copy.deepcopy(trans_params_fit)
+        trans_params[fiber_id][quantity][0] *= dr
+        trans_params[fiber_id][quantity][1] *= dr
+        if dr == 1:
+            fsl_dict_list, frs_dict_list, frd_dict_list = (
+                hmstssFiber.fsl_dict_list, hmstssFiber.frs_dict_list,
+                hmstssFiber.frd_dict_list)
+        else:
+            fsl_dict_list, frs_dict_list, frd_dict_list = \
+                hmstssFiber.get_fr_fsl_distribution(trans_params)
+        stimuli = getattr(
+            hmstssFiber, 'static_%s_exp' % hmstssFiber.control.lower())
+        if savedata:
+            fname = './pickles/%s_%s_%d%d.pkl' % (
+                skinphase, control, base_grouping[0], grouping[0])
+            already_exist = os.path.isfile(fname)
+            if already_exist and not updatedata:
+                pass
+            else:
+                varlist = ['stimuli', 'fsl_dict_list', 'frs_dict_list',
+                           'frd_dict_list']
+                response_grouping = {}
+                for varname in varlist:
+                    response_grouping[varname] = locals()[varname]
+                with open(fname, 'wb') as f:
+                    pickle.dump(response_grouping, f)
+        return stimuli, fsl_dict_list, frs_dict_list, frd_dict_list
+
+    def get_response_from_hc_grouping(
+            grouping, skinphase, quantity, control, response,
+            fiber_id=fiber_id, base_grouping=base_grouping):
+        hmstssFiber = hmstssFiberDict[skinphase][control]
+        trans_params_fit = hmstssFiber.trans_params
+        dr = grouping[0] / base_grouping[0]
+        trans_params = copy.deepcopy(trans_params_fit)
+        trans_params[fiber_id][quantity][0] *= dr
+        trans_params[fiber_id][quantity][1] *= dr
+        fsl_dict_list, frs_dict_list, frd_dict_list = \
+            hmstssFiber.get_fr_fsl_distribution(trans_params)
+        stimuli = getattr(
+            hmstssFiber, 'static_%s_exp' % hmstssFiber.control.lower())
+        return stimuli, frsmat, frdmat, fslmat
 
     def get_fr_from_hc_grouping(
-            grouping, skinphase, quantity, fiber_id=fiber_id,
+            grouping, skinphase, quantity, control='force', fiber_id=fiber_id,
             base_grouping=base_grouping):
-        hmstssFiber = hmstssFiberList[skinphase]
+        hmstssFiber = hmstssFiberDict[skinphase][control]
         trans_params_fit = hmstssFiber.trans_params
         dr = grouping[0] / base_grouping[0]
         trans_params = copy.deepcopy(trans_params_fit)
@@ -88,6 +169,7 @@ if __name__ == '__main__':
         static_force_exp = hmstssFiber.static_force_exp
         static_fr = predicted_fr[fiber_id][quantity][:, 1]
         return static_force_exp, static_fr
+
     fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
     fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
