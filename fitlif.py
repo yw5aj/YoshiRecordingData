@@ -138,6 +138,53 @@ class LifModel:
             current_array, max_index, model=model, mcnc_grouping=mcnc_grouping)
         return static_fr, dynamic_fr
 
+    def trans_param_to_fsl(self, quantity_dict, trans_param, model='LIF',
+                           mcnc_grouping=None):
+        quantity_array = quantity_dict['quantity_array']
+        quantity_rate_array = np.abs(np.gradient(quantity_array)) / DT
+        current_array = trans_param[0] * quantity_array +\
+            trans_param[1] * quantity_rate_array + trans_param[2]
+        spike_array = self.current_array_to_spike_array(
+            current_array, model=model, mcnc_grouping=mcnc_grouping)
+        spike_timings = spike_array.nonzero()[0] * DT
+        if spike_timings.size > 0:
+            fsl = spike_timings[0]
+        else:
+            fsl = np.inf
+        return fsl
+
+    def get_fr_fsl(self, quantity_dict_list, trans_param, model='LIF',
+                   mcnc_grouping=None):
+        """
+        Returns
+        -------
+        frs : ndarray
+            An array of static firing rate, Hz.
+        frd : ndarray
+            Dynamic firing rate, Hz.
+         fsl : ndarray
+            First spike latency, seconds.
+        """
+        frs, frd = self.trans_param_to_predicted_fr(
+            quantity_dict_list, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping).T[1:]
+        fsl = self.trans_param_to_predicted_fsl(
+            quantity_dict_list, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping).T[1]
+        return frs, frd, fsl
+
+    def trans_param_to_predicted_fsl(self, quantity_dict_list, trans_param,
+                                     model='LIF', mcnc_grouping=None):
+        predicted_fsl = []
+        for quantity_dict in quantity_dict_list:
+            fsl = self.trans_param_to_fsl(
+                quantity_dict, trans_param, model=model,
+                mcnc_grouping=mcnc_grouping)
+            predicted_fsl.append(fsl)
+        predicted_fsl = np.c_[range(len(quantity_dict_list)),
+                              predicted_fsl]
+        return predicted_fsl
+
     def trans_param_to_predicted_fr(self, quantity_dict_list, trans_param,
                                     model='LIF', mcnc_grouping=None):
         """

@@ -5,17 +5,61 @@ Created on Wed Mar 11 13:50:27 2015
 @author: Administrator
 """
 
-from constants import FIBER_MECH_ID, MARKER_LIST, COLOR_LIST
-from simulation import SimFiber, quantity_list
+from constants import FIBER_MECH_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV
+from simulation import SimFiber, quantity_list, stim_num
+from fitlif import LifModel
 import copy
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
+class HmstssFiber(SimFiber):
+
+    def __init__(self, factor, level, control):
+        SimFiber.__init__(self, factor, level, control)
+
+    def get_fr_fsl_distribution(self, trans_params=None):
+        # Determin whether this is a static call
+        update_instance = False
+        if trans_params is None:
+            update_instance = True
+            trans_params = self.trans_params
+        # Calculated predicted fr and fsl
+        # For now, only based on stress, static & dynamic
+        # Fix the fiber_id to 2
+        fiber_id = 2
+        lifModel = LifModel(**FIBER_RCV[fiber_id])
+        quantity = 'mstress'
+        num_mcnc = self.dist[0][quantity].shape[1]
+        # Initialize the arrays to store output
+        fslmat = np.empty((stim_num, num_mcnc))
+        frsmat = np.empty((stim_num, num_mcnc))
+        frdmat = np.empty((stim_num, num_mcnc))
+        for mcnc_id in range(num_mcnc):
+            quantity_dict_list = []
+            for stim_id, dist_dict in enumerate(self.dist):
+                max_index = self.traces[stim_id]['max_index']
+                time = dist_dict['time'].T[0]
+                time_fine = np.arange(0, time.max(), DT)
+                quantity_array = dist_dict[quantity].T[mcnc_id]
+                quantity_array = np.interp(time_fine, time, quantity_array)
+                quantity_dict_list.append({
+                    'quantity_array': quantity_array,
+                    'max_index': max_index})
+            frs, frd, fsl = lifModel.get_fr_fsl(
+                quantity_dict_list, trans_params[fiber_id][quantity[1:]])
+            fslmat[:, mcnc_id] = fsl
+            frsmat[:, mcnc_id] = frs
+            frdmat[:, mcnc_id] = frd
+        if update_instance:
+            self.fslmat, self.frsmat, self.frdmat = fslmat, frsmat, frdmat
+
+
 if __name__ == '__main__':
-    simFiberList = dict(
-        active=SimFiber('SkinThick', 1, 'Force'),
-        resting=SimFiber('SkinThick', 0, 'Force'))
+    hmstssFiberList = dict(
+        active=HmstssFiber('SkinThick', 1, 'Force'),
+        resting=HmstssFiber('SkinThick', 0, 'Force'))
     # %% See how Lesniak model would say!
     fiber_id = FIBER_MECH_ID
     control = 'Force'
@@ -34,14 +78,14 @@ if __name__ == '__main__':
     def get_fr_from_hc_grouping(
             grouping, skinphase, quantity, fiber_id=fiber_id,
             base_grouping=base_grouping):
-        simFiber = simFiberList[skinphase]
-        trans_params_fit = simFiber.trans_params
+        hmstssFiber = hmstssFiberList[skinphase]
+        trans_params_fit = hmstssFiber.trans_params
         dr = grouping[0] / base_grouping[0]
         trans_params = copy.deepcopy(trans_params_fit)
         trans_params[fiber_id][quantity][0] *= dr
         trans_params[fiber_id][quantity][1] *= dr
-        predicted_fr = simFiber.get_predicted_fr(trans_params=trans_params)
-        static_force_exp = simFiber.static_force_exp
+        predicted_fr = hmstssFiber.get_predicted_fr(trans_params=trans_params)
+        static_force_exp = hmstssFiber.static_force_exp
         static_fr = predicted_fr[fiber_id][quantity][:, 1]
         return static_force_exp, static_fr
     fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
@@ -143,5 +187,5 @@ if __name__ == '__main__':
     fig2.tight_layout()
     fig1.savefig('./plots/grouping_typical.png')
     fig2.savefig('./plots/grouping_all.png')
-#    plt.close(fig1)
-#    plt.close(fig2)
+    plt.close(fig1)
+    plt.close(fig2)
