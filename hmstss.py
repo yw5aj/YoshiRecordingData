@@ -73,7 +73,7 @@ class HmstssFiber(SimFiber):
 
 
 if __name__ == '__main__':
-    run_fiber = True
+    run_fiber = False
     if run_fiber:
         hmstssFiberDict = {
             'active': {
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     else:
         with open('./pickles/hmstss.pkl', 'rb') as f:
             hmstssFiberDict = pickle.load(f)
-    # %% See how Lesniak model would say!
+    # %% Some local constants
     fiber_id = FIBER_MECH_ID
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
     active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     grouping_df = grouping_df[['Resting', 'Active']]
     typical_grouping_id_list = [0, 1]
     base_grouping = resting_grouping_list[0]
-    # %% Define the calculation for other grouping cases and save / load
+    # %% Function definitions
 
     def calculate_response_from_hc_grouping(
             grouping, skinphase, control, base_grouping=base_grouping,
@@ -114,8 +114,10 @@ if __name__ == '__main__':
         trans_params_fit = hmstssFiber.trans_params
         dr = grouping[0] / base_grouping[0]
         trans_params = copy.deepcopy(trans_params_fit)
-        trans_params[fiber_id][quantity][0] *= dr
-        trans_params[fiber_id][quantity][1] *= dr
+        for fiber_id in FIBER_FIT_ID_LIST:
+            for quantity in quantity_list[-3:]:
+                trans_params[fiber_id][quantity][0] *= dr
+                trans_params[fiber_id][quantity][1] *= dr
         if dr == 1:
             fsl_dict_list, frs_dict_list, frd_dict_list = (
                 hmstssFiber.fsl_dict_list, hmstssFiber.frs_dict_list,
@@ -125,6 +127,12 @@ if __name__ == '__main__':
                 hmstssFiber.get_fr_fsl_distribution(trans_params)
         stimuli = getattr(
             hmstssFiber, 'static_%s_exp' % hmstssFiber.control.lower())
+        varlist = ['stimuli', 'fsl_dict_list', 'frs_dict_list',
+                   'frd_dict_list']
+        response_grouping = {}
+        for varname in varlist:
+            response_grouping[varname] = locals()[varname]
+        # Deal with data saving
         if savedata:
             fname = './pickles/%s_%s_%d%d.pkl' % (
                 skinphase, control, base_grouping[0], grouping[0])
@@ -132,44 +140,29 @@ if __name__ == '__main__':
             if already_exist and not updatedata:
                 pass
             else:
-                varlist = ['stimuli', 'fsl_dict_list', 'frs_dict_list',
-                           'frd_dict_list']
-                response_grouping = {}
-                for varname in varlist:
-                    response_grouping[varname] = locals()[varname]
                 with open(fname, 'wb') as f:
                     pickle.dump(response_grouping, f)
-        return stimuli, fsl_dict_list, frs_dict_list, frd_dict_list
+        return response_grouping
 
     def get_response_from_hc_grouping(
-            grouping, skinphase, quantity, control, response,
+            grouping, skinphase, quantity, control, coding,
             fiber_id=fiber_id, base_grouping=base_grouping):
-        hmstssFiber = hmstssFiberDict[skinphase][control]
-        trans_params_fit = hmstssFiber.trans_params
-        dr = grouping[0] / base_grouping[0]
-        trans_params = copy.deepcopy(trans_params_fit)
-        trans_params[fiber_id][quantity][0] *= dr
-        trans_params[fiber_id][quantity][1] *= dr
-        fsl_dict_list, frs_dict_list, frd_dict_list = \
-            hmstssFiber.get_fr_fsl_distribution(trans_params)
-        stimuli = getattr(
-            hmstssFiber, 'static_%s_exp' % hmstssFiber.control.lower())
-        return stimuli, frsmat, frdmat, fslmat
+        fname = './pickles/%s_%s_%d%d.pkl' % (
+            skinphase, control, base_grouping[0], grouping[0])
+        already_exist = os.path.isfile(fname)
+        if already_exist:
+            with open(fname, 'rb') as f:
+                response_grouping = pickle.load(f)
+        else:
+            response_grouping = calculate_response_from_hc_grouping(
+                grouping=grouping, skinphase=skinphase, control=control,
+                base_grouping=base_grouping)
+        stimuli = response_grouping['stimuli']
+        response = response_grouping['%s_dict_list' % coding][
+            fiber_id][quantity]
+        return stimuli, response
 
-    def get_fr_from_hc_grouping(
-            grouping, skinphase, quantity, control='force', fiber_id=fiber_id,
-            base_grouping=base_grouping):
-        hmstssFiber = hmstssFiberDict[skinphase][control]
-        trans_params_fit = hmstssFiber.trans_params
-        dr = grouping[0] / base_grouping[0]
-        trans_params = copy.deepcopy(trans_params_fit)
-        trans_params[fiber_id][quantity][0] *= dr
-        trans_params[fiber_id][quantity][1] *= dr
-        predicted_fr = hmstssFiber.get_predicted_fr(trans_params=trans_params)
-        static_force_exp = hmstssFiber.static_force_exp
-        static_fr = predicted_fr[fiber_id][quantity][:, 1]
-        return static_force_exp, static_fr
-
+    # %% Start plotting
     fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
     fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
@@ -192,9 +185,11 @@ if __name__ == '__main__':
                     kwargs['ls'] = ':'
                 elif groupphase == 'active' and skinphase == 'active':
                     kwargs['ls'] = '--'
-                force, response = get_fr_from_hc_grouping(grouping[groupphase],
-                                                          skinphase, quantity)
-                axes.plot(force, response, **kwargs)
+                stimuli, response = get_response_from_hc_grouping(
+                    grouping[groupphase], skinphase, quantity, control='force',
+                    coding='frs')
+                response = response.T[0]
+                axes.plot(stimuli, response, **kwargs)
                 return axes
             # Do fig1, for two typical cases
             if grouping_id in typical_grouping_id_list:
