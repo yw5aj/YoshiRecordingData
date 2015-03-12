@@ -6,7 +6,7 @@ Created on Wed Mar 11 13:50:27 2015
 """
 
 from constants import (FIBER_MECH_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV,
-                       FIBER_FIT_ID_LIST)
+                       FIBER_FIT_ID_LIST, MS)
 from simulation import SimFiber, quantity_list, stim_num
 from fitlif import LifModel
 import copy
@@ -183,13 +183,13 @@ if __name__ == '__main__':
         axes.plot(stimuli, response, **kwargs)
         return axes
     # %% Single fiber, rate coding
-    fig, axs = plt.subplots(3, 2, figsize=(3.5, 4.5))
+    fig, axs = plt.subplots(3, 2, figsize=(7, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
         active_grouping = active_grouping_list[grouping_id]
         grouping_dict = dict(resting=resting_grouping, active=active_grouping)
         marker = MARKER_LIST[grouping_id]
         color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color, ms=3)
+        kwargs = dict(marker=marker, color=color, mfc=color, mec=color, ms=MS)
         # Here, only use stress as quantity, force controlled
         quantity = 'stress'
         control = 'force'
@@ -217,6 +217,30 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     axs[0, 0].set_title('Static hold')
     axs[0, 1].set_title('Dynamic ramp')
+    # Add legends
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    handle = [[] for i in range(3)]
+    label = [[] for i in range(3)]
+    import matplotlib.lines as mlines
+    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]] +\
+                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
+                               mec=h.get_mec(), mfc=h.get_mfc())
+                 for h in handles[1::2]]
+    label[0] = labels[:2] + [
+        'Fiber #%d' % (i + 1)
+        for i in range(len(resting_grouping_list))]
+    handles, labels = axs[1, 0].get_legend_handles_labels()
+    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[1] = labels[:2]
+    handles, labels = axs[2, 0].get_legend_handles_labels()
+    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[2] = labels[:2]
+    for axes_id, axes in enumerate(axs[:, 0]):
+        axes.legend(handle[axes_id], label[axes_id], loc=2)
+        axes.set_ylim(0, 70)
     fig.tight_layout()
     fig.savefig('./plots/hmstss_single_fiber.png')
     plt.close(fig)
