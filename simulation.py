@@ -95,12 +95,12 @@ class SimFiber:
             # Propagate time
             self.dist[stim]['time'] = np.tile(
                 self.dist[stim]['time'][:, np.newaxis],
-                self.dist[stim]['cxnew'].shape[1])
+                self.dist[stim]['cxold'].shape[1])
             # Calculate integration over area
             for key in key_list:
                 if 'x' not in key and 'time' not in key:
                     def get_field(r):
-                        return np.interp(r, self.dist[stim][key[0]+'xnew'][
+                        return np.interp(r, self.dist[stim][key[0]+'xold'][
                             -1], self.dist[stim][key][-1])
                     self.dist[stim][key+'int'] = dblquad(
                         lambda r, theta: get_field(r) * r,
@@ -303,10 +303,10 @@ if __name__ == '__main__':
                 surface_quantity = 'cpress'
             elif control == 'Displ':
                 surface_quantity = 'cy'
-            surface_data = np.interp(xcoord, dist['cxnew'][-1],
+            surface_data = np.interp(xcoord, dist['cxold'][-1],
                                      dist[surface_quantity][-1])
             # Get mcnc data
-            mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
+            mcnc_data = np.interp(xcoord, dist['mxold'][-1],
                                   dist['m'+quantity][-1])
             # Calculate correlation
             spatial_pearsonr_table[i, j], spatial_pearsonp_table[i, j] = \
@@ -339,7 +339,7 @@ if __name__ == '__main__':
                             cscale = 1e-3
                         # Plotting
                         axs[row, j].plot(
-                            dist['cxnew'][-1, :] * xscale,
+                            dist['cxold'][-1, :] * xscale,
                             dist[cquantity][-1, :] * cscale,
                             ls=ls, c=color, label=quantile_label_list[level])
                     for row, mquantity in enumerate(mquantity_list):
@@ -350,7 +350,7 @@ if __name__ == '__main__':
                             mscale = 1
                         # Plotting
                         axs[row+2, j].plot(
-                            dist['mxnew'][-1, :] * xscale,
+                            dist['mxold'][-1, :] * xscale,
                             dist[mquantity][-1, :] * mscale,
                             ls=ls, c=color, label=quantile_label_list[level])
     # Set x and y lim
@@ -864,10 +864,10 @@ if __name__ == '__main__':
     xcoord = np.linspace(0, MAX_RADIUS, 100)
     # Get surface data
     surface_quantity = 'cy'
-    surface_data = np.interp(xcoord, dist['cxnew'][-1],
+    surface_data = np.interp(xcoord, dist['cxold'][-1],
                              dist[surface_quantity][-1])
     # Get mcnc data
-    mcnc_data = np.interp(xcoord, dist['mxnew'][-1],
+    mcnc_data = np.interp(xcoord, dist['mxold'][-1],
                           dist['my'][-1])
     # Calculate correlation
     spatial_y_pearsonr, spatial_y_pearsonp = pearsonr(surface_data, mcnc_data)
@@ -888,15 +888,15 @@ if __name__ == '__main__':
                 ls = LS_LIST[i]
                 dist = simFiberList[i][level][j].dist[stim]
                 xscale = 1e3
-                axs[0].plot(dist['cxnew'][-1, :] * xscale,
+                axs[0].plot(dist['cxold'][-1, :] * xscale,
                             dist['cy'][-1, :] * 1e-3,
                             ls=ls, c=color, label=quantile_label_list[level])
                 # Scaling the axes
                 # Plotting
-                axs[1].plot(dist['mxnew'][-1, :] * xscale,
+                axs[1].plot(dist['mxold'][-1, :] * xscale,
                             dist['my'][-1, :] * 1e-3,
                             ls=ls, c=color, label=quantile_label_list[level])
-                axs[2].plot(dist['mxnew'][-1, :] * xscale,
+                axs[2].plot(dist['mxold'][-1, :] * xscale,
                             dist['mstrain'][-1, :],
                             ls=ls, c=color, label=quantile_label_list[level])
     # Set x and y lim
@@ -1001,28 +1001,28 @@ if __name__ == '__main__':
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs[0, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cy'][-1, :] * 1e-3,
                     **kwargs)
                 axs[1, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstrain'][-1, :],
                     **kwargs)
                 axs[2, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
                 dist = simFiberList[i][level][1].dist[stim]
                 axs[3, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cpress'][-1, :] * 1e-3,
                     **kwargs)
                 axs[4, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstress'][-1, :] * 1e-3,
                     **kwargs)
                 axs[5, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
     # Set x and y lim
@@ -1156,28 +1156,28 @@ if __name__ == '__main__':
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs1[0, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cy'][-1, :] * 1e-3,
                     **kwargs)
                 axs1[1, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstrain'][-1, :],
                     **kwargs)
                 axs1[2, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
                 dist = simFiberList[i][level][1].dist[stim]
                 axs2[0, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cpress'][-1, :] * 1e-3,
                     **kwargs)
                 axs2[1, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstress'][-1, :] * 1e-3,
                     **kwargs)
                 axs2[2, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
     # Set x and y lim
@@ -1351,28 +1351,28 @@ if __name__ == '__main__':
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs[0, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cy'][-1, :] * 1e-3,
                     **kwargs)
                 axs[1, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstrain'][-1, :],
                     **kwargs)
                 axs[2, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
                 dist = simFiberList[i][level][1].dist[stim]
                 axs[3, 2].plot(
-                    dist['cxnew'][-1, :] * xscale,
+                    dist['cxold'][-1, :] * xscale,
                     dist['cpress'][-1, :] * 1e-3,
                     **kwargs)
                 axs[4, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['mstress'][-1, :] * 1e-3,
                     **kwargs)
                 axs[5, 2].plot(
-                    dist['mxnew'][-1, :] * xscale,
+                    dist['mxold'][-1, :] * xscale,
                     dist['msener'][-1, :] * 1e-3,
                     **kwargs)
     # Set x and y lim
