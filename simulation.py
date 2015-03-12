@@ -258,21 +258,30 @@ class SimFiber:
 
 
 if __name__ == '__main__':
+    run_fiber = False
     # Load experiment data
     binned_exp_list = []
     for i in range(FIBER_TOT_NUM):
         with open('./pickles/binned_exp_%d.pkl' % i, 'rb') as f:
             binned_exp_list.append(pickle.load(f))
-    # Generate data
-    simFiberList = [[[] for j in
-                    range(level_num)] for i in range(len(factor_list))]
-    for i, factor in enumerate(factor_list[:3]):
-        for level in range(level_num):
-            j = level
-            for k, control in enumerate(control_list):
-                simFiber = SimFiber(factor, level, control)
-                simFiberList[i][j].append(simFiber)
-                print(factor+str(level)+control+' is done.')
+    fname = './pickles/simFiberList.pkl'
+    if run_fiber:
+        # Generate data
+        simFiberList = [[[] for j in
+                        range(level_num)] for i in range(len(factor_list))]
+        for i, factor in enumerate(factor_list):
+            for level in range(level_num):
+                j = level
+                for k, control in enumerate(control_list):
+                    simFiber = SimFiber(factor, level, control)
+                    simFiberList[i][j].append(simFiber)
+                    print(factor+str(level)+control+' is done.')
+        # Store data
+        with open(fname, 'wb') as f:
+            pickle.dump(simFiberList, f)
+    else:
+        with open(fname, 'rb') as f:
+            simFiberList = pickle.load(f)
     # %% Generate table for integration
     spatial_table = np.empty([6, 3])
     for i, factor in enumerate(factor_list[:3]):
@@ -1269,16 +1278,6 @@ if __name__ == '__main__':
     fig2.savefig('./plots/paper_simulation_prss.png', dpi=300)
     plt.close('all')
     # %% The figure for substrate simulations
-    # Generate fibers needed
-    for i, factor in enumerate(factor_list[-2:]):
-        i = i + 3
-        for level in range(level_num):
-            j = level
-            for k, control in enumerate(control_list):
-                simFiber = SimFiber(factor, level, control)
-                simFiberList[i][j].append(simFiber)
-                print(factor+str(level)+control+' is done.')
-    # %% Do the plotting
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[-2:]):
         i = i + 3
