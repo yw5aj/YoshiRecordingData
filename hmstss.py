@@ -289,8 +289,8 @@ if __name__ == '__main__':
                     grouping_dict, hc[0], hc[1], coding, control, quantity,
                     axs[row], **kwargs)
     # Formatting
-    axs[-1].set_xlabel('Force (mN)')
     for axes in axs:
+        axes.set_xlabel('Force (mN)')
         axes.set_ylabel('Static firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
