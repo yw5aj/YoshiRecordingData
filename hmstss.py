@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     def get_response_from_hc_grouping(
             grouping, skinphase, quantity, control, coding,
-            fiber_id=fiber_id, base_grouping=base_grouping):
+            fiber_id=FIBER_MECH_ID, base_grouping=base_grouping):
         fname = './pickles/%s_%s_%d%d.pkl' % (
             skinphase, control, base_grouping[0], grouping[0])
         already_exist = os.path.isfile(fname)
@@ -162,49 +162,77 @@ if __name__ == '__main__':
             fiber_id][quantity]
         return stimuli, response
 
+    def plot_phase_single(
+            grouping_dict, groupphase, skinphase, coding, control, quantity,
+            axes, fiber_id=FIBER_MECH_ID, **kwargs):
+        grouping = grouping_dict[groupphase]
+        kwargs['label'] = '%s skin, %s grouping' % (
+            skinphase.capitalize(),
+            groupphase)
+        if groupphase == 'resting' and skinphase == 'resting':
+            kwargs['ls'] = '-'
+        elif groupphase == 'resting' and skinphase == 'active':
+            kwargs['ls'] = '-.'
+        elif groupphase == 'active' and skinphase == 'resting':
+            kwargs['ls'] = ':'
+        elif groupphase == 'active' and skinphase == 'active':
+            kwargs['ls'] = '--'
+        stimuli, response = get_response_from_hc_grouping(
+            grouping, skinphase, quantity, control, coding, fiber_id)
+        response = response.T[0]
+        axes.plot(stimuli, response, **kwargs)
+        return axes
     # %% Start plotting
     fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
     fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
         active_grouping = active_grouping_list[grouping_id]
-        grouping = dict(resting=resting_grouping, active=active_grouping)
+        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
         marker = MARKER_LIST[grouping_id]
         color = COLOR_LIST[grouping_id]
         kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
         for i, quantity in enumerate(quantity_list[-3:]):
-            # Plot different responses, from, say resting
-            def plot_phase(groupphase, skinphase, axes, **kwargs):
-                kwargs['label'] = '%s skin, %s grouping' % (
-                    skinphase.capitalize(),
-                    groupphase)
-                if groupphase == 'resting' and skinphase == 'resting':
-                    kwargs['ls'] = '-'
-                elif groupphase == 'resting' and skinphase == 'active':
-                    kwargs['ls'] = '-.'
-                elif groupphase == 'active' and skinphase == 'resting':
-                    kwargs['ls'] = ':'
-                elif groupphase == 'active' and skinphase == 'active':
-                    kwargs['ls'] = '--'
-                stimuli, response = get_response_from_hc_grouping(
-                    grouping[groupphase], skinphase, quantity, control='force',
-                    coding='frs')
-                response = response.T[0]
-                axes.plot(stimuli, response, **kwargs)
-                return axes
             # Do fig1, for two typical cases
             if grouping_id in typical_grouping_id_list:
                 j = typical_grouping_id_list.index(grouping_id)
-                plot_phase('resting', 'resting', axs1[j, i], **kwargs)
-                plot_phase('resting', 'active', axs1[j, i], **kwargs)
-                plot_phase('active', 'active', axs1[j, i], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'resting', 'frs', 'force', 'stress',
+                    axs1[j, i], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'active', 'frs', 'force', 'stress',
+                    axs1[j, i], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'active', 'active', 'frs', 'force', 'stress',
+                    axs1[j, i], **kwargs)
             # Do fig2, for multiple sensitivities
             if quantity == 'stress':
-                plot_phase('active', 'active', axs2[0], **kwargs)
-                plot_phase('resting', 'resting', axs2[0], **kwargs)
-                plot_phase('active', 'resting', axs2[1], **kwargs)
-                plot_phase('resting', 'resting', axs2[1], **kwargs)
-                plot_phase('resting', 'active', axs2[2], **kwargs)
-                plot_phase('resting', 'resting', axs2[2], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'active', 'active', 'frs', 'force', 'stress',
+                    axs2[2], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'resting', 'frs', 'force', 'stress',
+                    axs2[2], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'active', 'resting', 'frs', 'force', 'stress',
+                    axs2[0], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'resting', 'frs', 'force', 'stress',
+                    axs2[0], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'active', 'frs', 'force', 'stress',
+                    axs2[1], **kwargs)
+                plot_phase_single(
+                    grouping_dict,
+                    'resting', 'resting', 'frs', 'force', 'stress',
+                    axs2[1], **kwargs)
     # Add legends for fig 2
     handles, labels = axs2[0].get_legend_handles_labels()
     handle = [[] for i in range(3)]
