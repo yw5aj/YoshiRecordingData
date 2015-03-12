@@ -268,6 +268,63 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/hmstss_single_fiber.png')
     plt.close(fig)
+    # %% The only figure Greg liked
+    fig, axs = plt.subplots(3, 1, figsize=(3.27, 7.5))
+    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list[grouping_id]
+        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
+        marker = MARKER_LIST[grouping_id]
+        color = COLOR_LIST[grouping_id]
+        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
+        # Here, only use stress as quantity, force controlled
+        quantity = 'stress'
+        control = 'force'
+        coding = 'frs'
+        hc_list = [(('resting', 'resting'), ('active', 'resting')),
+                   (('resting', 'resting'), ('resting', 'active')),
+                   (('resting', 'resting'), ('active', 'active'))]
+        for row, hc_tuple in enumerate(hc_list):
+            for hc in hc_tuple:
+                plot_phase_single(
+                    grouping_dict, hc[0], hc[1], coding, control, quantity,
+                    axs[row], **kwargs)
+    # Formatting
+    axs[-1].set_xlabel('Force (mN)')
+    for axes in axs:
+        axes.set_ylabel('Static firing (Hz)')
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    handles, labels = axs[0].get_legend_handles_labels()
+    handle = [[] for i in range(3)]
+    label = [[] for i in range(3)]
+    import matplotlib.lines as mlines
+    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]] +\
+                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
+                               mec=h.get_mec(), mfc=h.get_mfc())
+                 for h in handles[1::2]]
+    label[0] = labels[:2] + [
+        'Fiber #%d' % (i + 1)
+        for i in range(len(resting_grouping_list))]
+    handles, labels = axs[1].get_legend_handles_labels()
+    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[1] = labels[:2]
+    handles, labels = axs[2].get_legend_handles_labels()
+    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
+                 for h in handles[:2]]
+    label[2] = labels[:2]
+    for axes_id, axes in enumerate(axs):
+        axes.legend(handle[axes_id], label[axes_id], loc=2, fontsize=8)
+        axes.set_ylim(0, 70)
+    axs[0].set_title('Only grouping changes')
+    axs[1].set_title('Only skin changes')
+    axs[2].set_title('Both skin and grouping change')
+    fig.tight_layout()
+    fig.savefig('./plots/hmstss_one_fig.png')
+    plt.close(fig)
     # %% Multiple fibers, both fr_s and fsl
     fig, axs = plt.subplots(3, 2, figsize=(7, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
