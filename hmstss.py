@@ -100,13 +100,14 @@ if __name__ == '__main__':
     # %% Some local constants
     fiber_id = FIBER_MECH_ID
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
-    active_grouping_list = [[9, 8, 5, 2, 1], [13, 11, 4], [6, 5, 4, 2, 1, 1],
+    active_grouping_list = [[9, 8, 5, 2, 2], [13, 9, 6, 2], [6, 5, 4, 2, 2, 1],
                             [8, 7, 4, 2]]
     grouping_df = pd.DataFrame(
         {'Resting': resting_grouping_list,
          'Active': active_grouping_list},
         index=['Fiber #%d' % (i+1) for i in range(len(active_grouping_list))])
     grouping_df = grouping_df[['Resting', 'Active']]
+    grouping_df.to_csv('./csvs/grouping.csv')
     typical_grouping_id_list = [0, 1]
     base_grouping = resting_grouping_list[0]
     # %% Function definitions
