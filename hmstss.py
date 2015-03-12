@@ -182,7 +182,45 @@ if __name__ == '__main__':
         response = response.T[0]
         axes.plot(stimuli, response, **kwargs)
         return axes
-    # %% Start plotting
+    # %% Single fiber, rate coding
+    fig, axs = plt.subplots(3, 2, figsize=(3.5, 4.5))
+    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list[grouping_id]
+        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
+        marker = MARKER_LIST[grouping_id]
+        color = COLOR_LIST[grouping_id]
+        kwargs = dict(marker=marker, color=color, mfc=color, mec=color, ms=3)
+        # Here, only use stress as quantity, force controlled
+        quantity = 'stress'
+        control = 'force'
+        hc_list = [(('resting', 'resting'), ('active', 'resting')),
+                   (('resting', 'resting'), ('resting', 'active')),
+                   (('resting', 'resting'), ('active', 'active'))]
+        for row, hc_tuple in enumerate(hc_list):
+            for col, coding in enumerate(['frs', 'frd']):
+                for hc in hc_tuple:
+                    plot_phase_single(
+                        grouping_dict, hc[0], hc[1], coding, control, quantity,
+                        axs[row, col], **kwargs)
+    # Formatting
+    for axes in axs[-1]:
+        axes.set_xlabel('Force (mN)')
+    for i, axes in enumerate(axs.ravel()):
+        if i % 2 == 0:
+            axes.set_ylim(0, 60)
+            axes.set_ylabel(r'$\mathit{r_s}$ (Hz)')
+        else:
+            axes.set_ylim(0, 105)
+            axes.set_ylabel(r'$\mathit{r_d}$ (Hz)')
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.35, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    axs[0, 0].set_title('Static hold')
+    axs[0, 1].set_title('Dynamic ramp')
+    fig.tight_layout()
+    fig.savefig('./plots/hmstss_single_fiber.png')
+    plt.close(fig)
+    # %% Old plots
     fig1, axs1 = plt.subplots(2, 3, figsize=(7.5, 5))
     fig2, axs2 = plt.subplots(3, 1, figsize=(3.27, 7.5))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
