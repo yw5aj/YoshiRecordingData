@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import pickle
 import os
 import matplotlib.lines as mlines
+from collections import OrderedDict
 
 
 class HmstssFiber(SimFiber):
@@ -170,7 +171,7 @@ if __name__ == '__main__':
             grouping_dict, groupphase, skinphase, coding, control, quantity,
             axes, fiber_id=FIBER_MECH_ID, **kwargs):
         grouping = grouping_dict[groupphase]
-        kwargs['label'] = '%s skin, %s grouping' % (
+        kwargs['label'] = '%s mechanics, %s grouping' % (
             skinphase.capitalize(),
             groupphase)
         if groupphase == 'resting' and skinphase == 'resting':
@@ -191,7 +192,7 @@ if __name__ == '__main__':
             grouping_dict, groupphase, skinphase, coding, control, quantity,
             stim_id, axes, fiber_id=FIBER_MECH_ID, **kwargs):
         grouping = grouping_dict[groupphase]
-        kwargs['label'] = '%s skin, %s grouping' % (
+        kwargs['label'] = '%s mechanics, %s grouping' % (
             skinphase.capitalize(),
             groupphase)
         if groupphase == 'resting' and skinphase == 'resting':
@@ -207,6 +208,40 @@ if __name__ == '__main__':
         response = response[stim_id]
         axes.plot(mx, response, **kwargs)
         return axes
+    # %% Quantification
+
+    def get_dfrs_dfrsk(
+            grouping, skinphase, quantity, control, coding, stim_id):
+        stimuli, response = get_response_from_hc_grouping(
+            grouping, skinphase, quantity, control, coding)
+        response = response[:, 0]
+        dfrs = response[stim_id]
+        dfrsk = np.polyfit(stimuli, response, 1)[0]
+        return dfrs, dfrsk
+    dfrs_dict = OrderedDict()
+    dfrsk_dict = OrderedDict()
+    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
+        stim_id = 5
+        quantity = 'stress'
+        control = 'force'
+        coding = 'frs'
+        active_grouping = active_grouping_list[grouping_id]
+        dfrs_array = np.empty(4)
+        dfrsk_array = np.empty(4)
+        dfrs_array[0], dfrsk_array[0] = get_dfrs_dfrsk(
+            resting_grouping, 'resting', quantity, control, coding, stim_id)
+        dfrs_array[1], dfrsk_array[1] = get_dfrs_dfrsk(
+            active_grouping, 'resting', quantity, control, coding, stim_id)
+        dfrs_array[2], dfrsk_array[2] = get_dfrs_dfrsk(
+            resting_grouping, 'active', quantity, control, coding, stim_id)
+        dfrs_array[3], dfrsk_array[3] = get_dfrs_dfrsk(
+            active_grouping, 'active', quantity, control, coding, stim_id)
+        dfrs_dict['Fiber #%d' % (grouping_id + 1)] = dfrs_array
+        dfrsk_dict['Fiber #%d' % (grouping_id + 1)] = dfrsk_array
+    dfrs_df = pd.DataFrame(dfrs_dict)
+    dfrsk_df = pd.DataFrame(dfrsk_dict)
+    dfrs_df.to_csv('./csvs/dfrs.csv')
+    dfrsk_df.to_csv('./csvs/dfrsk.csv')
     # %% Single fiber, rate coding
     fig, axs = plt.subplots(3, 3, figsize=(7, 6))
     for grouping_id, resting_grouping in enumerate(resting_grouping_list):
@@ -360,7 +395,7 @@ if __name__ == '__main__':
         for axes_id, axes in enumerate(axs.ravel()):
             axes.legend(loc=2, fontsize=6)
             axes.set_title('Fiber #%d' % (axes_id+1))
-            axes.set_ylim(0, 65)
+            axes.set_ylim(0, 70)
         fig.tight_layout()
         fig.suptitle(suptitle_list[hc_id], fontsize=14)
         fig.subplots_adjust(top=.9)
