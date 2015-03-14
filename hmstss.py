@@ -5,7 +5,7 @@ Created on Wed Mar 11 13:50:27 2015
 @author: Administrator
 """
 
-from constants import (FIBER_MECH_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV,
+from constants import (FIBER_HMSTSS_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV,
                        FIBER_FIT_ID_LIST, MS)
 from simulation import SimFiber, quantity_list, stim_num
 from fitlif import LifModel
@@ -17,6 +17,9 @@ import pickle
 import os
 import matplotlib.lines as mlines
 from collections import OrderedDict
+
+
+fiber_hmstss_use = 2
 
 
 class HmstssFiber(SimFiber):
@@ -100,7 +103,7 @@ if __name__ == '__main__':
                 print(fname)
     mx = hmstssFiberDict['active']['force'].dist[1]['mxold'][0] * 1e3
     # %% Some local constants
-    fiber_id = FIBER_MECH_ID
+    fiber_id = fiber_hmstss_use
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
     active_grouping_list = [[9, 8, 5, 2, 2], [13, 9, 6, 2], [6, 5, 4, 2, 2, 1],
                             [8, 7, 4, 2]]
@@ -158,7 +161,7 @@ if __name__ == '__main__':
 
     def get_response_from_hc_grouping(
             grouping, skinphase, quantity, control, coding,
-            fiber_id=FIBER_MECH_ID, base_grouping=base_grouping):
+            fiber_id=fiber_hmstss_use, base_grouping=base_grouping):
         response_grouping = calculate_response_from_hc_grouping(
             grouping=grouping, skinphase=skinphase, control=control,
             base_grouping=base_grouping)
@@ -169,7 +172,7 @@ if __name__ == '__main__':
 
     def plot_phase_single(
             grouping_dict, groupphase, skinphase, coding, control, quantity,
-            axes, fiber_id=FIBER_MECH_ID, **kwargs):
+            axes, fiber_id=fiber_hmstss_use, **kwargs):
         grouping = grouping_dict[groupphase]
         kwargs['label'] = '%s mechanics, %s grouping' % (
             skinphase.capitalize(),
@@ -190,7 +193,7 @@ if __name__ == '__main__':
 
     def plot_phase_population(
             grouping_dict, groupphase, skinphase, coding, control, quantity,
-            stim_id, axes, fiber_id=FIBER_MECH_ID, **kwargs):
+            stim_id, axes, fiber_id=fiber_hmstss_use, **kwargs):
         grouping = grouping_dict[groupphase]
         kwargs['label'] = '%s mechanics, %s grouping' % (
             skinphase.capitalize(),

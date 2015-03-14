@@ -594,7 +594,6 @@ if __name__ == '__main__':
         fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
         fiber = fiber_list[fiber_id]
         fmt = MARKER_LIST[fiber_id]
-#        color = COLOR_LIST[fiber_id]
         color = 'k'
         # Plot experiment
         axs[0].errorbar(
@@ -647,6 +646,51 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.subplots_adjust(top=.9)
         fig.savefig('./plots/paper_plot_fitting_%d.png' % fiber_id, dpi=300)
+        plt.close(fig)
+    # %% Plot force-based fitting figure
+    for fiber_id in FIBER_FIT_ID_LIST:
+        fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
+        fiber = fiber_list[fiber_id]
+        fmt = MARKER_LIST[fiber_id]
+        color = 'k'
+        # Plot experiment
+        axs[0].errorbar(
+            fiber.binned_exp['force_mean'], fiber.binned_exp
+            ['dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'],
+            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+        axs[1].errorbar(
+            fiber.binned_exp['force_mean'], fiber.binned_exp
+            ['static_fr_mean'], fiber.binned_exp['static_fr_std'],
+            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+        # Plot fitting
+        for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
+            ls = LS_LIST[quantity_id]
+            if fiber_id in FIBER_FIT_ID_LIST:
+                axs[0].plot(
+                    fiber.binned_exp['force_mean'], fiber.lif_fr[
+                        quantity][:, 1], c=color, ls=ls, label='Predicted by '
+                    + quantity)
+                axs[1].plot(
+                    fiber.binned_exp['force_mean'], fiber.lif_fr[
+                        quantity][:, 0], c=color, ls=ls, label='Predicted by'
+                    + quantity)
+        # Adjust formatting
+        axs[1].set_xlabel(r'Static force (mN)')
+        axs[0].set_ylabel('Dynamic mean firing (Hz)')
+        axs[1].set_ylabel('Static mean firing (Hz)')
+        h, l = axs[0].get_legend_handles_labels()
+        legend = fig.legend(
+            h, l, bbox_to_anchor=(0.05, 0.85, 0.9, .14), ncol=2,
+            mode='expand', frameon=True)
+        frame = legend.get_frame()
+        frame.set_linewidth(.5)
+        # Adding panel labels
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.15, 1.05, chr(65 + axes_id), transform=axes.transAxes,
+                      fontsize=12, fontweight='bold', va='top')
+        fig.tight_layout()
+        fig.subplots_adjust(top=.9)
+        fig.savefig('./plots/paper_plot_fitting_force_%d.png' % fiber_id)
         plt.close(fig)
     # %% Plot force-displ fitting
     fig, axs = plt.subplots(2, 1, figsize=(3.27, 5))
