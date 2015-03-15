@@ -17,6 +17,7 @@ import os
 
 
 fiber_hmstss_use = FIBER_HMSTSS_ID
+fiber_id = fiber_hmstss_use
 level_num = 10
 
 
@@ -65,22 +66,26 @@ class HmstssFiber(SimFiber):
         return predicted_fr
 
 
-if __name__ == '__main__':
-    run_fiber = False
-    update_neural_data = False
-    if run_fiber:
+def load_fiber():
+    fname = './pickles/hmstss.pkl'
+    already_exist = os.path.isfile(fname)
+    if already_exist:
+        with open(fname, 'rb') as f:
+            hmstssFiberList = pickle.load(f)
+    else:
         hmstssFiberList = []
         for level in range(level_num):
             hmstssFiberList.append(HmstssFiber(level))
-        with open('./pickles/hmstss.pkl', 'wb') as f:
+        with open(fname, 'wb') as f:
             pickle.dump(hmstssFiberList, f)
-    else:
-        with open('./pickles/hmstss.pkl', 'rb') as f:
-            hmstssFiberList = pickle.load(f)
+    return hmstssFiberList
+
+
+if __name__ == '__main__':
+    hmstssFiberList = load_fiber()
     # %% Some local constants
-    thickness_array = np.linspace(147, 433, level_num)
-    median_dict = {'resting': 2, 'active': 6}
-    fiber_id = fiber_hmstss_use
+    thickness_array = np.linspace(125, 433, level_num)
+    median_dict = {'resting': 3, 'active': 6}
     resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [6, 4, 2], [13, 5]]
     active_grouping_list_list = [
         [[9, 8, 5, 2, 2], [11, 6, 5, 2, 1, 1], [10, 8, 4, 3, 1]],
@@ -169,8 +174,8 @@ if __name__ == '__main__':
     rows = ['%d μm' % thickness for thickness in thickness_array]
     t42_df = pd.DataFrame(t42, columns=columns, index=rows)
     t43_df = pd.DataFrame(t43, columns=columns, index=rows)
-    t42_df.to_csv('./csvs/t42_df.csv')
-    t43_df.to_csv('./csvs/t43_df.csv')
+    t42_df.to_csv('./csvs/t42.csv')
+    t43_df.to_csv('./csvs/t43.csv')
     # %% Figure for first computational experiment, change skin thickness
     fig, axs = plt.subplots(2, 2, figsize=(5, 5))
     for grouping_id, base_grouping in enumerate(resting_grouping_list):
@@ -217,6 +222,8 @@ if __name__ == '__main__':
         rows.append('%s -> %s' % (str(base_grouping), str(active_grouping)))
     t46_df = pd.DataFrame(t46, columns=columns, index=rows)
     t47_df = pd.DataFrame(t46, columns=columns, index=rows)
+    t46_df.to_csv('./csvs/t46.csv')
+    t47_df.to_csv('./csvs/t47.csv')
     # %% Plot for thrid computational experiment
     fig, axs = plt.subplots(2, 2, figsize=(5, 5))
     for grouping_id, base_grouping in enumerate(resting_grouping_list):
@@ -288,12 +295,13 @@ if __name__ == '__main__':
             t45[3 * i + j, 1] = get_sts_change(
                 base_response, response_skin_changes)
     changed_to = thickness_array[skin_change_table.astype('int')].astype('int')
+    changed_to_um = ['%d μm' % thickness for thickness in changed_to]
     columns = ['Resting organ', 'Active organ', 'Skin constant',
                'Skin changes', 'Skin thickness changed to']
     t44_df = pd.DataFrame(np.c_[resting_organ_list, active_organ_list,
-                                t44, changed_to], columns=columns)
+                                t44, changed_to_um], columns=columns)
     t45_df = pd.DataFrame(np.c_[resting_organ_list, active_organ_list,
-                                t45, changed_to], columns=columns)
+                                t45, changed_to_um], columns=columns)
     t44_df.to_csv('./csvs/t44.csv')
     t45_df.to_csv('./csvs/t45.csv')
     # %% Plot for second computational experiment
