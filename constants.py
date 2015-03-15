@@ -12,7 +12,7 @@ STATIC_END = 4.5
 
 # Total fiber number
 fiber_mech_fname = '2012042702V_01.mat'
-fiber_hmstss_fname = '2012030905V_01.mat'
+fiber_hmstss_fname = '2012042702V_01.mat'
 
 
 def get_fiber_tot_num():
@@ -24,7 +24,7 @@ def get_fiber_tot_num():
             fiber_tot_num += 1
         if fname == fiber_mech_fname:
             fiber_mech_id = fiber_tot_num - 1
-        elif fname == fiber_hmstss_fname:
+        if fname == fiber_hmstss_fname:
             fiber_hmstss_id = fiber_tot_num - 1
     return fiber_tot_num, fiber_mech_id, fiber_hmstss_id, fiber_dict
 FIBER_TOT_NUM, FIBER_MECH_ID, FIBER_HMSTSS_ID, FIBER_DICT = get_fiber_tot_num()

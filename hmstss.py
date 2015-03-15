@@ -5,9 +5,8 @@ Created on Wed Mar 11 13:50:27 2015
 @author: Administrator
 """
 
-from constants import (FIBER_HMSTSS_ID, MARKER_LIST, COLOR_LIST, DT, FIBER_RCV,
-                       FIBER_FIT_ID_LIST, MS)
-from simulation import SimFiber, quantity_list, stim_num
+from constants import (FIBER_HMSTSS_ID, FIBER_RCV, MS)
+from simulation import SimFiber, stim_num
 from fitlif import LifModel
 import copy
 import numpy as np
@@ -15,625 +14,315 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
 import os
-import matplotlib.lines as mlines
-from collections import OrderedDict
 
 
-fiber_hmstss_use = 2
+fiber_hmstss_use = FIBER_HMSTSS_ID
+level_num = 10
 
 
 class HmstssFiber(SimFiber):
 
-    def __init__(self, factor, level, control):
-        SimFiber.__init__(self, factor, level, control)
-        self.get_fr_fsl_distribution()
+    def __init__(self, level):
+        self.factor = 'Hmstss'
+        self.control = 'Force'
+        self.level = level
+        self.get_dist()
+        self.load_traces()
+        self.load_trans_params()
+        self.get_predicted_fr()
 
-    def get_fr_fsl_distribution(self, trans_params=None):
+    def get_predicted_fr(self, trans_params=None):
         """
-        Calculate the predicted static, dynamic firing rate and fsl.
+        Returns the predicted fr based on the instance's stress/strain/sener.
+        1) If `trans_params is None`:
+            Perform calculation on the instance's current `self.trans_params`
+            and save data to `self.predicted_fr`;
+        2) Otherwise:
+            Sepcify `trans_params` and return the `predicted_fr` w/o
+            updating the instance's properties.
+            Note: do `copy.deepcopy()` before modifying the old `trans_params`!
         """
-        # Determin whether this is a static call
+        # Determine whether a static call or not
         update_instance = False
         if trans_params is None:
             update_instance = True
             trans_params = self.trans_params
-        fsl_dict_list, frs_dict_list, frd_dict_list = [], [], []
-        for fiber_id in FIBER_FIT_ID_LIST:
-            lifModel = LifModel(**FIBER_RCV[fiber_id])
-            fsl_dict_list.append({})
-            frs_dict_list.append({})
-            frd_dict_list.append({})
-            for quantity in quantity_list[-3:]:
-                mquantity = 'm' + quantity
-                num_mcnc = self.dist[0][mquantity].shape[1]
-                # Initialize the arrays to store output
-                fslmat = np.empty((stim_num, num_mcnc))
-                frsmat = np.empty((stim_num, num_mcnc))
-                frdmat = np.empty((stim_num, num_mcnc))
-                for mcnc_id in range(num_mcnc):
-                    quantity_dict_list = []
-                    for stim_id, dist_dict in enumerate(self.dist):
-                        max_index = self.traces[stim_id]['max_index']
-                        time = dist_dict['time'].T[0]
-                        time_fine = np.arange(0, time.max(), DT)
-                        quantity_array = dist_dict[mquantity].T[mcnc_id]
-                        quantity_array = np.interp(
-                            time_fine, time, quantity_array)
-                        quantity_dict_list.append({
-                            'quantity_array': quantity_array,
-                            'max_index': max_index})
-                    frs, frd, fsl = lifModel.get_fr_fsl(
-                        quantity_dict_list,
-                        trans_params[fiber_id][quantity])
-                    fslmat[:, mcnc_id] = fsl * 1e3
-                    frsmat[:, mcnc_id] = frs
-                    frdmat[:, mcnc_id] = frd
-                fsl_dict_list[-1][quantity] = fslmat
-                frs_dict_list[-1][quantity] = frsmat
-                frd_dict_list[-1][quantity] = frdmat
+        # Calculate predicted fr
+        quantity = 'stress'
+        # Get the quantity_dict_list for input
+        quantity_dict_list = [{
+            'quantity_array': self.traces[i][quantity],
+            'max_index': self.traces[i]['max_index']}
+            for i in range(stim_num)]
+        # Calculate
+        lifModel = LifModel(**FIBER_RCV[fiber_id])
+        predicted_fr =\
+            lifModel.trans_param_to_predicted_fr(
+                quantity_dict_list, trans_params[fiber_id][quantity])
+        # Update instance if needed
         if update_instance:
-            for key in ['fsl', 'frs', 'frd']:
-                varname = '%s_dict_list' % key
-                setattr(self, varname, locals()[varname])
-        return fsl_dict_list, frs_dict_list, frd_dict_list
+            self.predicted_fr = predicted_fr
+        return predicted_fr
 
 
 if __name__ == '__main__':
     run_fiber = False
     update_neural_data = False
     if run_fiber:
-        hmstssFiberDict = {
-            'active': {
-                'force': HmstssFiber('SkinThick', 1, 'Force'),
-                'displ': HmstssFiber('SkinThick', 1, 'Displ')},
-            'resting': {
-                'force': HmstssFiber('SkinThick', 0, 'Force'),
-                'displ': HmstssFiber('SkinThick', 0, 'Displ')}}
+        hmstssFiberList = []
+        for level in range(level_num):
+            hmstssFiberList.append(HmstssFiber(level))
         with open('./pickles/hmstss.pkl', 'wb') as f:
-            pickle.dump(hmstssFiberDict, f)
+            pickle.dump(hmstssFiberList, f)
     else:
         with open('./pickles/hmstss.pkl', 'rb') as f:
-            hmstssFiberDict = pickle.load(f)
-    if update_neural_data:
-        for fname in os.listdir('./pickles'):
-            if (('active' in fname and 'force' in fname) or
-                    ('resting' in fname and 'force' in fname) or
-                    ('active' in fname and 'displ' in fname) or
-                    ('resting' in fname and 'displ' in fname)):
-                print(fname)
-    mx = hmstssFiberDict['active']['force'].dist[1]['mxold'][0] * 1e3
+            hmstssFiberList = pickle.load(f)
     # %% Some local constants
+    thickness_array = np.linspace(147, 433, level_num)
+    median_dict = {'resting': 2, 'active': 6}
     fiber_id = fiber_hmstss_use
-    resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [5, 4, 3, 1], [7, 5, 2]]
-    active_grouping_list = [[9, 8, 5, 2, 2], [13, 9, 6, 2], [6, 5, 4, 2, 2, 1],
-                            [8, 7, 4, 2]]
-    grouping_df = pd.DataFrame(
-        {'Resting': resting_grouping_list,
-         'Active': active_grouping_list},
-        index=['Fiber #%d' % (i+1) for i in range(len(active_grouping_list))])
-    grouping_df = grouping_df[['Resting', 'Active']]
+    resting_grouping_list = [[8, 5, 3, 1], [11, 7, 2], [6, 4, 2], [13, 5]]
+    active_grouping_list_list = [
+        [[9, 8, 5, 2, 2], [11, 6, 5, 2, 1, 1], [10, 8, 4, 3, 1]],
+        [[13, 9, 6, 2], [14, 8, 6, 2], [15, 8, 3, 2, 2]],
+        [[7, 5, 3, 2, 2], [8, 6, 4, 1], [7, 5, 4, 3]],
+        [[15, 8, 3, 2], [16, 9, 3], [14, 7, 4, 3]]]
+    grouping_table = np.empty((len(resting_grouping_list),
+                               len(active_grouping_list_list[0]) + 1),
+                              dtype='object')
+    for i in range(grouping_table.shape[0]):
+        grouping_table[i, 0] = resting_grouping_list[i]
+        for j in range(grouping_table.shape[1] - 1):
+            grouping_table[i, j + 1] = active_grouping_list_list[i][j]
+    grouping_df = pd.DataFrame(grouping_table,
+                               index=['Fiber #%d' % (i + 1) for i in range(4)],
+                               columns=['Resting'] + ['Active'] * 3)
     grouping_df.to_csv('./csvs/grouping.csv')
-    typical_grouping_id_list = [0, 1]
+
+    def validate_grouping():
+        """
+        Validate number of MC counts.
+        """
+        for row in grouping_df.iterrows():
+            for group in row[1]:
+                print(sum(group))
     base_grouping = resting_grouping_list[0]
+    stimuli = hmstssFiberList[0].static_force_exp
     # %% Function definitions
 
-    def calculate_response_from_hc_grouping(
-            grouping, skinphase, control, base_grouping=base_grouping):
-        """
-        By default, will first detect whether data got saved, then save if no
-        previous file exists.
-        If savedata = False, then only do the calculations and return outputs.
-        If savedata = True and updatedata = True, then overwrite.
-        """
-        fname = './pickles/%s_%s_%d%d.pkl' % (
-            skinphase, control, base_grouping[0], grouping[0])
+    def get_response_from_hc_grouping(
+            grouping, skinlevel, base_grouping=base_grouping):
+        quantity = 'stress'
+        fiber_id = fiber_hmstss_use
+        fname = './pickles/hmstss%d_%d%d.pkl' % (
+            skinlevel, base_grouping[0], grouping[0])
         already_exist = os.path.isfile(fname)
         if already_exist:
             with open(fname, 'rb') as f:
-                response_grouping = pickle.load(f)
+                response = pickle.load(f)
         else:
-            hmstssFiber = hmstssFiberDict[skinphase][control]
+            hmstssFiber = hmstssFiberList[skinlevel]
             trans_params_fit = hmstssFiber.trans_params
             dr = grouping[0] / base_grouping[0]
             trans_params = copy.deepcopy(trans_params_fit)
-            for fiber_id in FIBER_FIT_ID_LIST:
-                for quantity in quantity_list[-3:]:
-                    trans_params[fiber_id][quantity][0] *= dr
-                    trans_params[fiber_id][quantity][1] *= dr
+            trans_params[fiber_id][quantity][0] *= dr
+            trans_params[fiber_id][quantity][1] *= dr
             if dr == 1:
-                fsl_dict_list, frs_dict_list, frd_dict_list = (
-                    hmstssFiber.fsl_dict_list, hmstssFiber.frs_dict_list,
-                    hmstssFiber.frd_dict_list)
+                response = hmstssFiber.predicted_fr.T[1]
             else:
-                fsl_dict_list, frs_dict_list, frd_dict_list = \
-                    hmstssFiber.get_fr_fsl_distribution(trans_params)
-            stimuli = getattr(
-                hmstssFiber, 'static_%s_exp' % hmstssFiber.control.lower())
-            varlist = ['stimuli', 'fsl_dict_list', 'frs_dict_list',
-                       'frd_dict_list']
-            response_grouping = {}
-            for varname in varlist:
-                response_grouping[varname] = locals()[varname]
+                response = hmstssFiber.get_predicted_fr(trans_params).T[1]
             # Deal with data saving
             with open(fname, 'wb') as f:
-                pickle.dump(response_grouping, f)
-        return response_grouping
+                pickle.dump(response, f)
+        return response
 
-    def get_response_from_hc_grouping(
-            grouping, skinphase, quantity, control, coding,
-            fiber_id=fiber_hmstss_use, base_grouping=base_grouping):
-        response_grouping = calculate_response_from_hc_grouping(
-            grouping=grouping, skinphase=skinphase, control=control,
-            base_grouping=base_grouping)
-        stimuli = response_grouping['stimuli']
-        response = response_grouping['%s_dict_list' % coding][
-            fiber_id][quantity]
-        return stimuli, response
+    def get_sts(response, st=False):
+        if st is False:
+            start_idx = 0
+        else:
+            start_idx = response.nonzero()[0][0]
+        sts = np.polyfit(stimuli[start_idx:], response[start_idx:], 1)[0]
+        return sts
 
-    def plot_phase_single(
-            grouping_dict, groupphase, skinphase, coding, control, quantity,
-            axes, fiber_id=fiber_hmstss_use, **kwargs):
-        grouping = grouping_dict[groupphase]
-        kwargs['label'] = '%s mechanics, %s grouping' % (
-            skinphase.capitalize(),
-            groupphase)
-        if groupphase == 'resting' and skinphase == 'resting':
-            kwargs['ls'] = '-'
-        elif groupphase == 'resting' and skinphase == 'active':
-            kwargs['ls'] = '-.'
-        elif groupphase == 'active' and skinphase == 'resting':
-            kwargs['ls'] = ':'
-        elif groupphase == 'active' and skinphase == 'active':
-            kwargs['ls'] = '--'
-        stimuli, response = get_response_from_hc_grouping(
-            grouping, skinphase, quantity, control, coding, fiber_id)
-        response = response.T[0]
+    def get_sts_change(base_response, response):
+        return get_sts(response) - get_sts(base_response)
+
+    def get_percent(base_response, response):
+        return (response.sum() / base_response.sum() - 1)
+
+    def plot_phase(grouping, skinlevel, axes,
+                   fiber_id=fiber_hmstss_use, **kwargs):
+        response = get_response_from_hc_grouping(grouping, skinlevel)
         axes.plot(stimuli, response, **kwargs)
         return axes
-
-    def plot_phase_population(
-            grouping_dict, groupphase, skinphase, coding, control, quantity,
-            stim_id, axes, fiber_id=fiber_hmstss_use, **kwargs):
-        grouping = grouping_dict[groupphase]
-        kwargs['label'] = '%s mechanics, %s grouping' % (
-            skinphase.capitalize(),
-            groupphase)
-        if groupphase == 'resting' and skinphase == 'resting':
-            kwargs['ls'] = '-'
-        elif groupphase == 'resting' and skinphase == 'active':
-            kwargs['ls'] = '-.'
-        elif groupphase == 'active' and skinphase == 'resting':
-            kwargs['ls'] = ':'
-        elif groupphase == 'active' and skinphase == 'active':
-            kwargs['ls'] = '--'
-        stimuli, response = get_response_from_hc_grouping(
-            grouping, skinphase, quantity, control, coding, fiber_id)
-        response = response[stim_id]
-        axes.plot(mx, response, **kwargs)
-        return axes
-    # %% Quantification
-
-    def get_dfrs_dfrsk(
-            grouping, skinphase, quantity, control, coding, stim_id):
-        stimuli, response = get_response_from_hc_grouping(
-            grouping, skinphase, quantity, control, coding)
-        response = response[:, 0]
-        dfrs = response[stim_id]
-        dfrsk = np.polyfit(stimuli, response, 1)[0]
-        return dfrs, dfrsk
-    dfrs_dict = OrderedDict()
-    dfrsk_dict = OrderedDict()
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        stim_id = 5
-        quantity = 'stress'
-        control = 'force'
-        coding = 'frs'
-        active_grouping = active_grouping_list[grouping_id]
-        dfrs_array = np.empty(4)
-        dfrsk_array = np.empty(4)
-        dfrs_array[0], dfrsk_array[0] = get_dfrs_dfrsk(
-            resting_grouping, 'resting', quantity, control, coding, stim_id)
-        dfrs_array[1], dfrsk_array[1] = get_dfrs_dfrsk(
-            active_grouping, 'resting', quantity, control, coding, stim_id)
-        dfrs_array[2], dfrsk_array[2] = get_dfrs_dfrsk(
-            resting_grouping, 'active', quantity, control, coding, stim_id)
-        dfrs_array[3], dfrsk_array[3] = get_dfrs_dfrsk(
-            active_grouping, 'active', quantity, control, coding, stim_id)
-        dfrs_dict['Fiber #%d' % (grouping_id + 1)] = dfrs_array
-        dfrsk_dict['Fiber #%d' % (grouping_id + 1)] = dfrsk_array
-    dfrs_df = pd.DataFrame(dfrs_dict)
-    dfrsk_df = pd.DataFrame(dfrsk_dict)
-    dfrs_df.to_csv('./csvs/dfrs.csv')
-    dfrsk_df.to_csv('./csvs/dfrsk.csv')
-    # %% Single fiber, rate coding
-    fig, axs = plt.subplots(3, 3, figsize=(7, 6))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color, ms=4)
-        # Here, only use stress as quantity, force controlled
-        quantity = 'stress'
-        control = 'force'
-        hc_list = [(('resting', 'resting'), ('active', 'resting')),
-                   (('resting', 'resting'), ('resting', 'active')),
-                   (('resting', 'resting'), ('active', 'active'))]
-        for row, hc_tuple in enumerate(hc_list):
-            for col, coding in enumerate(['frs', 'frd', 'fsl']):
-                for hc in hc_tuple:
-                    plot_phase_single(
-                        grouping_dict, hc[0], hc[1], coding, control, quantity,
-                        axs[row, col], **kwargs)
-    # Formatting
+    # %% Table for first computational experiment, change skin thickness
+    t42 = np.empty((level_num, len(resting_grouping_list)))
+    t43 = np.empty((level_num, len(resting_grouping_list)))
+    for grouping_id, base_grouping in enumerate(resting_grouping_list):
+        base_response = get_response_from_hc_grouping(base_grouping, 0)
+        for skinlevel in range(level_num):
+            response = get_response_from_hc_grouping(base_grouping, skinlevel)
+            t42[skinlevel, grouping_id] = get_percent(base_response, response)
+            t43[skinlevel, grouping_id] = get_sts(response)
+    # Get column and row labels
+    columns = [str(grouping) for grouping in resting_grouping_list]
+    rows = ['%d μm' % thickness for thickness in thickness_array]
+    t42_df = pd.DataFrame(t42, columns=columns, index=rows)
+    t43_df = pd.DataFrame(t43, columns=columns, index=rows)
+    t42_df.to_csv('./csvs/t42_df.csv')
+    t43_df.to_csv('./csvs/t43_df.csv')
+    # %% Figure for first computational experiment, change skin thickness
+    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    for grouping_id, base_grouping in enumerate(resting_grouping_list):
+        plot_phase(base_grouping, 0, axs.ravel()[grouping_id],
+                   ls='-', marker='s', c='k', ms=MS,
+                   label='%d μm' % thickness_array[0])
+        plot_phase(base_grouping, -1, axs.ravel()[grouping_id],
+                   ls='-', marker='o', c='k', ms=MS,
+                   label='%d μm' % thickness_array[-1])
+        axs.ravel()[grouping_id].set_title(
+            'Organ = %s' % str(base_grouping))
+    axs[0, 0].legend(loc=2)
     for axes in axs[-1]:
         axes.set_xlabel('Force (mN)')
-    for i, axes in enumerate(axs.ravel()):
-        if i % 3 == 0:
-            axes.set_ylim(0, 60)
-            axes.set_ylabel('Static firing (Hz)')
-        elif i % 3 == 1:
-            axes.set_ylim(0, 105)
-            axes.set_ylabel('Dynamic firing (Hz)')
-        elif i % 3 == 2:
-            axes.set_ylabel('First spike latency (msec)')
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    # Add legends
-    handles, labels = axs[0, 0].get_legend_handles_labels()
-    handle = [[] for i in range(3)]
-    label = [[] for i in range(3)]
-    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]] +\
-                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
-                               mec=h.get_mec(), mfc=h.get_mfc())
-                 for h in handles[1::2]]
-    label[0] = labels[:2] + [
-        'Fiber #%d' % (i + 1)
-        for i in range(len(resting_grouping_list))]
-    handles, labels = axs[1, 0].get_legend_handles_labels()
-    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[1] = labels[:2]
-    handles, labels = axs[2, 0].get_legend_handles_labels()
-    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[2] = labels[:2]
-    for axes_id, axes in enumerate(axs[:, 0]):
-        axes.legend(handle[axes_id], label[axes_id], loc=2, fontsize=6)
-        axes.set_ylim(0, 70)
-    fig.tight_layout()
-    fig.savefig('./plots/hmstss_single_fiber.png')
-    plt.close(fig)
-    # %% The one figure with frs all
-    fig, axs = plt.subplots(3, 1, figsize=(3.27, 7.5))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-        # Here, only use stress as quantity, force controlled
-        quantity = 'stress'
-        control = 'force'
-        coding = 'frs'
-        hc_list = [(('resting', 'resting'), ('active', 'resting')),
-                   (('resting', 'resting'), ('resting', 'active')),
-                   (('resting', 'resting'), ('active', 'active'))]
-        for row, hc_tuple in enumerate(hc_list):
-            for hc in hc_tuple:
-                plot_phase_single(
-                    grouping_dict, hc[0], hc[1], coding, control, quantity,
-                    axs[row], **kwargs)
-    # Formatting
-    for axes in axs:
-        axes.set_xlabel('Force (mN)')
+    for axes in axs.T[0]:
         axes.set_ylabel('Static firing (Hz)')
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.15, 1.1, chr(65 + axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
-    # Add legends
-    handles, labels = axs[0].get_legend_handles_labels()
-    handle = [[] for i in range(3)]
-    label = [[] for i in range(3)]
-    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]] +\
-                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
-                               mec=h.get_mec(), mfc=h.get_mfc())
-                 for h in handles[1::2]]
-    label[0] = labels[:2] + [
-        'Fiber #%d' % (i + 1)
-        for i in range(len(resting_grouping_list))]
-    handles, labels = axs[1].get_legend_handles_labels()
-    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[1] = labels[:2]
-    handles, labels = axs[2].get_legend_handles_labels()
-    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[2] = labels[:2]
-    for axes_id, axes in enumerate(axs):
-        axes.legend(handle[axes_id], label[axes_id], loc=2, fontsize=8)
-        axes.set_ylim(0, 70)
-    axs[0].set_title('Only grouping changes')
-    axs[1].set_title('Only skin changes')
-    axs[2].set_title('Both skin and grouping change')
     fig.tight_layout()
-    fig.savefig('./plots/hmstss_one_fig.png')
+    fig.savefig('./plots/lesniak_f41.png')
     plt.close(fig)
-    # %% The Daine way of split, different fibers in a plot
-    hc_list = [(('resting', 'resting'), ('active', 'resting')),
-               (('resting', 'resting'), ('resting', 'active')),
-               (('resting', 'resting'), ('active', 'active'))]
-    suptitle_list = ['Only neural structure change',
-                     'Only skin mechanics change',
-                     'Both neural structure and skin change']
-    for hc_id, hc_tuple in enumerate(hc_list):
-        fig, axs = plt.subplots(2, 2, figsize=(5, 5))
-        for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-            active_grouping = active_grouping_list[grouping_id]
-            grouping_dict = dict(resting=resting_grouping,
-                                 active=active_grouping)
-            marker = MARKER_LIST[grouping_id]
-            color = COLOR_LIST[grouping_id]
-            kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-            # Here, only use stress as quantity, force controlled
-            quantity = 'stress'
-            control = 'force'
-            coding = 'frs'
-            for hc in hc_tuple:
-                plot_phase_single(
-                    grouping_dict, hc[0], hc[1], coding, control, quantity,
-                    axs.ravel()[grouping_id], **kwargs)
-        # Formatting
-        for axes in axs[-1]:
-            axes.set_xlabel('Force (mN)')
-        for axes in axs.ravel():
-            axes.set_ylabel('Static firing (Hz)')
-        for axes_id, axes in enumerate(axs.ravel()):
-            axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                      fontsize=12, fontweight='bold', va='top')
-        # Add legends
-        for axes_id, axes in enumerate(axs.ravel()):
-            axes.legend(loc=2, fontsize=6)
-            axes.set_title('Fiber #%d' % (axes_id+1))
-            axes.set_ylim(0, 70)
-        fig.tight_layout()
-        fig.suptitle(suptitle_list[hc_id], fontsize=14)
-        fig.subplots_adjust(top=.9)
-        fig.savefig('./plots/hmstss_daine_split_%d.png' % hc_id)
-        plt.close(fig)
-    # %% The fiber way of split, different phases in a plot
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        fig, axs = plt.subplots(3, 1, figsize=(3.27, 7.5))
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-        # Here, only use stress as quantity, force controlled
-        quantity = 'stress'
-        control = 'force'
-        coding = 'frs'
-        hc_list = [(('resting', 'resting'), ('active', 'resting')),
-                   (('resting', 'resting'), ('resting', 'active')),
-                   (('resting', 'resting'), ('active', 'active'))]
-        for row, hc_tuple in enumerate(hc_list):
-            for hc in hc_tuple:
-                plot_phase_single(
-                    grouping_dict, hc[0], hc[1], coding, control, quantity,
-                    axs[row], **kwargs)
-        # Formatting
-        for axes in axs:
-            axes.set_xlabel('Force (mN)')
-            axes.set_ylabel('Static firing (Hz)')
-        for axes_id, axes in enumerate(axs.ravel()):
-            axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                      fontsize=12, fontweight='bold', va='top')
-        # Add legends
-        handles, labels = axs[0].get_legend_handles_labels()
-        handle = [[] for i in range(3)]
-        label = [[] for i in range(3)]
-        handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                     for h in handles[:2]] +\
-                    [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
-                                   mec=h.get_mec(), mfc=h.get_mfc())
-                     for h in handles[1::2]]
-        label[0] = labels[:2] + [
-            'Fiber #%d' % (grouping_id + 1)]
-        handles, labels = axs[1].get_legend_handles_labels()
-        handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                     for h in handles[:2]]
-        label[1] = labels[:2]
-        handles, labels = axs[2].get_legend_handles_labels()
-        handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                     for h in handles[:2]]
-        label[2] = labels[:2]
-        for axes_id, axes in enumerate(axs):
-            axes.legend(handle[axes_id], label[axes_id], loc=2, fontsize=8)
-            axes.set_ylim(0, 70)
-        axs[0].set_title('Only grouping changes')
-        axs[1].set_title('Only skin changes')
-        axs[2].set_title('Both skin and grouping change')
-        fig.tight_layout()
-        fig.savefig('./plots/hmstss_fiber_split_%d.png' % grouping_id)
-        plt.close(fig)
-    # %% Multiple fibers, both fr_s and fsl
-    fig, axs = plt.subplots(3, 2, figsize=(7, 7.5))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = ''
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color, ms=MS)
-        # Here, only use stress as quantity, force controlled
-        quantity = 'stress'
-        control = 'force'
-        hc_list = [(('resting', 'resting'), ('active', 'resting')),
-                   (('resting', 'resting'), ('resting', 'active')),
-                   (('resting', 'resting'), ('active', 'active'))]
-        for row, hc_tuple in enumerate(hc_list):
-            for col, coding in enumerate(['frs', 'fsl']):
-                for hc in hc_tuple:
-                    plot_phase_population(
-                        grouping_dict, hc[0], hc[1], coding, control, quantity,
-                        5, axs[row, col], **kwargs)
-    # Formatting
-    for axes in axs.ravel():
-        axes.set_xlim(0, 0.5)
+    # %% Table for third computational experiment, both skin and neuron changes
+    t46 = np.empty((len(resting_grouping_list), 2))
+    t47 = np.empty((len(resting_grouping_list), 2))
+    columns = ['Skin constant', 'Skin changes']
+    rows = []
+    for grouping_id, base_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list_list[grouping_id][0]
+        base_response = get_response_from_hc_grouping(
+            base_grouping, median_dict['resting'])
+        response_skin_constant = get_response_from_hc_grouping(
+            active_grouping, median_dict['resting'])
+        response_skin_changes = get_response_from_hc_grouping(
+            active_grouping, median_dict['active'])
+        t46[grouping_id, 0] = get_percent(
+            base_response, response_skin_constant)
+        t46[grouping_id, 1] = get_percent(
+            base_response, response_skin_changes)
+        t47[grouping_id, 0] = get_sts_change(
+            base_response, response_skin_constant)
+        t47[grouping_id, 1] = get_sts_change(
+            base_response, response_skin_changes)
+        rows.append('%s -> %s' % (str(base_grouping), str(active_grouping)))
+    t46_df = pd.DataFrame(t46, columns=columns, index=rows)
+    t47_df = pd.DataFrame(t46, columns=columns, index=rows)
+    # %% Plot for thrid computational experiment
+    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    for grouping_id, base_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list_list[grouping_id][0]
+        plot_phase(
+            base_grouping, median_dict['resting'], axs.ravel()[grouping_id],
+            ls='-', marker='s', c='k', ms=MS, label='Rest organ')
+        plot_phase(
+            active_grouping, median_dict['resting'], axs.ravel()[grouping_id],
+            ls='-', marker='o', c='k', ms=MS,
+            label='Active organ, skin constant')
+        plot_phase(
+            active_grouping, median_dict['active'], axs.ravel()[grouping_id],
+            ls='--', marker='^', c='k', ms=MS,
+            label='Active organ, skin changes')
+        axs.ravel()[grouping_id].set_title(
+            'Resting = %s, active = %s' % (base_grouping, active_grouping),
+            fontsize=6)
     for axes in axs[-1]:
-        axes.set_xlabel('Location (mm)')
-    for i, axes in enumerate(axs.ravel()):
-        if i % 2 == 0:
-            axes.set_ylim(0, 90)
-            axes.set_ylabel('Static firing (Hz)')
-        else:
-            axes.set_ylim(0, 35)
-            axes.set_ylabel('First spike latency (msec)')
-    # Add legends
-    handles, labels = axs[0, 0].get_legend_handles_labels()
-    handle = [[] for i in range(3)]
-    label = [[] for i in range(3)]
-    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]] +\
-                [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c(),
-                               marker=h.get_marker(),
-                               mec=h.get_mec(), mfc=h.get_mfc())
-                 for h in handles[0::2]]
-    label[0] = labels[:2] + [
-        'Fiber #%d' % (i + 1)
-        for i in range(len(resting_grouping_list))]
-    handles, labels = axs[1, 0].get_legend_handles_labels()
-    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[1] = labels[:2]
-    handles, labels = axs[2, 0].get_legend_handles_labels()
-    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[2] = labels[:2]
-    for axes_id, axes in enumerate(axs[:, 1]):
-        axes.legend(handle[axes_id], label[axes_id], loc=2, fontsize=8)
-    fig.tight_layout()
-    fig.savefig('./plots/hmstss_population.png')
-    plt.close(fig)
-    # %% Internal deformation field
-    fig, axs = plt.subplots(2, 3, figsize=(7.5, 5))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-        control = 'force'
-        for i, quantity in enumerate(quantity_list[-3:]):
-            if grouping_id in typical_grouping_id_list:
-                j = typical_grouping_id_list.index(grouping_id)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'resting', 'frs', control, quantity,
-                    axs[j, i], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'active', 'frs', control, quantity,
-                    axs[j, i], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'active', 'active', 'frs', control, quantity,
-                    axs[j, i], **kwargs)
-    # Add legends for fig 1
-    for axes_id, axes in enumerate(axs[0]):
-        if axes_id == 0:
-            axes.legend(loc=2)
-        axes.set_ylim(0, 60)
-        axes.text(.1, .5, 'Fiber #%d' % (typical_grouping_id_list[0] + 1),
-                  transform=axes.transAxes, fontsize=8)
-    for axes_id, axes in enumerate(axs[1]):
-        if axes_id == 0:
-            axes.legend(loc=2)
-        axes.set_ylim(0, 80)
-        axes.text(.1, .5, 'Fiber #%d' % (typical_grouping_id_list[1] + 1),
-                  transform=axes.transAxes, fontsize=8)
-    # Add labels
-    for axes in axs.T[0].ravel():
-        axes.set_ylabel('Static firing (Hz)')
-    for axes in axs[-1].ravel():
         axes.set_xlabel('Force (mN)')
-    # Add titles
-    for axes_id, axes in enumerate(axs[0]):
-        axes.set_title('%s-based model' % ['Stress', 'Strain', 'SED'][axes_id])
-    # Format and save
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.14, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
-    fig.tight_layout()
-    fig.savefig('./plots/hmstss_internal.png')
-    plt.close(fig)
-    # %% Displ control
-    fig, axs = plt.subplots(3, 1, figsize=(3.27, 7.5))
-    for grouping_id, resting_grouping in enumerate(resting_grouping_list):
-        active_grouping = active_grouping_list[grouping_id]
-        grouping_dict = dict(resting=resting_grouping, active=active_grouping)
-        marker = MARKER_LIST[grouping_id]
-        color = COLOR_LIST[grouping_id]
-        kwargs = dict(marker=marker, color=color, mfc=color, mec=color)
-        control = 'displ'
-        for i, quantity in enumerate(quantity_list[-3:]):
-            # Do fig2, for multiple sensitivities
-            if quantity == 'stress' and grouping_id == 2:
-                plot_phase_single(
-                    grouping_dict,
-                    'active', 'active', 'frs', control, quantity,
-                    axs[2], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'resting', 'frs', control, quantity,
-                    axs[2], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'active', 'resting', 'frs', control, quantity,
-                    axs[0], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'resting', 'frs', control, quantity,
-                    axs[0], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'active', 'frs', control, quantity,
-                    axs[1], **kwargs)
-                plot_phase_single(
-                    grouping_dict,
-                    'resting', 'resting', 'frs', control, quantity,
-                    axs[1], **kwargs)
-    # Add legends
-    handles, labels = axs[0].get_legend_handles_labels()
-    handle = [[] for i in range(3)]
-    label = [[] for i in range(3)]
-    handle[0] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]] +\
-                [mlines.Line2D([], [], ls='None', marker=h.get_marker(),
-                               mec=h.get_mec(), mfc=h.get_mfc())
-                 for h in handles[1::2]]
-    # This legend is hard-coded
-    label[0] = labels[:2] + [
-        'Fiber #%d' % 3]
-    handles, labels = axs[1].get_legend_handles_labels()
-    handle[1] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[1] = labels[:2]
-    handles, labels = axs[2].get_legend_handles_labels()
-    handle[2] = [mlines.Line2D([], [], ls=h.get_linestyle(), c=h.get_c())
-                 for h in handles[:2]]
-    label[2] = labels[:2]
-    for axes_id, axes in enumerate(axs):
-        axes.legend(handle[axes_id], label[axes_id], loc=2)
-        axes.set_ylim(0, 100)
-    # Format and save
-    for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
-                  fontsize=12, fontweight='bold', va='top')
+    for axes in axs.T[0]:
         axes.set_ylabel('Static firing (Hz)')
-    axs[-1].set_xlabel('Displacement (mm)')
+    axs[0, 0].legend(loc=2, fontsize=6)
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.1, chr(65 + axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
-    fig.savefig('./plots/hmstss_displ.png')
+    fig.savefig('./plots/lesniak_f43.png')
+    plt.close(fig)
+    # %% Table for second computational experiment
+    mda = median_dict['active']
+    mdr = 0
+    skin_change_table = np.empty((len(resting_grouping_list) * len(
+        active_grouping_list_list[0]), 1))
+    t44 = np.empty((len(resting_grouping_list) * len(
+        active_grouping_list_list[0]), 2))
+    t45 = np.empty((len(resting_grouping_list) * len(
+        active_grouping_list_list[0]), 2))
+    active_organ_list = []
+    resting_organ_list = []
+    for i, base_grouping in enumerate(resting_grouping_list):
+        active_grouping_list = active_grouping_list_list[i]
+        for j, active_grouping in enumerate(active_grouping_list):
+            active_organ_list.append(active_grouping)
+            resting_organ_list.append(base_grouping)
+            base_response = get_response_from_hc_grouping(
+                base_grouping, mdr)
+            response_skin_constant = get_response_from_hc_grouping(
+                active_grouping, mdr)
+
+            def get_skin_number():
+                score = np.empty(level_num)
+                for i in range(level_num):
+                    response_skin_changes = get_response_from_hc_grouping(
+                        active_grouping, i)
+                    score[i] = get_percent(base_response,
+                                           response_skin_changes)
+                skin_number = np.abs(score).argmin()
+                return skin_number
+            skin_change_table[3 * i + j] = get_skin_number()
+            response_skin_changes = get_response_from_hc_grouping(
+                active_grouping, skin_change_table[3 * i + j])
+            t44[3 * i + j, 0] = get_percent(
+                base_response, response_skin_constant)
+            t44[3 * i + j, 1] = get_percent(
+                base_response, response_skin_changes)
+            t45[3 * i + j, 0] = get_sts_change(
+                base_response, response_skin_constant)
+            t45[3 * i + j, 1] = get_sts_change(
+                base_response, response_skin_changes)
+    changed_to = thickness_array[skin_change_table.astype('int')].astype('int')
+    columns = ['Resting organ', 'Active organ', 'Skin constant',
+               'Skin changes', 'Skin thickness changed to']
+    t44_df = pd.DataFrame(np.c_[resting_organ_list, active_organ_list,
+                                t44, changed_to], columns=columns)
+    t45_df = pd.DataFrame(np.c_[resting_organ_list, active_organ_list,
+                                t45, changed_to], columns=columns)
+    t44_df.to_csv('./csvs/t44.csv')
+    t45_df.to_csv('./csvs/t45.csv')
+    # %% Plot for second computational experiment
+    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    for grouping_id, base_grouping in enumerate(resting_grouping_list):
+        active_grouping = active_grouping_list_list[grouping_id][0]
+        plot_phase(
+            base_grouping, mdr, axs.ravel()[grouping_id],
+            ls='-', marker='s', c='k', ms=MS, label='Rest organ')
+        plot_phase(
+            active_grouping, mdr, axs.ravel()[grouping_id],
+            ls='-', marker='o', c='k', ms=MS,
+            label='Active organ, skin constant')
+        plot_phase(
+            active_grouping, skin_change_table[3 * grouping_id],
+            axs.ravel()[grouping_id],
+            ls='--', marker='^', c='k', ms=MS,
+            label='Active organ, skin changes')
+        axs.ravel()[grouping_id].set_title(
+            'Resting = %s, active = %s' % (base_grouping, active_grouping),
+            fontsize=6)
+    for axes in axs[-1]:
+        axes.set_xlabel('Force (mN)')
+    for axes in axs.T[0]:
+        axes.set_ylabel('Static firing (Hz)')
+    axs[0, 0].legend(loc=2, fontsize=6)
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.15, 1.1, chr(65 + axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    fig.tight_layout()
+    fig.savefig('./plots/lesniak_f42.png')
     plt.close(fig)
