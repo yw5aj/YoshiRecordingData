@@ -128,12 +128,25 @@ class LifModel:
         return avg_fr
 
     def trans_param_to_fr(self, quantity_dict, trans_param, model='LIF',
-                          mcnc_grouping=None):
+                          mcnc_grouping=None, std=None):
         quantity_array = quantity_dict['quantity_array']
         max_index = quantity_dict['max_index']
         quantity_rate_array = np.abs(np.gradient(quantity_array)) / DT
         current_array = trans_param[0] * quantity_array +\
             trans_param[1] * quantity_rate_array + trans_param[2]
+        if model == 'Lesniak':
+            trans_param = np.tile(trans_param, (4, 1))
+            trans_param[:, :2] = np.multiply(
+                trans_param[:, :2].T, mcnc_grouping).T
+            quantity_array = np.tile(quantity_array, (mcnc_grouping.size, 1)).T
+            quantity_rate_array = np.tile(
+                quantity_rate_array, (mcnc_grouping.size, 1)).T
+            current_array = np.multiply(quantity_array, trans_param[:, 0]) +\
+                np.multiply(quantity_rate_array, trans_param[:, 1]) +\
+                np.multiply(np.ones_like(quantity_array), trans_param[:, 2])
+            if std is not None:
+                current_array += np.random.normal(loc=0., scale=std,
+                                                  size=quantity_array.shape)
         static_fr, dynamic_fr = self.current_array_to_fr(
             current_array, max_index, model=model, mcnc_grouping=mcnc_grouping)
         return static_fr, dynamic_fr
@@ -186,17 +199,19 @@ class LifModel:
         return predicted_fsl
 
     def trans_param_to_predicted_fr(self, quantity_dict_list, trans_param,
-                                    model='LIF', mcnc_grouping=None):
+                                    model='LIF', mcnc_grouping=None, std=None):
         """
         Different between trans_param_to_predicted_fr and trans_param_to_fr:
         trans_param_to_fr is for one quantity trace
         trans_param_to_predicted_fr is for all quantity traces
         """
+        if type(mcnc_grouping) is not np.ndarray:
+            mcnc_grouping = np.array(mcnc_grouping)
         predicted_static_fr, predicted_dynamic_fr = [], []
         for quantity_dict in quantity_dict_list:
             static_fr, dynamic_fr = self.trans_param_to_fr(
                 quantity_dict, trans_param, model=model,
-                mcnc_grouping=mcnc_grouping)
+                mcnc_grouping=mcnc_grouping, std=std)
             predicted_static_fr.append(static_fr)
             predicted_dynamic_fr.append(dynamic_fr)
         predicted_fr = np.c_[range(len(quantity_dict_list)),

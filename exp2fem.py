@@ -498,15 +498,6 @@ if __name__ == '__main__':
         fig, axs = plt.subplots()
         fiber_mech.plot_force_trace_fitting(axs)
         fig.savefig('./plots/fitting_%d.png' % fiber_mech.fiber_id, dpi=300)
-    # Initialize fiber.lif_r2 and fiber.lif_fr
-    for fiber in fiber_list:
-        fiber.lif_r2 = {
-            quantity: (.0, .0) for quantity in quantity_name_list
-        }
-        fiber.lif_fr = {
-            quantity: np.zeros([len(fiber.stim_group_dict), 2])
-            for quantity in quantity_name_list
-        }
     # Run the Abaqus model
     for fiber in fiber_list:
         if fiber.fiber_id in FIBER_FIT_ID_LIST:
@@ -823,3 +814,43 @@ if __name__ == '__main__':
     plt.close(fig)
     print(force_static_fit_resvar, displ_static_fit_resvar)
 #    print(force_dynamic_fit_resvar, displ_dynamic_fit_resvar)
+    # %% For the hmstss work
+    for i, fiber in enumerate(fiber_list):
+        fig, axs = plt.subplots(1, 3, figsize=(7, 2.5))
+        fmt = MARKER_LIST[i] + ':'
+        color = 'k'
+        axs[0].errorbar(
+            fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
+            ['force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
+            mec=color, ms=MS)
+        axs[1].errorbar(
+            fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
+            ['static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
+            c=color, mec=color, ms=MS, label='Experiment')
+        axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
+            'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
+            c=color, mec=color, ms=MS)
+        axs[1].plot(fiber.binned_exp['displ_mean'] * 1e-3,
+                    fiber.lif_fr['stress'].T[0],
+                    '-', c='k', label='Model')
+        axs[2].plot(fiber.binned_exp['force_mean'],
+                    fiber.lif_fr['stress'].T[0],
+                    '-', c='k')
+        # Add subplot labels
+        axs[0].set_xlabel('Displacement (mm)')
+        axs[1].set_xlabel('Displacement (mm)')
+        axs[2].set_xlabel('Force (mN)')
+        axs[0].set_ylabel('Force (mN)')
+        axs[1].set_ylabel('Static firing (Hz)')
+        axs[2].set_ylabel('Static firing (Hz)')
+        axs[1].legend(loc=2)
+        if fiber.fiber_id == 2:
+            axs[0].set_xlim(.375, .55)
+            axs[1].set_xlim(.375, .55)
+        # Adding panel labels
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.2, 1.05, chr(65 + axes_id), transform=axes.transAxes,
+                      fontsize=12, fontweight='bold', va='top')
+        fig.tight_layout()
+        fig.savefig('./plots/hmstss_displ_force_%d.png' % fiber.fiber_id)
+        plt.close(fig)
