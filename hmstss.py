@@ -334,3 +334,16 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/lesniak_f42.png')
     plt.close(fig)
+    # %% Increase heminode for the slide
+    fig, axs = plt.subplots()
+    mdr = median_dict['resting']
+    g = [[11, 7, 2], [15, 10, 5], [13, 9, 4, 2, 2]]
+    for i in range(len(g)):
+        plot_phase(g[i], mdr, axs, ls=['-', '--', ':'][i],
+                   marker=['s', '^', 'o'][i], c='k',
+                   ms=MS, label=str(g[i]))
+    axs.legend(loc=2)
+    axs.set_xlabel('Force (mN)')
+    axs.set_ylabel('Static firing (Hz)')
+    fig.savefig('./plots/hmstss_heminode.png')
+    plt.close(fig)
