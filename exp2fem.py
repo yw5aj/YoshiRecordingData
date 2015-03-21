@@ -18,10 +18,11 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 
 from cleandata.convert import CleanFiber
+from fitlif import LifModel
 from constants import (
     DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS,
     STATIC_START, STATIC_END, FIBER_MECH_ID, FIBER_FIT_ID_LIST,
-    EVAL_DISPL, EVAL_FORCE, LS_LIST, FIBER_RCV)
+    EVAL_DISPL, EVAL_FORCE, LS_LIST, FIBER_RCV, COV)
 quantity_name_list = ['force', 'displ', 'stress', 'strain', 'sener']
 
 
@@ -472,6 +473,7 @@ if __name__ == '__main__':
     run_fiber_mech = False
     run_each_fiber = False
     run_fitting = False
+    fit_noise = True
     use_single_mech = False
     # Run calibration
     if run_calibration:
@@ -532,7 +534,6 @@ if __name__ == '__main__':
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                     quantity_dict_list[i]['max_index'] = max_index_list[i]
                 # Perform the fitting for diff-form
-                from fitlif import LifModel
                 lifModel = LifModel(**FIBER_RCV[fiber.fiber_id])
                 target_fr_array = np.c_[fiber.lumped_dict['stim_num'],
                                         fiber.lumped_dict['static_fr'],
@@ -542,6 +543,11 @@ if __name__ == '__main__':
                     fiber.trans_param[quantity_name] = \
                         lifModel.fit_trans_param(
                             quantity_dict_list, target_fr_array)
+                    if fit_noise:
+                        fiber.trans_param[quantity_name + '_std'] = \
+                            lifModel.fit_noise(
+                                fiber.trans_param[quantity_name],
+                                quantity_dict_list, COV)
 #                    fiber.trans_param[quantity_name] = lifModel.get_lstsq_fit(
 #                        quantity_dict_list, target_fr_array)
                     with open('./pickles/trans_params_%d.pkl' % fiber.fiber_id,

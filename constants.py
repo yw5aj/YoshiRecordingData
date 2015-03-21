@@ -10,6 +10,9 @@ VOLTAGE_THRESHOLD_LIF = 30e-3  # V
 STATIC_START = 2.
 STATIC_END = 4.5
 
+# Target COV for SAI, from Wellnitz et al., 0.78 ± 0.09
+COV = .78
+
 # Total fiber number
 fiber_mech_fname = '2012042702V_01.mat'
 fiber_hmstss_fname = '2012042702V_01.mat'

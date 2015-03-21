@@ -106,6 +106,7 @@ class LifModel:
 
     def current_array_to_fr(self, current_array, max_index, model='LIF',
                             mcnc_grouping=None):
+        # Is this constraint really valid?
         current_array[current_array < 0] = 0.
         spike_array = self.current_array_to_spike_array(
             current_array, model=model, mcnc_grouping=mcnc_grouping)
@@ -129,11 +130,38 @@ class LifModel:
 
     def trans_param_to_fr(self, quantity_dict, trans_param, model='LIF',
                           mcnc_grouping=None, std=None):
-        quantity_array = quantity_dict['quantity_array']
         max_index = quantity_dict['max_index']
+        current_array = self.trans_param_to_current_array(
+            quantity_dict, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping, std=std)
+        static_fr, dynamic_fr = self.current_array_to_fr(
+            current_array, max_index, model=model, mcnc_grouping=mcnc_grouping)
+        return static_fr, dynamic_fr
+
+    def trans_param_to_cov(self, quantity_dict, trans_param, model='LIF',
+                           mcnc_grouping=None, std=None):
+        current_array = self.trans_param_to_current_array(
+            quantity_dict, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping, std=std)
+        spike_array = self.current_array_to_spike_array(
+            current_array, model=model, mcnc_grouping=mcnc_grouping)
+        spike_timings = spike_array.nonzero()[0] * DT
+        isi = np.diff(spike_timings)
+        cov = isi.std() / isi.mean()
+        return cov
+
+    def trans_param_to_current_array(self, quantity_dict, trans_param,
+                                     model='LIF', mcnc_grouping=None,
+                                     std=None):
+        quantity_array = quantity_dict['quantity_array']
         quantity_rate_array = np.abs(np.gradient(quantity_array)) / DT
-        current_array = trans_param[0] * quantity_array +\
-            trans_param[1] * quantity_rate_array + trans_param[2]
+        if model == 'LIF':
+            current_array = trans_param[0] * quantity_array +\
+                trans_param[1] * quantity_rate_array + trans_param[2]
+            if std is not None:
+                std = 0 if std < 0 else std
+                current_array += np.random.normal(
+                    loc=0., scale=std, size=quantity_array.shape)
         if model == 'Lesniak':
             trans_param = np.tile(trans_param, (4, 1))
             trans_param[:, :2] = np.multiply(
@@ -145,18 +173,16 @@ class LifModel:
                 np.multiply(quantity_rate_array, trans_param[:, 1]) +\
                 np.multiply(np.ones_like(quantity_array), trans_param[:, 2])
             if std is not None:
+                std = 0 if std < 0 else std
                 current_array += np.random.normal(loc=0., scale=std,
                                                   size=quantity_array.shape)
-        static_fr, dynamic_fr = self.current_array_to_fr(
-            current_array, max_index, model=model, mcnc_grouping=mcnc_grouping)
-        return static_fr, dynamic_fr
+        return current_array
 
     def trans_param_to_fsl(self, quantity_dict, trans_param, model='LIF',
-                           mcnc_grouping=None):
-        quantity_array = quantity_dict['quantity_array']
-        quantity_rate_array = np.abs(np.gradient(quantity_array)) / DT
-        current_array = trans_param[0] * quantity_array +\
-            trans_param[1] * quantity_rate_array + trans_param[2]
+                           mcnc_grouping=None, std=None):
+        current_array = self.trans_param_to_current_array(
+            quantity_dict, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping, std=std)
         spike_array = self.current_array_to_spike_array(
             current_array, model=model, mcnc_grouping=mcnc_grouping)
         spike_timings = spike_array.nonzero()[0] * DT
@@ -187,16 +213,30 @@ class LifModel:
         return frs, frd, fsl
 
     def trans_param_to_predicted_fsl(self, quantity_dict_list, trans_param,
-                                     model='LIF', mcnc_grouping=None):
+                                     model='LIF', mcnc_grouping=None,
+                                     std=None):
         predicted_fsl = []
         for quantity_dict in quantity_dict_list:
             fsl = self.trans_param_to_fsl(
                 quantity_dict, trans_param, model=model,
-                mcnc_grouping=mcnc_grouping)
+                mcnc_grouping=mcnc_grouping, std=std)
             predicted_fsl.append(fsl)
         predicted_fsl = np.c_[range(len(quantity_dict_list)),
                               predicted_fsl]
         return predicted_fsl
+
+    def trans_param_to_predicted_cov(self, quantity_dict_list, trans_param,
+                                     model='LIF', mcnc_grouping=None,
+                                     std=None):
+        predicted_cov = []
+        for quantity_dict in quantity_dict_list:
+            cov = self.trans_param_to_cov(
+                quantity_dict, trans_param, model=model,
+                mcnc_grouping=mcnc_grouping, std=std)
+            predicted_cov.append(cov)
+        predicted_cov = np.c_[range(len(quantity_dict_list)),
+                              predicted_cov]
+        return predicted_cov
 
     def trans_param_to_predicted_fr(self, quantity_dict_list, trans_param,
                                     model='LIF', mcnc_grouping=None, std=None):
@@ -205,8 +245,6 @@ class LifModel:
         trans_param_to_fr is for one quantity trace
         trans_param_to_predicted_fr is for all quantity traces
         """
-        if type(mcnc_grouping) is not np.ndarray:
-            mcnc_grouping = np.array(mcnc_grouping)
         predicted_static_fr, predicted_dynamic_fr = [], []
         for quantity_dict in quantity_dict_list:
             static_fr, dynamic_fr = self.trans_param_to_fr(
@@ -280,6 +318,36 @@ class LifModel:
                        options={'eps': 1e-3})
         trans_param = res.x * trans_param_init
         return trans_param
+
+    def fit_noise(self, trans_param, quantity_dict_list, target_cov,
+                  model='LIF', mcnc_grouping=None):
+        def get_abs_err(fitx, std0, target_cov):
+            std = fitx * std0
+            predicted_cov = self.trans_param_to_predicted_cov(
+                quantity_dict_list, trans_param, model=model,
+                mcnc_grouping=mcnc_grouping, std=std)
+            mean_cov = predicted_cov.T[1].mean()
+            err = abs(mean_cov - target_cov)
+            return err
+
+        def avg_abs_err(fitx, std0, target_cov, n):
+            """
+            Runs n repetitions of get_abs_err and get average.
+            """
+            err = np.empty(n)
+            for i in range(n):
+                err[i] = get_abs_err(fitx, std0, target_cov)
+            print(fitx, err.mean())
+            return err.mean()
+
+        std0 = self.fr2current(50.) * .5
+        bounds = ((0, None), )
+        res = minimize(avg_abs_err, 1., args=(std0, target_cov, 10),
+                       method='SLSQP', bounds=bounds, options={'eps': 1e-1}
+                       )
+        std = res.x * std0
+        print(res)
+        return std
 
 
 def get_r2(target_array, predicted_array):

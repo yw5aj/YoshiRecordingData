@@ -5,6 +5,7 @@ Created on Mon Mar 16 22:33:37 2015
 @author: Administrator
 """
 
+from constants import COV
 from fitlif import LifModel
 import unittest
 import pickle
@@ -12,7 +13,7 @@ import copy
 import numpy as np
 
 
-class TestLesniakVsLif(unittest.TestCase):
+class TestLif(unittest.TestCase):
 
     def setUp(self):
         with open('./pickles/test_lesniak_vs_lif_data.pkl', 'rb') as f:
@@ -20,19 +21,24 @@ class TestLesniakVsLif(unittest.TestCase):
         for key, item in data_dict.items():
             setattr(self, key, item)
         self.lifModel = LifModel(**self.fiber_rcv)
+        self.mcnc_grouping = np.array([8, 5, 3, 1])
+        self.trans_param_lesniak = copy.deepcopy(self.trans_param)
+        self.trans_param_lesniak[:2] /= max(self.mcnc_grouping)
 
     def test_equiv(self):
-        mcnc_grouping = [8, 5, 3, 1]
         lif_response = self.lifModel.trans_param_to_predicted_fr(
             self.quantity_dict_list, self.trans_param)
-        trans_param_lesniak = copy.deepcopy(self.trans_param)
-        trans_param_lesniak[:2] /= max(mcnc_grouping)
         lesniak_response = self.lifModel.trans_param_to_predicted_fr(
-            self.quantity_dict_list, trans_param_lesniak,
-            model='Lesniak', mcnc_grouping=mcnc_grouping)
-        print(lesniak_response)
+            self.quantity_dict_list, self.trans_param_lesniak,
+            model='Lesniak', mcnc_grouping=self.mcnc_grouping)
         self.assertTrue(np.allclose(
             lif_response, lesniak_response))
+
+    def test_std(self):
+        std = self.lifModel.fit_noise(
+            self.trans_param_lesniak, self.quantity_dict_list, COV,
+            model='Lesniak', mcnc_grouping=self.mcnc_grouping)
+        self.assertTrue(True)
 
 if __name__ == '__main__':
     unittest.main()
