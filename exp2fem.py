@@ -607,12 +607,12 @@ if __name__ == '__main__':
             if fiber_id in FIBER_FIT_ID_LIST:
                 axs[0].plot(
                     fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                        quantity][:, 1], c=color, ls=ls, label='Predicted by '
-                    + quantity)
+                        quantity][:, 1], c=color, ls=ls, label='%s-based Model'
+                    % ['Stress', 'Strain', 'SED'][quantity_id])
                 axs[1].plot(
                     fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                        quantity][:, 0], c=color, ls=ls, label='Predicted by'
-                    + quantity)
+                        quantity][:, 0], c=color, ls=ls, label='%s-based Model'
+                    % ['Stress', 'Strain', 'SED'][quantity_id])
         # Adjust formatting
         if fiber_id == 2:
             xmin, xmax = .39, .55
@@ -632,8 +632,8 @@ if __name__ == '__main__':
         axs[1].set_ylabel('Static mean firing (Hz)')
         h, l = axs[0].get_legend_handles_labels()
         legend = fig.legend(
-            h, l, bbox_to_anchor=(0.05, 0.85, 0.9, .14), ncol=2,
-            mode='expand', frameon=True)
+            h, l, bbox_to_anchor=(0.125, 0.825, 0.85, .15), ncol=2,
+            mode='expand', frameon=True, fontsize=7)
         frame = legend.get_frame()
         frame.set_linewidth(.5)
         # Adding panel labels
@@ -665,20 +665,20 @@ if __name__ == '__main__':
             if fiber_id in FIBER_FIT_ID_LIST:
                 axs[0].plot(
                     fiber.binned_exp['force_mean'], fiber.lif_fr[
-                        quantity][:, 1], c=color, ls=ls, label='Predicted by '
-                    + quantity)
+                        quantity][:, 1], c=color, ls=ls, label='%s-based Model'
+                    % ['Stress', 'Strain', 'SED'][quantity_id])
                 axs[1].plot(
                     fiber.binned_exp['force_mean'], fiber.lif_fr[
-                        quantity][:, 0], c=color, ls=ls, label='Predicted by'
-                    + quantity)
+                        quantity][:, 0], c=color, ls=ls, label='%s-based Model'
+                    % ['Stress', 'Strain', 'SED'][quantity_id])
         # Adjust formatting
         axs[1].set_xlabel(r'Static force (mN)')
         axs[0].set_ylabel('Dynamic mean firing (Hz)')
         axs[1].set_ylabel('Static mean firing (Hz)')
         h, l = axs[0].get_legend_handles_labels()
         legend = fig.legend(
-            h, l, bbox_to_anchor=(0.05, 0.85, 0.9, .14), ncol=2,
-            mode='expand', frameon=True)
+            h, l, bbox_to_anchor=(0.125, 0.825, 0.85, .15), ncol=2,
+            mode='expand', frameon=True, fontsize=7)
         frame = legend.get_frame()
         frame.set_linewidth(.5)
         # Adding panel labels

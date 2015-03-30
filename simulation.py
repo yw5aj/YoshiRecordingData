@@ -1074,15 +1074,16 @@ if __name__ == '__main__':
     # Add legends
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].set_ylim(.225, .625)
     axs[0, 0].legend(
         handles[len(stim_plot_list)*(len(level_plot_list)//2)
                 + len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
-         for factor_display in factor_display_list[:3]], loc=4)
+         for factor_display in factor_display_list[:3]], loc=4, fontsize=6)
     # The 5 quantile labels
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
-        'Quartile', 'Median'], loc=1)
+        'Quartile', 'Median'], loc=1, fontsize=6)
     # Add subtitles
     axs[0, 0].set_title('Temporal progression')
     axs[0, 1].set_title('Temporal rate')

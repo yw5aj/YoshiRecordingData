@@ -341,12 +341,13 @@ class LifModel:
             return err.mean()
 
         std0 = self.fr2current(50.) * .5
-        bounds = ((0, None), )
-        res = minimize(avg_abs_err, 1., args=(std0, target_cov, 10),
-                       method='SLSQP', bounds=bounds, options={'eps': 1e-1}
-                       )
-        std = res.x * std0
-        print(res)
+        import matplotlib.pyplot as plt
+        fig, axs = plt.subplots()
+        n = 50
+        std_array = np.empty(n)
+        err_array = np.empty(n)
+        for i in range(n):
+            pass
         return std
 
 
