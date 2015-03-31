@@ -938,6 +938,59 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/spatial_cy_my.png', dpi=300)
     plt.close(fig)
+    # %% The huge mech table for JN paper
+    jn_mech_table = np.empty((4, 15))
+    # Fill iqr ratio data
+    jn_mech_table[0, 0:3] = temporal_table[1]
+    jn_mech_table[0, 5:8] = temporal_rate_table[1]
+    jn_mech_table[0, 10:13] = spatial_table[1]
+    jn_mech_table[1, 0:3] = temporal_table[2]
+    jn_mech_table[1, 5:8] = temporal_rate_table[2]
+    jn_mech_table[1, 10:13] = spatial_table[2]
+    jn_mech_table[2, 0:3] = temporal_table[3]
+    jn_mech_table[2, 5:8] = temporal_rate_table[3]
+    jn_mech_table[2, 10:13] = spatial_table[3]
+    jn_mech_table[3, 0:3] = temporal_table[5]
+    jn_mech_table[3, 5:8] = temporal_rate_table[5]
+    jn_mech_table[3, 10:13] = spatial_table[5]
+    # Sum the iqr ratios
+    for i in range(3, 14, 5):
+        jn_mech_table[:, i] = jn_mech_table[:, i-3:i].sum(axis=1)
+    # Fill r2 data
+    jn_mech_table[0, 4] = temporal_pearsonr_table[1, 0] ** 2
+    jn_mech_table[1, 4] = temporal_pearsonr_table[2, 0] ** 2
+    jn_mech_table[2, 4] = temporal_pearsonr_table[0, 1] ** 2
+    jn_mech_table[3, 4] = temporal_pearsonr_table[2, 1] ** 2
+    jn_mech_table[0, 4] = temporal_rate_pearsonr_table[1, 0] ** 2
+    jn_mech_table[1, 9] = temporal_rate_pearsonr_table[2, 0] ** 2
+    jn_mech_table[2, 9] = temporal_rate_pearsonr_table[0, 1] ** 2
+    jn_mech_table[3, 9] = temporal_rate_pearsonr_table[2, 1] ** 2
+    jn_mech_table[0, 9] = spatial_pearsonr_table[1, 0] ** 2
+    jn_mech_table[1, 14] = spatial_pearsonr_table[2, 0] ** 2
+    jn_mech_table[2, 14] = spatial_pearsonr_table[0, 1] ** 2
+    jn_mech_table[3, 14] = spatial_pearsonr_table[2, 1] ** 2
+    # Convert to pandas dataframe before I forget
+    columns = []
+    [columns.extend(['T', 'M', 'V', 'Sum', 'R2'])
+        for i in range(3)]
+    index = ['Strain', 'SED', 'Stress', 'SED']
+    jn_mech_table_df = pd.DataFrame(data=jn_mech_table,
+                                    columns=columns, index=index)
+    jn_mech_table_df.to_csv('./csvs/jn_mech_table.csv')
+    # %% The table for simulations
+    jn_sim_table = np.empty((2, 12))
+    for control_id in range(2):
+        for quantity_id in range(3):
+            jn_sim_table[control_id, quantity_id * 4:quantity_id * 4 + 3] =\
+                sim_table[3 * control_id + quantity_id]
+            jn_sim_table[control_id, quantity_id * 4 + 3] = sim_table[
+                3 * control_id + quantity_id].sum()
+    columns = []
+    [columns.extend(['T', 'M', 'V', 'Sum']) for i in range(3)]
+    index = ['Displacement', 'Force']
+    df_jn_sim_table = pd.DataFrame(jn_sim_table,
+                                   columns=columns, index=index)
+    df_jn_sim_table.to_csv('./csvs/jn_sim_table.csv')
     # %% The huge simulation figure in JN paper
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[:3]):
