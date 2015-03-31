@@ -381,9 +381,9 @@ class Fiber:
                   ) as f:
             template_script = f.read()
         self.abq_script = template_script.replace(
-            'CSVFILEPATH',
-            '\'x:/WorkFolder/DataAnalysis/YoshiRecordingData/csvs/stim_block_'
-            + str(self.fiber_id) + '.csv\'').replace(
+            'CSVFILEPATH', '\'x:/WorkFolder/DataAnalysis/' +
+            'YoshiRecordingData/csvs/stim_block_' +
+            str(self.fiber_id) + '.csv\'').replace(
                 'BASEMODELNAME', '\'Fiber' + str(self.fiber_id) + '\'')
         with open('./scripts/' + str(self.fiber_id) + '.py', 'w') as f:
             f.write(self.abq_script)
@@ -578,8 +578,8 @@ if __name__ == '__main__':
                         target_fr_array - predicted_fr_array)[:, 1]) ** 2
                         ).sum()
                     ssres_dynamic = (((
-                        target_fr_array - predicted_fr_array)[:, 2])
-                        ** 2).sum()
+                        target_fr_array - predicted_fr_array)[:, 2]) ** 2
+                        ).sum()
                     static_r2 = 1. - ssres_static / sstot_static
                     dynamic_r2 = 1. - ssres_dynamic / sstot_dynamic
                     return static_r2, dynamic_r2
@@ -596,22 +596,24 @@ if __name__ == '__main__':
         axs[0].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'],
-            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+            fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
         axs[1].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_std'],
-            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+            fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
         # Plot fitting
         for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
             ls = LS_LIST[quantity_id]
             if fiber_id in FIBER_FIT_ID_LIST:
                 axs[0].plot(
                     fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                        quantity][:, 1], c=color, ls=ls, label='%s-based Model'
+                        quantity][:, 1], color=color, ls=ls,
+                    label='%s-based Model'
                     % ['Stress', 'Strain', 'SED'][quantity_id])
                 axs[1].plot(
                     fiber.binned_exp['displ_mean'] * 1e-3, fiber.lif_fr[
-                        quantity][:, 0], c=color, ls=ls, label='%s-based Model'
+                        quantity][:, 0], color=color, ls=ls,
+                    label='%s-based Model'
                     % ['Stress', 'Strain', 'SED'][quantity_id])
         # Adjust formatting
         if fiber_id == 2:
@@ -654,22 +656,24 @@ if __name__ == '__main__':
         axs[0].errorbar(
             fiber.binned_exp['force_mean'], fiber.binned_exp
             ['dynamic_fr_mean'], fiber.binned_exp['dynamic_fr_std'],
-            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+            fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
         axs[1].errorbar(
             fiber.binned_exp['force_mean'], fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_std'],
-            fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+            fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
         # Plot fitting
         for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
             ls = LS_LIST[quantity_id]
             if fiber_id in FIBER_FIT_ID_LIST:
                 axs[0].plot(
                     fiber.binned_exp['force_mean'], fiber.lif_fr[
-                        quantity][:, 1], c=color, ls=ls, label='%s-based Model'
+                        quantity][:, 1], color=color, ls=ls,
+                    label='%s-based Model'
                     % ['Stress', 'Strain', 'SED'][quantity_id])
                 axs[1].plot(
                     fiber.binned_exp['force_mean'], fiber.lif_fr[
-                        quantity][:, 0], c=color, ls=ls, label='%s-based Model'
+                        quantity][:, 0], color=color, ls=ls,
+                    label='%s-based Model'
                     % ['Stress', 'Strain', 'SED'][quantity_id])
         # Adjust formatting
         axs[1].set_xlabel(r'Static force (mN)')
@@ -699,9 +703,9 @@ if __name__ == '__main__':
     axs[0].errorbar(
         fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
         ['force_mean'], fiber.binned_exp['force_std'],
-        fmt=fmt, c=color, mec=color, ms=MS, label='Experiment')
+        fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
     axs[0].plot(
-        fiber.abq_displ_scaled * 1e-3, fiber.abq_force, ls='-', c=color,
+        fiber.abq_displ_scaled * 1e-3, fiber.abq_force, ls='-', color=color,
         label='Model')
     # Plot force trace
     fiber_mech.get_stim_block_trace_exp()
@@ -788,15 +792,15 @@ if __name__ == '__main__':
         color = 'k'
         axs[0].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
-            ['force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
-            mec=color, ms=MS, label='Fiber #%d' % (i + 1))
+            ['force_mean'], fiber.binned_exp['force_sem'], fmt=fmt,
+            color=color, mec=color, ms=MS, label='Fiber #%d' % (i + 1))
         axs[1].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % (i + 1))
+            color=color, mec=color, ms=MS, label='Fiber #%d' % (i + 1))
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Fiber #%d' % (i + 1))
+            color=color, mec=color, ms=MS, label='Fiber #%d' % (i + 1))
     axs[1].plot(np.sort(displ_list) * 1e-3,
                 np.sort(displ_static_predict), '-k',
                 label='Linear regression')
@@ -827,21 +831,21 @@ if __name__ == '__main__':
         color = 'k'
         axs[0].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
-            ['force_mean'], fiber.binned_exp['force_sem'], fmt=fmt, c=color,
-            mec=color, ms=MS)
+            ['force_mean'], fiber.binned_exp['force_sem'], fmt=fmt,
+            color=color, mec=color, ms=MS)
         axs[1].errorbar(
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
-            c=color, mec=color, ms=MS, label='Experiment')
+            color=color, mec=color, ms=MS, label='Experiment')
         axs[2].errorbar(fiber.binned_exp['force_mean'], fiber.binned_exp[
             'static_fr_mean'], fiber.binned_exp['static_fr_sem'], fmt=fmt,
-            c=color, mec=color, ms=MS)
+            color=color, mec=color, ms=MS)
         axs[1].plot(fiber.binned_exp['displ_mean'] * 1e-3,
                     fiber.lif_fr['stress'].T[0],
-                    '-', c='k', label='Model')
+                    '-', color='k', label='Model')
         axs[2].plot(fiber.binned_exp['force_mean'],
                     fiber.lif_fr['stress'].T[0],
-                    '-', c='k')
+                    '-', color='k')
         # Add subplot labels
         axs[0].set_xlabel('Displacement (mm)')
         axs[1].set_xlabel('Displacement (mm)')

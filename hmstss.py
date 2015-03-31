@@ -180,10 +180,10 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(2, 2, figsize=(5, 5))
     for grouping_id, base_grouping in enumerate(resting_grouping_list):
         plot_phase(base_grouping, 0, axs.ravel()[grouping_id],
-                   ls='-', marker='s', c='k', ms=MS,
+                   ls='-', marker='s', color='k', ms=MS,
                    label='%d μm' % thickness_array[0])
         plot_phase(base_grouping, -1, axs.ravel()[grouping_id],
-                   ls='-', marker='o', c='k', ms=MS,
+                   ls='-', marker='o', color='k', ms=MS,
                    label='%d μm' % thickness_array[-1])
         axs.ravel()[grouping_id].set_title(
             'Organ = %s' % str(base_grouping))
@@ -230,14 +230,14 @@ if __name__ == '__main__':
         active_grouping = active_grouping_list_list[grouping_id][0]
         plot_phase(
             base_grouping, median_dict['resting'], axs.ravel()[grouping_id],
-            ls='-', marker='s', c='k', ms=MS, label='Rest organ')
+            ls='-', marker='s', color='k', ms=MS, label='Rest organ')
         plot_phase(
             active_grouping, median_dict['resting'], axs.ravel()[grouping_id],
-            ls='-', marker='o', c='k', ms=MS,
+            ls='-', marker='o', color='k', ms=MS,
             label='Active organ, skin constant')
         plot_phase(
             active_grouping, median_dict['active'], axs.ravel()[grouping_id],
-            ls='--', marker='^', c='k', ms=MS,
+            ls='--', marker='^', color='k', ms=MS,
             label='Active organ, skin changes')
         axs.ravel()[grouping_id].set_title(
             'Resting = %s, active = %s' % (base_grouping, active_grouping),
@@ -310,15 +310,15 @@ if __name__ == '__main__':
         active_grouping = active_grouping_list_list[grouping_id][0]
         plot_phase(
             base_grouping, mdr, axs.ravel()[grouping_id],
-            ls='-', marker='s', c='k', ms=MS, label='Rest organ')
+            ls='-', marker='s', color='k', ms=MS, label='Rest organ')
         plot_phase(
             active_grouping, mdr, axs.ravel()[grouping_id],
-            ls='-', marker='o', c='k', ms=MS,
+            ls='-', marker='o', color='k', ms=MS,
             label='Active organ, skin constant')
         plot_phase(
             active_grouping, skin_change_table[3 * grouping_id],
             axs.ravel()[grouping_id],
-            ls='--', marker='^', c='k', ms=MS,
+            ls='--', marker='^', color='k', ms=MS,
             label='Active organ, skin changes')
         axs.ravel()[grouping_id].set_title(
             'Resting = %s, active = %s' % (base_grouping, active_grouping),
@@ -340,7 +340,7 @@ if __name__ == '__main__':
     g = [[11, 7, 2], [15, 10, 5], [13, 9, 4, 2, 2]]
     for i in range(len(g)):
         plot_phase(g[i], mdr, axs, ls=['-', '--', ':'][i],
-                   marker=['s', '^', 'o'][i], c='k',
+                   marker=['s', '^', 'o'][i], color='k',
                    ms=MS, label=str(g[i]))
     axs.legend(loc=2)
     axs.set_xlabel('Force (mN)')

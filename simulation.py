@@ -80,8 +80,8 @@ class SimFiber:
         for stim in range(stim_num)[1:]:
             for key in key_list:
                 self.dist[stim][key] = np.loadtxt(
-                    fpath+self.factor+str(self.level)+str(stim-1)+self.control
-                    + '_'+key+'.csv', delimiter=',')
+                    fpath+self.factor+str(self.level)+str(stim-1)+
+                    self.control + '_'+key+'.csv', delimiter=',')
                 # Change unit to experiment ones
                 if 'y' in key:
                     self.dist[stim][key] = displcoeff[0] + displcoeff[1] *\
@@ -350,7 +350,8 @@ if __name__ == '__main__':
                         axs[row, j].plot(
                             dist['cxold'][-1, :] * xscale,
                             dist[cquantity][-1, :] * cscale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
                     for row, mquantity in enumerate(mquantity_list):
                         # Scaling the axes
                         if 'ress' in mquantity or 'sener' in mquantity:
@@ -361,7 +362,8 @@ if __name__ == '__main__':
                         axs[row+2, j].plot(
                             dist['mxold'][-1, :] * xscale,
                             dist[mquantity][-1, :] * mscale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
@@ -387,8 +389,8 @@ if __name__ == '__main__':
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]], loc=3)
@@ -417,12 +419,11 @@ if __name__ == '__main__':
         iqr_dict, distance_dict = {}, {}
         for quantity in quantity_list[-3:]:
             iqr_dict[quantity] = \
-                np.abs(integrate(simFiberLevelList[3], quantity, 2)
-                       - integrate(simFiberLevelList[1], quantity, 2)
-                       )
+                np.abs(integrate(simFiberLevelList[3], quantity, 2) -
+                       integrate(simFiberLevelList[1], quantity, 2))
             distance_dict[quantity] = \
-                .5 * np.abs(integrate(simFiberLevelList[2], quantity, 1)
-                            - integrate(simFiberLevelList[2], quantity, 3))
+                .5 * np.abs(integrate(simFiberLevelList[2], quantity, 1) -
+                            integrate(simFiberLevelList[2], quantity, 3))
         return iqr_dict, distance_dict
     temporal_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
@@ -470,14 +471,16 @@ if __name__ == '__main__':
                         axs[row, k].plot(
                             simFiber.traces[stim]['time'],
                             simFiber.traces[stim][surface] * sscale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
                     for row, quantity in enumerate(quantity_list[-3:]):
                         scale = 1 if quantity is 'strain' else 1e-3
                         axes = axs[row+2, k]
                         axes.plot(
                             simFiber.traces[stim]['time'],
                             simFiber.traces[stim][quantity]*scale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
@@ -530,13 +533,11 @@ if __name__ == '__main__':
         iqr_dict, distance_dict = {}, {}
         for quantity in quantity_list[-3:]:
             iqr_dict[quantity] = \
-                np.abs(integrate_rate(simFiberLevelList[3], quantity, 2)
-                       - integrate_rate(simFiberLevelList[1], quantity, 2)
-                       )
+                np.abs(integrate_rate(simFiberLevelList[3], quantity, 2) -
+                       integrate_rate(simFiberLevelList[1], quantity, 2))
             distance_dict[quantity] = \
-                .5 * np.abs(integrate_rate(simFiberLevelList[2], quantity, 1)
-                            - integrate_rate(simFiberLevelList[2], quantity, 3)
-                            )
+                .5 * np.abs(integrate_rate(simFiberLevelList[2], quantity, 1) -
+                            integrate_rate(simFiberLevelList[2], quantity, 3))
         return iqr_dict, distance_dict
     temporal_rate_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
@@ -586,14 +587,16 @@ if __name__ == '__main__':
                         axs[row, k].plot(
                             simFiber.traces_rate[stim]['time'],
                             simFiber.traces_rate[stim][surface] * sscale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
                     for row, quantity in enumerate(quantity_list[-3:]):
                         scale = 1 if quantity is 'strain' else 1e-3
                         axes = axs[row+2, k]
                         axes.plot(
                             simFiber.traces_rate[stim]['time'],
                             simFiber.traces_rate[stim][quantity] * scale,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
@@ -617,8 +620,8 @@ if __name__ == '__main__':
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(
-        handles[len(stim_plot_list) * (len(level_plot_list) // 2)
-                + len(stim_plot_list) // 2::len(stim_plot_list) * len(
+        handles[len(stim_plot_list) * (len(level_plot_list) // 2) +
+                len(stim_plot_list) // 2::len(stim_plot_list) * len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]],
@@ -684,17 +687,17 @@ if __name__ == '__main__':
                     axs[0, k].plot(
                         simFiber.static_displ_exp,
                         simFiber.static_force_exp,
-                        c=color, mec=color, ms=MS,
+                        color=color, mec=color, ms=MS,
                         ls=fmt, label=label)
                     axs[1, k].plot(
                         simFiber.static_displ_exp,
                         simFiber.predicted_fr[fiber_id][quantity].T[1],
-                        c=color, mec=color, ms=MS,
+                        color=color, mec=color, ms=MS,
                         ls=fmt, label=label)
                     axs[2, k].plot(
                         simFiber.static_force_exp,
                         simFiber.predicted_fr[fiber_id][quantity].T[1],
-                        c=color, mec=color, ms=MS,
+                        color=color, mec=color, ms=MS,
                         ls=fmt, label=label)
         # X and Y limits
         for axes in axs[0:, :].ravel():
@@ -743,27 +746,27 @@ if __name__ == '__main__':
             axs[0, 0].plot(
                 simFiberList[i][level][0].static_displ_exp,
                 simFiberList[i][level][0].predicted_fr[2]['strain'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
             axs[1, 0].plot(
                 simFiberList[i][level][0].static_force_exp,
                 simFiberList[i][level][0].predicted_fr[2]['stress'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
             axs[0, 1].plot(
                 simFiberList[i][level][0].static_displ_exp,
                 simFiberList[i][level][0].predicted_fr[0]['strain'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
             axs[1, 1].plot(
                 simFiberList[i][level][0].static_force_exp,
                 simFiberList[i][level][0].predicted_fr[0]['stress'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
             axs[0, 2].plot(
                 simFiberList[i][level][0].static_displ_exp,
                 simFiberList[i][level][0].predicted_fr[1]['strain'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
             axs[1, 2].plot(
                 simFiberList[i][level][0].static_force_exp,
                 simFiberList[i][level][0].predicted_fr[1]['stress'].T[1],
-                c=color, mec=color, ms=MS, ls=fmt, label=label)
+                color=color, mec=color, ms=MS, ls=fmt, label=label)
     # Formatting
     for axes in axs[0, :].ravel():
         axes.set_xlabel(r'Static displacement (mm)')
@@ -823,7 +826,8 @@ if __name__ == '__main__':
                         stimuli = simFiber.static_displ_exp
                     elif row == 1:
                         stimuli = simFiber.static_force_exp
-                    axs[row, col].plot(stimuli, response, c=color, mec=color,
+                    axs[row, col].plot(stimuli, response, color=color,
+                                       mec=color,
                                        ms=MS, ls=fmt, label=label)
     # Formatting
     for axes in axs[0, :].ravel():
@@ -899,15 +903,18 @@ if __name__ == '__main__':
                 xscale = 1e3
                 axs[0].plot(dist['cxold'][-1, :] * xscale,
                             dist['cy'][-1, :] * 1e-3,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
                 # Scaling the axes
                 # Plotting
                 axs[1].plot(dist['mxold'][-1, :] * xscale,
                             dist['my'][-1, :] * 1e-3,
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
                 axs[2].plot(dist['mxold'][-1, :] * xscale,
                             dist['mstrain'][-1, :],
-                            ls=ls, c=color, label=quantile_label_list[level])
+                            ls=ls, color=color,
+                            label=quantile_label_list[level])
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
@@ -924,8 +931,8 @@ if __name__ == '__main__':
     # The line type labels
     handles, labels = axs[0].get_legend_handles_labels()
     axs[0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]], loc=3)
@@ -1004,7 +1011,8 @@ if __name__ == '__main__':
                 elif stim == 3:
                     color = (0, 0, 1, alpha)
                 ls = LS_LIST[i]
-                kwargs = dict(ls=ls, c=color, label=quantile_label_list[level])
+                kwargs = dict(ls=ls, color=color,
+                              label=quantile_label_list[level])
                 # First column, temporal progression
                 simFiber = simFiberList[i][level][0]
                 axs[0, 0].plot(
@@ -1129,8 +1137,8 @@ if __name__ == '__main__':
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].set_ylim(.225, .625)
     axs[0, 0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]], loc=4, fontsize=6)
@@ -1161,7 +1169,8 @@ if __name__ == '__main__':
                 elif stim == 3:
                     color = (0, 0, 1, alpha)
                 ls = LS_LIST[i]
-                kwargs = dict(ls=ls, c=color, label=quantile_label_list[level])
+                kwargs = dict(ls=ls, color=color,
+                              label=quantile_label_list[level])
                 # First column, temporal progression
                 simFiber = simFiberList[i][level][0]
                 axs1[0, 0].plot(
@@ -1296,8 +1305,8 @@ if __name__ == '__main__':
     handles, labels = axs1[0, 0].get_legend_handles_labels()
     # The line type labels
     axs1[0, 0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]], loc=4)
@@ -1306,8 +1315,8 @@ if __name__ == '__main__':
         'Quartile', 'Median'], loc=1)
     # The line type labels for plot #2
     axs2[0, 1].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
          for factor_display in factor_display_list[:3]], loc=1)
@@ -1345,7 +1354,8 @@ if __name__ == '__main__':
                 elif stim == 3:
                     color = (0, 0, 1, alpha)
                 ls = LS_LIST[i - 3]
-                kwargs = dict(ls=ls, c=color, label=quantile_label_list[level])
+                kwargs = dict(ls=ls, color=color,
+                              label=quantile_label_list[level])
                 # First column, temporal progression
                 simFiber = simFiberList[i][level][0]
                 axs[0, 0].plot(
@@ -1469,8 +1479,8 @@ if __name__ == '__main__':
     # The line type labels
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2)
-                + len(stim_plot_list)//2::len(stim_plot_list)*len(
+        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display.capitalize()
          for factor_display in factor_display_list[-2:]], loc=4)
