@@ -884,12 +884,10 @@ if __name__ == '__main__':
                           dist['my'][-1])
     # Calculate correlation
     spatial_y_pearsonr, spatial_y_pearsonp = pearsonr(surface_data, mcnc_data)
-    # %% Plot distribution
-    fig, axs = plt.subplots(3, 1, figsize=(3.27, 6), sharex=True)
+    # %% Plot the displacement at MCNC
+    fig, axs = plt.subplots(2, 3, figsize=(7, 3.5))
     for i, factor in enumerate(factor_list[:3]):
         for level in level_plot_list:
-            j = 0
-            control = 'Displ'
             for stim in stim_plot_list:
                 alpha = 1. - .65 * abs(level - 2)
                 if stim == 2:
@@ -899,51 +897,84 @@ if __name__ == '__main__':
                 elif stim == 3:
                     color = (0, 0, 1, alpha)
                 ls = LS_LIST[i]
-                dist = simFiberList[i][level][j].dist[stim]
+                kwargs = dict(ls=ls, color=color,
+                              label=quantile_label_list[level])
+                # First column, temporal progression
+                dist = simFiberList[i][level][0].dist[stim]
+                axs[0, 0].plot(
+                    dist['time'][:, 0],
+                    dist['cy'][:, 0] * 1e-3,
+                    **kwargs)
+                axs[1, 0].plot(
+                    dist['time'][:, 0],
+                    dist['my'][:, 0] * 1e-3,
+                    **kwargs)
+                # Second column, temporal rate
+                axs[0, 1].plot(
+                    dist['time'][:, 0],
+                    np.r_[0, np.diff(dist['cy'][:, 0]) /
+                          np.diff(dist['time'][:, 0])] * 1e-3,
+                    **kwargs)
+                axs[1, 1].plot(
+                    dist['time'][:, 0],
+                    np.r_[0, np.diff(dist['my'][:, 0]) /
+                          np.diff(dist['time'][:, 0])] * 1e-3,
+                    **kwargs)
+                # Third column, spatial distribution
                 xscale = 1e3
-                axs[0].plot(dist['cxold'][-1, :] * xscale,
-                            dist['cy'][-1, :] * 1e-3,
-                            ls=ls, color=color,
-                            label=quantile_label_list[level])
-                # Scaling the axes
-                # Plotting
-                axs[1].plot(dist['mxold'][-1, :] * xscale,
-                            dist['my'][-1, :] * 1e-3,
-                            ls=ls, color=color,
-                            label=quantile_label_list[level])
-                axs[2].plot(dist['mxold'][-1, :] * xscale,
-                            dist['mstrain'][-1, :],
-                            ls=ls, color=color,
-                            label=quantile_label_list[level])
+                axs[0, 2].plot(
+                    dist['cxold'][-1, :] * xscale,
+                    dist['cy'][-1, :] * 1e-3,
+                    **kwargs)
+                axs[1, 2].plot(
+                    dist['mxold'][-1, :] * xscale,
+                    dist['my'][-1, :] * 1e-3,
+                    **kwargs)
     # Set x and y lim
-    for axes in axs.ravel():
+    for axes in axs[:, 0].ravel():
+        axes.set_xlim(0, MAX_TIME)
+    for axes in axs[:, 1].ravel():
+        axes.set_xlim(0, MAX_RATE_TIME)
+        axes.set_ylim(0, 1.8)
+    for axes in axs[:, 2].ravel():
         axes.set_xlim(0, MAX_RADIUS*1e3)
     # Formatting labels
-    axs[-1].set_xlabel('Location (mm)')
-    axs[0].set_ylabel(r'Surface deformation (mm)')
-    axs[1].set_ylabel(r'Internal displacement (mm)')
-    axs[2].set_ylabel(r'Internal strain')
+    # x-axis
+    axs[-1, 0].set_xlabel('Time (s)')
+    axs[-1, 1].set_xlabel('Time (s)')
+    axs[-1, 2].set_xlabel('Location (mm)')
+    # y-axis for the temporal progression
+    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 0].set_ylabel('Internal displacement (mm)')
+    # y-axis for the temporal rate
+    axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
+    axs[1, 1].set_ylabel(r'Internal velocity (mm/s)')
+    # y-axis for the spatial distribution
+    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 2].set_ylabel('Internal displacement (mm)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.34, 1.13, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
-    handles, labels = axs[0].get_legend_handles_labels()
-    axs[0].legend(
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(
         handles[len(stim_plot_list)*(len(level_plot_list)//2) +
                 len(stim_plot_list)//2::len(stim_plot_list)*len(
                 level_plot_list)],
         [factor_display[5:].capitalize()
-         for factor_display in factor_display_list[:3]], loc=3)
+         for factor_display in factor_display_list[:3]], loc=4, fontsize=6)
     # The 5 quantile labels
-    axs[1].legend(handles[1:3*len(level_plot_list)+1:3], [
-        'Quartile', 'Median'], loc=3)
+    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
+        'Quartile', 'Median'], loc=1, fontsize=6)
     # Add subtitles
-    axs[0].set_title('Deformation controlled')
+    axs[0, 0].set_title('Temporal progression')
+    axs[0, 1].set_title('Temporal rate')
+    axs[0, 2].set_title('Spatial distribution')
     # Save figure
     fig.tight_layout()
-    fig.savefig('./plots/spatial_cy_my.png', dpi=300)
+    fig.savefig('./plots/paper_internal_disp.png', dpi=300)
     plt.close(fig)
     # %% The huge mech table for JN paper
     jn_mech_table = np.empty((4, 15))
