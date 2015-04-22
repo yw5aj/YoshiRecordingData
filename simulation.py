@@ -1375,9 +1375,9 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[-2:]):
         i = i + 3
-        for level in level_plot_list:
+        for level in range(level_num):
             for stim in stim_plot_list:
-                alpha = 1. - .65 * abs(level - 2)
+                alpha = 1. - .3 * abs(level - 2)
                 if stim == 2:
                     color = (0, 0, 0, alpha)
                 elif stim == 1:
@@ -1508,16 +1508,17 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     # Add legends
     # The line type labels
+    axs[0, 1].set_ylim(0, 0.8)
     handles, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(
-        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+        handles[len(stim_plot_list)*(len(range(level_num))//2) +
                 len(stim_plot_list)//2::len(stim_plot_list)*len(
-                level_plot_list)],
+                range(level_num))],
         [factor_display.capitalize()
          for factor_display in factor_display_list[-2:]], loc=4)
     # The 5 quantile labels
-    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
-        'Quartile', 'Median'], loc=1)
+    axs[0, 1].legend(handles[1:3*len(range(level_num))+1:3], [
+        r'100±50%', r'100±25%', r'100%'], loc=1)
     # Add subtitles
     axs[0, 0].set_title('Temporal progression')
     axs[0, 1].set_title('Temporal rate')
