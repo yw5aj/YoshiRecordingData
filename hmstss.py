@@ -152,8 +152,12 @@ if __name__ == '__main__':
     def get_sts_change(base_response, response):
         return get_sts(response) - get_sts(base_response)
 
-    def get_percent(base_response, response):
-        return (response.sum() / base_response.sum() - 1)
+    def get_percent(base_response, response, overall=False):
+        if overall:  # Calculate overall change
+            percent = (response.sum() / base_response.sum() - 1)
+        else:
+            percent = (response[-1] / base_response[-1]) - 1
+        return percent
 
     def plot_phase(grouping, skinlevel, axes,
                    fiber_id=fiber_hmstss_use, **kwargs):
@@ -221,7 +225,7 @@ if __name__ == '__main__':
             base_response, response_skin_changes)
         rows.append('%s -> %s' % (str(base_grouping), str(active_grouping)))
     t46_df = pd.DataFrame(t46, columns=columns, index=rows)
-    t47_df = pd.DataFrame(t46, columns=columns, index=rows)
+    t47_df = pd.DataFrame(t47, columns=columns, index=rows)
     t46_df.to_csv('./csvs/t46.csv')
     t47_df.to_csv('./csvs/t47.csv')
     # %% Plot for thrid computational experiment

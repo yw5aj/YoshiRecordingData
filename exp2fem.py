@@ -864,3 +864,14 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.savefig('./plots/hmstss_displ_force_%d.png' % fiber.fiber_id)
         plt.close(fig)
+    # %% Save the fitting paramters for the paper
+    base_grouping = [8, 5, 3, 1]
+    trans_params_array = np.empty((3, 9))
+    for i, fiber in enumerate(fiber_list):
+        trans_params_array[0, i * 3: i * 3 + 3] = fiber.trans_param['stress']
+        trans_params_array[1, i * 3: i * 3 + 3] = fiber.trans_param['strain']
+        trans_params_array[2, i * 3: i * 3 + 3] = fiber.trans_param['sener']
+        trans_params_array[:, i * 3: i * 3 + 2] /= base_grouping[0]
+    trans_params_df = pd.DataFrame(trans_params_array,
+                                   index=['stress', 'strain', 'sener'])
+    trans_params_df.to_csv('./csvs/trans_params.csv')

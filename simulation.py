@@ -657,9 +657,9 @@ if __name__ == '__main__':
             for simFiber in simFiberLevelList]
         slope_iqr = []
         slope_iqr.append(np.abs(
-            (slope_list_displ[3] - slope_list_displ[1])/slope_list_displ[2]))
+            (slope_list_displ[3] - slope_list_displ[1]) / slope_list_displ[2]))
         slope_iqr.append(np.abs(
-            (slope_list_force[3] - slope_list_force[1])/slope_list_force[2]))
+            (slope_list_force[3] - slope_list_force[1]) / slope_list_force[2]))
         return slope_iqr
     sim_table = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
