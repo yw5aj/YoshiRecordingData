@@ -66,7 +66,7 @@ if __name__ == '__main__':
         relaxAdapt = RelaxAdapt(i, make_plot=make_plot)
         relaxAdaptList.append(relaxAdapt)
     relaxAdaptTypical = relaxAdaptList[FIBER_MECH_ID]
-    params_hat = np.array([ 0.01257859,  0.00078881,  0.49779717,  0.59975368])
+    params_hat = np.array([ 0.01214418,  0.00082817,  0.5       ,  0.77081547])
     relaxAdaptTypical.plot_inst_fr(lnp_params=params_hat)
     # Construct the fit_input_list to be fitted
     fit_input_list = []
