@@ -44,15 +44,20 @@ def sse_stress_response(fitx, params_init,
     params_prony = params[2:]
     response = stress2response(params_k, params_prony, stress, time)
     interp_response = np.interp(target_time, time, response)
-    sse = ((interp_response - target_response) ** 2).sum()
+    sse = ((interp_response - target_response + 1) ** 2).sum()
     return sse
 
 
-def sse_whole_fiber(fitx, params_init, fit_input_list):
-    sse = 0
+def r2_whole_fiber(fitx, params_init, fit_input_list, sign=1.):
+    r2_list = []
     for fit_input in fit_input_list:
-        sse += sse_stress_response(fitx, params_init, **fit_input)
-    return sse
+        sse = sse_stress_response(fitx, params_init, **fit_input)
+        sst = (fit_input['target_response'] ** 2).sum()
+        r2_list.append(1 - sse / sst)
+    r2_mean = np.mean(r2_list)
+    print(r2_mean)
+    print(r2_list[0])
+    return sign * r2_mean
 
 
 def fit_stress_response(stress, time, target_time, target_response):
@@ -70,10 +75,11 @@ def fit_whole_fiber(fit_input_list):
     bounds = ((0, None), (0, None), (0, 1), (0, None))
     params_init = np.array((1e-2, 1e-3, .5, .5))
     res = minimize(
-        sse_whole_fiber, np.ones(4), args=(params_init, fit_input_list),
+        r2_whole_fiber, np.ones(4), args=(params_init, fit_input_list, -1.),
         method='SLSQP', bounds=bounds)
     params_hat = res.x * params_init
-    return params_hat
+    mean_r2 = -1 * res.fun
+    return params_hat, mean_r2
 
 
 if __name__ == '__main__':
@@ -81,17 +87,13 @@ if __name__ == '__main__':
                               delimiter=',').T
     spike_time_aggregate, spike_fr_aggregate = np.loadtxt(
         './csvs/test_lnp_target.csv', delimiter=',').T
+    # %% Plot a raw trace and its fitting
     plt.plot(spike_time_aggregate, spike_fr_aggregate, '.', color='.5')
-    # %%
-    params_k = (100/stress.max(), 5/stress.max())
-    params_prony = (.5, .5)
-#    plt.plot(time, stress2response(params_k, params_prony, stress, time))
     res = fit_stress_response(stress, time,
                               spike_time_aggregate, spike_fr_aggregate)
     plt.plot(time, stress2response(res[:2], res[2:], stress, time))
-    # %%
+    # %% Try to fit an entire fiber
     import pickle
     with open('./pickles/test_lnp_fit_input.pkl', 'rb') as f:
         fit_input_list = pickle.load(f)
-    fit_whole_fiber(fit_input_list)
-# array([ 0.01257859,  0.00078881,  0.49779717,  0.59975368])
+    params_hat, mean_r2 = fit_whole_fiber(fit_input_list)
