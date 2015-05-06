@@ -70,7 +70,7 @@ def fit_stress_response(stress, time, target_time, target_response):
     constraints = (
         {'type': 'ineq',
          'fun': lambda x: 1 - x[2::2]})
-    params_init = (1e-2, 1e-3, .5, .5)
+    params_init = (1e-2, 1e-3, .5, 1.)
     res = minimize(
         r2_stress_response, np.ones(4),
         args=(params_init, stress, time, target_time, target_response, -1.),
@@ -84,7 +84,7 @@ def fit_whole_fiber(fit_input_list):
     constraints = (
         {'type': 'ineq',
          'fun': lambda x: 1 - x[2::2]})
-    params_init = np.array((1e-2, 1e-3, .5, .5))
+    params_init = np.array((1e-2, 1e-3, .5, 1.))
     res = minimize(
         r2_whole_fiber, np.ones(4), args=(params_init, fit_input_list, -1.),
         method='SLSQP', bounds=bounds, constraints=constraints)

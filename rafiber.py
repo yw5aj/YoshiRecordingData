@@ -60,7 +60,7 @@ class RelaxAdapt(Fiber):
 if __name__ == '__main__':
     # Switches
     make_plot = False
-    run_fiber = True
+    run_fiber = False
     # %% Run the fibers
     if run_fiber:
         # Instantiate fibers
