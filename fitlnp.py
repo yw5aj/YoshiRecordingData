@@ -10,6 +10,9 @@ from constants import DT
 from scipy.optimize import minimize
 
 
+log_scale = True
+
+
 def apply_linear_filter(stimuli, linear_filter):
     stimuli_rate = np.r_[0, np.diff(stimuli) / DT]
     response = (np.convolve(stimuli_rate, linear_filter) *
@@ -24,9 +27,11 @@ def get_stimuli(params_k, stress):
 
 
 def get_linear_filter(params_prony, time):
-    g1, tau1 = params_prony
-    ginf = 1 - g1
-    linear_filter = g1 * np.exp(-time / tau1) + ginf
+    g = params_prony[::2]
+    ginf = 1 - np.sum(g)
+    tau = params_prony[1::2]
+    linear_filter = ginf + np.sum(((
+        gi * np.exp(-time / taui)) for gi, taui in zip(g, tau)), axis=1)
     return linear_filter
 
 
@@ -37,46 +42,56 @@ def stress2response(params_k, params_prony, stress, time):
     return response
 
 
-def sse_stress_response(fitx, params_init,
-                        stress, time, target_time, target_response):
+def r2_stress_response(fitx, params_init,
+                       stress, time, target_time, target_response,
+                       sign=1., log_scale=True):
     params = fitx * params_init
     params_k = params[:2]
     params_prony = params[2:]
     response = stress2response(params_k, params_prony, stress, time)
     interp_response = np.interp(target_time, time, response)
-    sse = ((interp_response - target_response + 1) ** 2).sum()
-    return sse
+    if log_scale:
+        zero_indices = (interp_response * target_response) != 0
+        target_response = np.log(target_response[zero_indices])
+        interp_response = np.log(interp_response[zero_indices])
+    sse = ((interp_response - target_response) ** 2).sum()
+    sst = (target_response ** 2).sum()
+    r2 = 1 - sse / sst
+    return r2 * sign
 
 
 def r2_whole_fiber(fitx, params_init, fit_input_list, sign=1.):
     r2_list = []
     for fit_input in fit_input_list:
-        sse = sse_stress_response(fitx, params_init, **fit_input)
-        sst = (fit_input['target_response'] ** 2).sum()
-        r2_list.append(1 - sse / sst)
+        r2_list.append(r2_stress_response(fitx, params_init, **fit_input))
     r2_mean = np.mean(r2_list)
     print(r2_mean)
-    print(r2_list[0])
     return sign * r2_mean
 
 
 def fit_stress_response(stress, time, target_time, target_response):
     bounds = ((0, None), (0, None), (0, 1), (0, None))
-    params_init = (100/stress.max(), 5/stress.max(), .5, .5)
+    constraints = (
+        {'type': 'ineq',
+         'fun': lambda x: 1 - x[2::2]})
+    params_init = (1e-2, 1e-3, .5, .5)
     res = minimize(
-        sse_stress_response, np.ones(4),
-        args=(params_init, stress, time, target_time, target_response),
-        method='SLSQP', bounds=bounds)
+        r2_stress_response, np.ones(6),
+        args=(params_init, stress, time, target_time, target_response, -1.),
+        method='SLSQP', bounds=bounds, constraints=constraints)
     params_hat = res.x * params_init
     return params_hat
 
 
 def fit_whole_fiber(fit_input_list):
     bounds = ((0, None), (0, None), (0, 1), (0, None))
+    constraints = (
+        {'type': 'ineq',
+         'fun': lambda x: 1 - x[2::2]})
     params_init = np.array((1e-2, 1e-3, .5, .5))
     res = minimize(
-        r2_whole_fiber, np.ones(4), args=(params_init, fit_input_list, -1.),
-        method='SLSQP', bounds=bounds)
+        r2_whole_fiber, np.ones(6), args=(params_init, fit_input_list, -1.),
+        method='SLSQP', bounds=bounds, constraints=constraints)
     params_hat = res.x * params_init
     mean_r2 = -1 * res.fun
     return params_hat, mean_r2
