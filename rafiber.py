@@ -46,21 +46,28 @@ class RelaxAdapt(Fiber):
             axes = axs.ravel()[i]
             axes.plot(stim_group['spike_time_aggregate'],
                       stim_group['spike_fr_aggregate'],
-                      '.', color='.5')
+                      '.', color='.5', label='Experiment')
             response = stress2response(
                 self.lnp_params[:2], self.lnp_params[2:],
                 stim_group['traces_fem']['stress'],
                 stim_group['traces_fem']['time'])
             axes.plot(stim_group['traces_fem']['time'],
-                      response, '-k')
+                      response, '-k', label='Model')
+            axes.set_title('Displacement = %.3f mm' % (
+                stim_group['static_displ'].mean() / 1000))
             axes.set_xlim(0, 5)
+            axes.set_ylabel('IFR (Hz)')
+            axes.set_xlabel('Time (s)')
+        axs[0, 0].legend(loc=1)
+        fig.tight_layout()
         return fig, axs
 
 
 if __name__ == '__main__':
     # Switches
     make_plot = False
-    run_fiber = True
+    run_fiber = False
+    plot_fit = True
     # %% Run the fibers
     if run_fiber:
         # Instantiate fibers
@@ -78,13 +85,15 @@ if __name__ == '__main__':
                     'target_response': stim_group['spike_fr_aggregate']})
             relaxAdapt.lnp_params, relaxAdapt.lnp_mean_r2 = fit_whole_fiber(
                 fit_input_list)
-            fig, axs = relaxAdapt.plot_inst_fr()
-            fig.savefig('./plots/relaxadapt/lnp_fitting_#%d.png' % i)
-            plt.close(fig)
         with open('./pickles/relaxAdaptList.pkl', 'wb') as f:
             pickle.dump(relaxAdaptList, f)
     else:
         with open('./pickles/relaxAdaptList.pkl', 'rb') as f:
             relaxAdaptList = pickle.load(f)
-    # %% Do other stuff
-    pass
+    # %% Plot again
+    if plot_fit:
+        for i, relaxAdapt in enumerate(relaxAdaptList):
+            fig, axs = relaxAdapt.plot_inst_fr()
+            fig.savefig('./plots/relaxadapt/lnp_fitting_#%d.png' % i)
+            plt.close(fig)
+    # %% Do something fun

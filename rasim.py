@@ -17,6 +17,8 @@ class RaSim(SimFiber):
         self.factor = factor
         self.level = level
         self.control = control
+        self.load_traces()
+
 
 
 if __name__ == '__main__':
