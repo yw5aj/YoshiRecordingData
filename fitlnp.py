@@ -44,14 +44,18 @@ def stress2response(params_k, params_prony, stress, time):
 
 def r2_stress_response(fitx, params_init,
                        stress, time, target_time, target_response,
-                       sign=1.):
+                       sign=1., lad=True):
     params = fitx * params_init
     params_k = params[:2]
     params_prony = params[2:]
     response = stress2response(params_k, params_prony, stress, time)
     interp_response = np.interp(target_time, time, response)
-    sse = ((interp_response - target_response) ** 2).sum()
-    sst = (target_response ** 2).sum()
+    if lad:
+        sse = np.abs(interp_response - target_response).sum()
+        sst = np.abs(target_response - target_response.mean()).sum()
+    else:
+        sse = ((interp_response - target_response) ** 2).sum()
+        sst = target_response.var() * target_response.size
     r2 = 1 - sse / sst
     return r2 * sign
 
