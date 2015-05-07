@@ -87,6 +87,8 @@ if __name__ == '__main__':
                 fit_input_list)
         with open('./pickles/relaxAdaptList.pkl', 'wb') as f:
             pickle.dump(relaxAdaptList, f)
+        np.savetxt('./csvs/lnp_params_%d.csv' % i, relaxAdapt.lnp_params,
+                   delimiter=',')
     else:
         with open('./pickles/relaxAdaptList.pkl', 'rb') as f:
             relaxAdaptList = pickle.load(f)
@@ -96,4 +98,4 @@ if __name__ == '__main__':
             fig, axs = relaxAdapt.plot_inst_fr()
             fig.savefig('./plots/relaxadapt/lnp_fitting_#%d.png' % i)
             plt.close(fig)
-    # %% Do something fun
+    # %% Do something

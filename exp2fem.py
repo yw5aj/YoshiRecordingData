@@ -318,7 +318,7 @@ class Fiber:
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
             # Use log scale
-            log_scale = True
+            log_scale = False
             if log_scale:
                 static_force = np.log(static_force)
                 abq_force_interp = np.log(abq_force_interp)
@@ -473,7 +473,7 @@ if __name__ == '__main__':
     run_fiber_mech = False
     run_each_fiber = False
     run_fitting = False
-    fit_noise = True
+    fit_noise = False
     use_single_mech = False
     # Run calibration
     if run_calibration:
