@@ -103,11 +103,11 @@ if __name__ == '__main__':
             raSimList[0][level][0].traces[3]['time'],
             raSimList[0][level][0].lnp_response[fiber_id][3],
             '-', color=color, label=label_thick)
-        axs[2, 0].plot(
+        axs[1, 1].plot(
             raSimList[1][level][0].traces[3]['time'],
             raSimList[1][level][0].lnp_response[fiber_id][3],
             '-', color=color, label=label_ind)
-        axs[1, 1].plot(
+        axs[2, 0].plot(
             raSimList[0][level][0].traces[3]['time'],
             raSimList[0][level][0].lnp_response[fiber_id][3] /
             raSimList[0][level][0].lnp_response[fiber_id][3].max(),
@@ -124,13 +124,12 @@ if __name__ == '__main__':
     axs[0, 0].set_ylabel('Displacement stimuli (mm)')
     axs[0, 1].set_ylabel('Displacement stimuli (mm)')
     axs[1, 0].set_ylabel('Expected response (Hz)')
-    axs[2, 0].set_ylabel('Expected response (Hz)')
-    axs[1, 1].set_ylabel('Normalized expected response')
+    axs[1, 1].set_ylabel('Expected response (Hz)')
+    axs[2, 0].set_ylabel('Normalized expected response')
     axs[2, 1].set_ylabel('Normalized expected response')
     axs[1, 0].legend(loc=1)
-    axs[2, 0].legend(loc=1)
-    axs[1, 0].set_ylim(0, 160)
-    axs[2, 0].set_ylim(0, 100)
+    axs[1, 1].legend(loc=1)
+    axs[1, 1].set_ylim(0, 80)
     fig.tight_layout()
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.1, chr(65 + axes_id), transform=axes.transAxes,
@@ -158,11 +157,11 @@ if __name__ == '__main__':
             raSimList[0][level][1].traces[3]['time'],
             raSimList[0][level][1].lnp_response[fiber_id][3],
             '-', color=color, label=label_thick)
-        axs[2, 0].plot(
+        axs[1, 1].plot(
             raSimList[1][level][1].traces[3]['time'],
             raSimList[1][level][1].lnp_response[fiber_id][3],
             '-', color=color, label=label_ind)
-        axs[1, 1].plot(
+        axs[2, 0].plot(
             raSimList[0][level][1].traces[3]['time'],
             raSimList[0][level][1].lnp_response[fiber_id][3] /
             raSimList[0][level][1].lnp_response[fiber_id][3].max(),
@@ -179,15 +178,15 @@ if __name__ == '__main__':
     axs[0, 0].set_ylabel('Force stimuli (mN)')
     axs[0, 1].set_ylabel('Force stimuli (mN)')
     axs[1, 0].set_ylabel('Expected response (Hz)')
-    axs[2, 0].set_ylabel('Expected response (Hz)')
-    axs[1, 1].set_ylabel('Normalized expected response')
+    axs[1, 1].set_ylabel('Expected response (Hz)')
+    axs[2, 0].set_ylabel('Normalized expected response')
     axs[2, 1].set_ylabel('Normalized expected response')
     axs[1, 0].legend(loc=1)
-    axs[2, 0].legend(loc=1)
+    axs[1, 1].legend(loc=1)
     axs[0, 0].set_ylim(0, 5)
     axs[0, 1].set_ylim(0, 5)
     axs[1, 0].set_ylim(0, 80)
-    axs[2, 0].set_ylim(0, 80)
+    axs[1, 1].set_ylim(0, 80)
     fig.tight_layout()
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.15, 1.1, chr(65 + axes_id), transform=axes.transAxes,

@@ -318,7 +318,7 @@ class Fiber:
             p = np.polyfit(abq_displ_scaled, abq_force, 3)
             abq_force_interp = np.polyval(p, exp_displ)
             # Use log scale
-            log_scale = False
+            log_scale = True
             if log_scale:
                 static_force = np.log(static_force)
                 abq_force_interp = np.log(abq_force_interp)

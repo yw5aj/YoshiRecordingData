@@ -67,7 +67,7 @@ class HmstssFiber(SimFiber):
 
 
 def load_fiber():
-    fname = './pickles/hmstss.pkl'
+    fname = './pickles/hmstss/hmstss.pkl'
     already_exist = os.path.isfile(fname)
     if already_exist:
         with open(fname, 'rb') as f:
@@ -119,7 +119,7 @@ if __name__ == '__main__':
             grouping, skinlevel, base_grouping=base_grouping):
         quantity = 'stress'
         fiber_id = fiber_hmstss_use
-        fname = './pickles/hmstss%d_%d%d.pkl' % (
+        fname = './pickles/hmstss/hmstss%d_%d%d.pkl' % (
             skinlevel, base_grouping[0], grouping[0])
         already_exist = os.path.isfile(fname)
         if already_exist:

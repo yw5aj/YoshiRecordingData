@@ -39,10 +39,10 @@ FIBER_RCV = {}
 for key in FIBER_DICT:
     if FIBER_DICT[key] == '2012030905V_01.mat':
         FIBER_RCV[key] = {
-            'r': 40e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
+            'r': 55e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
     elif FIBER_DICT[key] == '2012042001V_01.mat':
         FIBER_RCV[key] = {
-            'r': 60e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
+            'r': 70e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
     elif FIBER_DICT[key] == '2012042702V_01.mat':
         FIBER_RCV[key] = {
             'r': 15e8, 'c': CAPACITANCE_LIF, 'v': VOLTAGE_THRESHOLD_LIF}
