@@ -879,5 +879,19 @@ if __name__ == '__main__':
     trans_params_df.to_csv('./csvs/trans_params.csv')
     # %% Get data to Lindsay
     from scipy.io import savemat
+    import copy
+    fiber2lindsay = copy.deepcopy(fiber_mech)
+    if False:
+        for i, stim_group_dict in enumerate(fiber2lindsay.stim_group_dict):
+            start_idx = (stim_group_dict['traces_fem']['displ'] > 0).nonzero(
+                )[0][0] - 1
+            for key, item in stim_group_dict['traces_fem'].items():
+                if key != 'max_index' and key != 'time':
+                    stim_group_dict['traces_fem'][key] = item[start_idx:]
+                elif key == 'time':
+                    stim_group_dict['traces_fem'][key] = item[start_idx:] -\
+                        item[start_idx]
+                elif key == 'max_index':
+                    stim_group_dict['traces_fem'][key] = item - start_idx
     savemat('./pickles/lindsayfiber.mat',
-            dict(data=fiber_mech.stim_group_dict), do_compression=True)
+            dict(data=fiber2lindsay.stim_group_dict), do_compression=True)
