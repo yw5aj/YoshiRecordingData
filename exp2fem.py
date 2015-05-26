@@ -460,6 +460,8 @@ class Fiber:
                 'stress': stress_fine,
                 'strain': strain_fine,
                 'sener': sener_fine,
+                'displ_scaled': self.displ_coeff[0] * 1e-6 + displ_fine *
+                self.displ_coeff[1]
             }
             self.stim_group_dict[i]['traces_fem']['max_index'] = \
                 self.stim_group_dict[i]['traces_fem']['force'].argmax()
@@ -875,3 +877,7 @@ if __name__ == '__main__':
     trans_params_df = pd.DataFrame(trans_params_array,
                                    index=['stress', 'strain', 'sener'])
     trans_params_df.to_csv('./csvs/trans_params.csv')
+    # %% Get data to Lindsay
+    from scipy.io import savemat
+    savemat('./pickles/lindsayfiber.mat',
+            dict(data=fiber_mech.stim_group_dict), do_compression=True)
