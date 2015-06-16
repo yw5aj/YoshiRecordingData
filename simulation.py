@@ -517,7 +517,7 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/temporal_distribution.png', dpi=300)
     plt.close(fig)
-    # %% Calculating iqr for all temporal rate traces
+    # %% Calculating iqr for all Stimulus rate over time traces
     # Calculate iqrs
 
     def calculate_rate_iqr(simFiberLevelList, end_time=MAX_RATE_TIME):
@@ -565,7 +565,7 @@ if __name__ == '__main__':
                 temporal_rate_pearsonp_table[i, j] = pearsonr(xdata, ydata)
     np.savetxt('./csvs/temporal_rate_r2_table.csv',
                temporal_rate_pearsonr_table**2, delimiter=',')
-    # %% Plot temporal rate traces
+    # %% Plot Stimulus rate over time traces
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(5, 2, figsize=(6.83, 9.19), sharex=True)
     for i, factor in enumerate(factor_list[:3]):
@@ -899,7 +899,7 @@ if __name__ == '__main__':
                 ls = LS_LIST[i]
                 kwargs = dict(ls=ls, color=color,
                               label=quantile_label_list[level])
-                # First column, temporal progression
+                # First column, Stimulus magnitude over time
                 dist = simFiberList[i][level][0].dist[stim]
                 axs[0, 0].plot(
                     dist['time'][:, 0],
@@ -909,7 +909,7 @@ if __name__ == '__main__':
                     dist['time'][:, 0],
                     dist['my'][:, 0] * 1e-3,
                     **kwargs)
-                # Second column, temporal rate
+                # Second column, Stimulus rate over time
                 axs[0, 1].plot(
                     dist['time'][:, 0],
                     np.r_[0, np.diff(dist['cy'][:, 0]) /
@@ -920,7 +920,7 @@ if __name__ == '__main__':
                     np.r_[0, np.diff(dist['my'][:, 0]) /
                           np.diff(dist['time'][:, 0])] * 1e-3,
                     **kwargs)
-                # Third column, spatial distribution
+                # Third column, Stimulus magnitude over space
                 xscale = 1e3
                 axs[0, 2].plot(
                     dist['cxold'][-1, :] * xscale,
@@ -943,13 +943,13 @@ if __name__ == '__main__':
     axs[-1, 0].set_xlabel('Time (s)')
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
-    # y-axis for the temporal progression
+    # y-axis for the Stimulus magnitude over time
     axs[0, 0].set_ylabel(r'Surface deformation (mm)')
     axs[1, 0].set_ylabel('Internal displacement (mm)')
-    # y-axis for the temporal rate
+    # y-axis for the Stimulus rate over time
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal velocity (mm/s)')
-    # y-axis for the spatial distribution
+    # y-axis for the Stimulus magnitude over space
     axs[0, 2].set_ylabel(r'Surface deformation (mm)')
     axs[1, 2].set_ylabel('Internal displacement (mm)')
     # Added panel labels
@@ -969,9 +969,9 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=1, fontsize=6)
     # Add subtitles
-    axs[0, 0].set_title('Temporal progression')
-    axs[0, 1].set_title('Temporal rate')
-    axs[0, 2].set_title('Spatial distribution')
+    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_internal_disp.png', dpi=300)
@@ -1044,7 +1044,7 @@ if __name__ == '__main__':
                 ls = LS_LIST[i]
                 kwargs = dict(ls=ls, color=color,
                               label=quantile_label_list[level])
-                # First column, temporal progression
+                # First column, Stimulus magnitude over time
                 simFiber = simFiberList[i][level][0]
                 axs[0, 0].plot(
                     simFiber.traces[stim]['time'],
@@ -1071,7 +1071,7 @@ if __name__ == '__main__':
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Second column, temporal rate
+                # Second column, Stimulus rate over time
                 simFiber = simFiberList[i][level][0]
                 axs[0, 1].plot(
                     simFiber.traces_rate[stim]['time'],
@@ -1098,7 +1098,7 @@ if __name__ == '__main__':
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Third column, spatial distribution
+                # Third column, Stimulus magnitude over space
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs[0, 2].plot(
@@ -1138,21 +1138,21 @@ if __name__ == '__main__':
     axs[-1, 0].set_xlabel('Time (s)')
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
-    # y-axis for the temporal progression
+    # y-axis for the Stimulus magnitude over time
     axs[0, 0].set_ylabel(r'Surface deformation (mm)')
     axs[1, 0].set_ylabel('Internal strain')
     axs[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 0].set_ylabel(r'Surface pressure (kPa)')
     axs[4, 0].set_ylabel('Internal stress (kPa)')
     axs[5, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
-    # y-axis for the temporal rate
+    # y-axis for the Stimulus rate over time
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
     axs[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     axs[3, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
     axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
     axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
-    # y-axis for the spatial distribution
+    # y-axis for the Stimulus magnitude over space
     axs[0, 2].set_ylabel(r'Surface deformation (mm)')
     axs[1, 2].set_ylabel('Internal strain')
     axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
@@ -1177,9 +1177,9 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=1, fontsize=6)
     # Add subtitles
-    axs[0, 0].set_title('Temporal progression')
-    axs[0, 1].set_title('Temporal rate')
-    axs[0, 2].set_title('Spatial distribution')
+    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_simulation.png', dpi=300)
@@ -1207,7 +1207,7 @@ if __name__ == '__main__':
                 ls = LS_LIST[i - 3]
                 kwargs = dict(ls=ls, color=color,
                               label=quantile_label_list[level])
-                # First column, temporal progression
+                # First column, Stimulus magnitude over time
                 simFiber = simFiberList[i][level][0]
                 axs[0, 0].plot(
                     simFiber.traces[stim]['time'],
@@ -1234,7 +1234,7 @@ if __name__ == '__main__':
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Second column, temporal rate
+                # Second column, Stimulus rate over time
                 simFiber = simFiberList[i][level][0]
                 axs[0, 1].plot(
                     simFiber.traces_rate[stim]['time'],
@@ -1261,7 +1261,7 @@ if __name__ == '__main__':
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Third column, spatial distribution
+                # Third column, Stimulus magnitude over space
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs[0, 2].plot(
@@ -1301,21 +1301,21 @@ if __name__ == '__main__':
     axs[-1, 0].set_xlabel('Time (s)')
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
-    # y-axis for the temporal progression
+    # y-axis for the Stimulus magnitude over time
     axs[0, 0].set_ylabel(r'Surface deformation (mm)')
     axs[1, 0].set_ylabel('Internal strain')
     axs[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 0].set_ylabel(r'Surface pressure (kPa)')
     axs[4, 0].set_ylabel('Internal stress (kPa)')
     axs[5, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
-    # y-axis for the temporal rate
+    # y-axis for the Stimulus rate over time
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
     axs[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     axs[3, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
     axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
     axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
-    # y-axis for the spatial distribution
+    # y-axis for the Stimulus magnitude over space
     axs[0, 2].set_ylabel(r'Surface deformation (mm)')
     axs[1, 2].set_ylabel('Internal strain')
     axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
@@ -1340,12 +1340,105 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(range(level_num))+1:3], [
         r'100±50%', r'100±25%', r'100%'], loc=1)
     # Add subtitles
-    axs[0, 0].set_title('Temporal progression')
-    axs[0, 1].set_title('Temporal rate')
-    axs[0, 2].set_title('Spatial distribution')
+    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
     # Save figure
     fig.tight_layout()
-    fig.savefig('./plots/paper_substrate.png', dpi=300)
+    fig.savefig('./plots/paper_substrate_full.png', dpi=300)
+    plt.close(fig)
+    # %% The figure for substrate simulations
+    fig, axs = plt.subplots(2, 3, figsize=(7, 3.5))
+    for i, factor in enumerate(factor_list[-2:]):
+        i = i + 3
+        for level in range(level_num):
+            for stim in stim_plot_list:
+                alpha = 1. - .3 * abs(level - 2)
+                if stim == 2:
+                    color = (0, 0, 0, alpha)
+                elif stim == 1:
+                    color = (1, 0, 0, alpha)
+                elif stim == 3:
+                    color = (0, 0, 1, alpha)
+                ls = LS_LIST[i - 3]
+                kwargs = dict(ls=ls, color=color,
+                              label=quantile_label_list[level])
+                # First column, Stimulus magnitude over time
+                simFiber = simFiberList[i][level][0]
+                axs[0, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['displ'] * 1e3,
+                    **kwargs)
+                axs[1, 0].plot(
+                    simFiber.traces[stim]['time'],
+                    simFiber.traces[stim]['strain'],
+                    **kwargs)
+                # Second column, Stimulus rate over time
+                simFiber = simFiberList[i][level][0]
+                axs[0, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['displ'] * 1e3,
+                    **kwargs)
+                axs[1, 1].plot(
+                    simFiber.traces_rate[stim]['time'],
+                    simFiber.traces_rate[stim]['strain'],
+                    **kwargs)
+                # Third column, Stimulus magnitude over space
+                xscale = 1e3
+                dist = simFiberList[i][level][0].dist[stim]
+                axs[0, 2].plot(
+                    dist['cxold'][-1, :] * xscale,
+                    dist['cy'][-1, :] * 1e-3,
+                    **kwargs)
+                axs[1, 2].plot(
+                    dist['mxold'][-1, :] * xscale,
+                    dist['mstrain'][-1, :],
+                    **kwargs)
+    # Set x and y lim
+    for axes in axs[:, 0].ravel():
+        axes.set_xlim(0, MAX_TIME)
+    for axes in axs[:, 1].ravel():
+        axes.set_xlim(0, MAX_RATE_TIME)
+    for axes in axs[:, 2].ravel():
+        axes.set_xlim(0, MAX_RADIUS*1e3)
+    # Formatting labels
+    # x-axis
+    axs[-1, 0].set_xlabel('Time (s)')
+    axs[-1, 1].set_xlabel('Time (s)')
+    axs[-1, 2].set_xlabel('Location (mm)')
+    # y-axis for the Stimulus magnitude over time
+    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 0].set_ylabel('Internal strain')
+    # y-axis for the Stimulus rate over time
+    axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
+    axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    # y-axis for the Stimulus magnitude over space
+    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[1, 2].set_ylabel('Internal strain')
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.3, 1.15, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+    axs[0, 1].set_ylim(0, 0.8)
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(
+        handles[len(stim_plot_list)*(len(range(level_num))//2) +
+                len(stim_plot_list)//2::len(stim_plot_list)*len(
+                range(level_num))],
+        [factor_display.capitalize()
+         for factor_display in factor_display_list[-2:]], loc=4)
+    # The 5 quantile labels
+    axs[0, 1].legend(handles[1:3*len(range(level_num))+1:3], [
+        r'100±50%', r'100±25%', r'100%'], loc=1)
+    # Add subtitles
+    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/paper_substrate_short.png', dpi=300)
     plt.close(fig)
     # %% Two separate simulation figures in JN paper
     fig1, axs1 = plt.subplots(3, 3, figsize=(7, 6))
@@ -1365,7 +1458,7 @@ if __name__ == '__main__':
                 ls = LS_LIST[i]
                 kwargs = dict(ls=ls, color=color,
                               label=quantile_label_list[level])
-                # First column, temporal progression
+                # First column, Stimulus magnitude over time
                 simFiber = simFiberList[i][level][0]
                 axs1[0, 0].plot(
                     simFiber.traces[stim]['time'],
@@ -1392,7 +1485,7 @@ if __name__ == '__main__':
                     simFiber.traces[stim]['time'],
                     simFiber.traces[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Second column, temporal rate
+                # Second column, Stimulus rate over time
                 simFiber = simFiberList[i][level][0]
                 axs1[0, 1].plot(
                     simFiber.traces_rate[stim]['time'],
@@ -1419,7 +1512,7 @@ if __name__ == '__main__':
                     simFiber.traces_rate[stim]['time'],
                     simFiber.traces_rate[stim]['sener'] * 1e-3,
                     **kwargs)
-                # Third column, spatial distribution
+                # Third column, Stimulus magnitude over space
                 xscale = 1e3
                 dist = simFiberList[i][level][0].dist[stim]
                 axs1[0, 2].plot(
@@ -1473,21 +1566,21 @@ if __name__ == '__main__':
     axs2[-1, 0].set_xlabel('Time (s)')
     axs2[-1, 1].set_xlabel('Time (s)')
     axs2[-1, 2].set_xlabel('Location (mm)')
-    # y-axis for the temporal progression
+    # y-axis for the Stimulus magnitude over time
     axs1[0, 0].set_ylabel(r'Surface deformation (mm)')
     axs1[1, 0].set_ylabel('Internal strain')
     axs1[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs2[0, 0].set_ylabel(r'Surface pressure (kPa)')
     axs2[1, 0].set_ylabel('Internal stress (kPa)')
     axs2[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
-    # y-axis for the temporal rate
+    # y-axis for the Stimulus rate over time
     axs1[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs1[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
     axs1[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     axs2[0, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
     axs2[1, 1].set_ylabel(r'Internal stress rate (kPa/s)')
     axs2[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
-    # y-axis for the spatial distribution
+    # y-axis for the Stimulus magnitude over space
     axs1[0, 2].set_ylabel(r'Surface deformation (mm)')
     axs1[1, 2].set_ylabel('Internal strain')
     axs1[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
@@ -1524,12 +1617,12 @@ if __name__ == '__main__':
     axs2[0, 2].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=2)
     # Add subtitles
-    axs1[0, 0].set_title('Temporal progression')
-    axs1[0, 1].set_title('Temporal rate')
-    axs1[0, 2].set_title('Spatial distribution')
-    axs2[0, 0].set_title('Temporal progression')
-    axs2[0, 1].set_title('Temporal rate')
-    axs2[0, 2].set_title('Spatial distribution')
+    axs1[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs1[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs1[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
+    axs2[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+    axs2[0, 1].set_title('Stimulus rate over time', fontsize=8)
+    axs2[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
     fig1.suptitle('Deformation controlled', fontsize=12)
     fig2.suptitle('Pressure controlled', fontsize=12)
     # Save figure
