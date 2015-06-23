@@ -647,6 +647,7 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.subplots_adjust(top=.9)
         fig.savefig('./plots/paper_plot_fitting_%d.png' % fiber_id, dpi=300)
+        fig.savefig('./plots/paper_plot_fitting_%d.pdf' % fiber_id, dpi=300)
         plt.close(fig)
     # %% Plot force-based fitting figure
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -740,6 +741,8 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
+    fig.savefig('./plots/paper_plot_fitting_mechanical.tif', dpi=300)
+    fig.savefig('./plots/paper_plot_fitting_mechanical.pdf')
     plt.close(fig)
     # %% Plot experiment data with displ / force aligned - static, separate
     # Gather data for fitting

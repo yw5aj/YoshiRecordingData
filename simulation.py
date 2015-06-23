@@ -734,6 +734,7 @@ if __name__ == '__main__':
         # Save
         fig.tight_layout()
         fig.savefig('./plots/sim_compare_variance_%d.png' % fiber_id, dpi=300)
+        fig.savefig('./plots/sim_compare_variance_%d.pdf' % fiber_id, dpi=300)
         plt.close(fig)
     # %% Plot the other two fibers, stress&force, strain&displ
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
@@ -794,6 +795,7 @@ if __name__ == '__main__':
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance_other_fibers.png', dpi=300)
+    fig.savefig('./plots/sim_compare_variance_other_fibers.pdf', dpi=300)
     plt.close(fig)
     # %% Plot the other two groupings, stress&force, strain&displ
     fig, axs = plt.subplots(2, 3, figsize=(6.83, 4))
@@ -856,6 +858,7 @@ if __name__ == '__main__':
     # Save
     fig.tight_layout()
     fig.savefig('./plots/sim_compare_variance_groupings.png', dpi=300)
+    fig.savefig('./plots/sim_compare_variance_groupings.pdf', dpi=300)
     plt.close(fig)
     # %% Calculate values for displacement vs. mcnc displacement
     spatial_y_table = np.empty([3])
@@ -975,6 +978,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_internal_disp.png', dpi=300)
+    fig.savefig('./plots/paper_internal_disp.pdf', dpi=300)
     plt.close(fig)
     # %% The huge mech table for JN paper
     jn_mech_table = np.empty((4, 15))
@@ -1183,6 +1187,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_simulation.png', dpi=300)
+    fig.savefig('./plots/paper_simulation.pdf', dpi=300)
     # Add x labels to all for presentation use
     for row in axs:
         for col, axes in enumerate(row):
@@ -1346,6 +1351,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_substrate_full.png', dpi=300)
+    fig.savefig('./plots/paper_substrate_full.pdf', dpi=300)
     plt.close(fig)
     # %% The figure for substrate simulations
     fig, axs = plt.subplots(2, 3, figsize=(7, 3.5))
@@ -1439,6 +1445,7 @@ if __name__ == '__main__':
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/paper_substrate_short.png', dpi=300)
+    fig.savefig('./plots/paper_substrate_short.pdf', dpi=300)
     plt.close(fig)
     # %% Two separate simulation figures in JN paper
     fig1, axs1 = plt.subplots(3, 3, figsize=(7, 6))
