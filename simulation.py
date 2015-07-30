@@ -41,6 +41,9 @@ MAX_TIME = 5.
 MAX_RATE_TIME = .3
 stim_plot_list = [1, 2, 3]  # Stims to be plotted
 level_plot_list = range(level_num)[1:-1]
+dist_key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
+                 'mstrain', 'mstress', 'mxnew', 'mxold', 'my',
+                 'time']
 
 
 class SimFiber:
@@ -71,12 +74,9 @@ class SimFiber:
         self.get_line_fit()
         return
 
-    def get_dist(self):
+    def get_dist(self, key_list=dist_key_list):
         fpath = BASE_CSV_PATH
         self.dist = [{} for i in range(stim_num)]
-        key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
-                    'mstrain', 'mstress', 'mxnew', 'mxold', 'my',
-                    'time']
         for stim in range(stim_num)[1:]:
             for key in key_list:
                 self.dist[stim][key] = np.loadtxt(
@@ -98,7 +98,7 @@ class SimFiber:
                 self.dist[stim]['cxold'].shape[1])
             # Calculate integration over area
             for key in key_list:
-                if 'x' not in key and 'time' not in key:
+                if 'time' not in key:
                     def get_field(r):
                         return np.interp(r, self.dist[stim][key[0]+'xold'][
                             -1], self.dist[stim][key][-1])
@@ -207,6 +207,31 @@ class SimFiber:
         if update_instance:
             self.predicted_fr = predicted_fr
         return predicted_fr
+
+    def get_predicted_spike_array(self, trans_params=None):
+        # Determine whether a static call or not
+        update_instance = False
+        if trans_params is None:
+            update_instance = True
+            trans_params = self.trans_params
+        # Calculate predicted spike array
+        predicted_spike_array = [{} for i in range(FIBER_TOT_NUM)]
+        for fiber_id in FIBER_FIT_ID_LIST:
+            for quantity in quantity_list[-3:]:
+                # Get the quantity_dict_list for input
+                quantity_dict_list = [{
+                    'quantity_array': self.traces[i][quantity],
+                    'max_index': self.traces[i]['max_index']}
+                    for i in range(stim_num)]
+                # Calculate
+                lifModel = LifModel(**FIBER_RCV[fiber_id])
+                predicted_spike_array[fiber_id][quantity] =\
+                    lifModel.trans_param_to_predicted_spike_array(
+                        quantity_dict_list, trans_params[fiber_id][quantity])
+        # Update instance if needed
+        if update_instance:
+            self.predicted_spike_array = predicted_spike_array
+        return predicted_spike_array
 
     def get_line_fit(self):
         self.line_fit = [{} for i in range(FIBER_TOT_NUM)]
@@ -1640,3 +1665,51 @@ if __name__ == '__main__':
     fig2.subplots_adjust(top=.91)
     fig2.savefig('./plots/paper_simulation_prss.png', dpi=300)
     plt.close('all')
+    # %% Plot example spike traces
+    fig, axs = plt.subplots(2, 3, figsize=(7, 5))
+    simFiber = simFiberList[0][2][1]
+    simFiber.get_predicted_spike_array()
+    stim_list = [3, 4]
+    kwargs = dict()
+    for trace_no, stim in enumerate(stim_list):
+        axs[0, 0].plot(
+            simFiber.traces[stim]['time'],
+            simFiber.traces[stim]['stress'] * 1e-3,
+            **kwargs)
+        axs[0, 1].plot(
+            simFiber.traces_rate[stim]['time'],
+            simFiber.traces_rate[stim]['stress'] * 1e-3,
+            **kwargs)
+        axs[0, 2].plot(
+            simFiber.dist[stim]['mxold'][-1, :] * xscale,
+            simFiber.dist[stim]['mstress'][-1, :] * 1e-3,
+            **kwargs)
+        # Plot the spikes
+        spike_array = simFiber.predicted_spike_array[
+            FIBER_MECH_ID]['stress'][stim]
+        time_array = np.arange(spike_array.size) * DT
+        axs[1, 0].plot(time_array, spike_array + trace_no * 2)
+        axs[1, 1].plot(time_array, spike_array + trace_no * 2)
+    for axes in axs[1]:
+        axes.set_ylim(-1, 4)
+        axes.set_yticklabels([])
+    axs[0, 0].set_ylim(0, 6)
+    axs[0, 2].set_ylim(0, 12)
+    axs[0, 0].set_xlim(0, MAX_TIME)
+    axs[1, 0].set_xlim(2, 4.5)
+    for axes in axs[:, 1].ravel():
+        axes.set_xlim(0, MAX_RATE_TIME)
+    for axes in axs[:, 2].ravel():
+        axes.set_xlim(0, MAX_RADIUS*1e3)
+    for axes in axs[:2, :2].ravel():
+        axes.set_xlabel('Time (s)')
+    axs[0, 2].set_xlabel('Location (mm)')
+    axs[0, 0].set_ylabel(r'Internal stress (kPa)')
+    axs[0, 1].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs[0, 2].set_ylabel(r'Internal stress (kPa)')
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    fig.tight_layout()
+    fig.savefig('./plots/quantity_to_spike.png', dpi=300)
+    fig.savefig('./plots/quantity_to_spike.pdf', dpi=300)

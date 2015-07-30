@@ -192,6 +192,16 @@ class LifModel:
             fsl = np.inf
         return fsl
 
+    def trans_param_to_spike_array(self, quantity_dict,
+                                   trans_param, model='LIF',
+                                   mcnc_grouping=None, std=None):
+        current_array = self.trans_param_to_current_array(
+            quantity_dict, trans_param, model=model,
+            mcnc_grouping=mcnc_grouping, std=std)
+        spike_array = self.current_array_to_spike_array(
+            current_array, model=model, mcnc_grouping=mcnc_grouping)
+        return spike_array
+
     def get_fr_fsl(self, quantity_dict_list, trans_param, model='LIF',
                    mcnc_grouping=None):
         """
@@ -256,6 +266,17 @@ class LifModel:
                              predicted_static_fr,
                              predicted_dynamic_fr]
         return predicted_fr
+
+    def trans_param_to_predicted_spike_array(
+            self, quantity_dict_list, trans_param,
+            model='LIF', mcnc_grouping=None, std=None):
+        predicted_spike_array = []
+        for quantity_dict in quantity_dict_list:
+            spike_array = self.trans_param_to_spike_array(
+                quantity_dict, trans_param, model=model,
+                mcnc_grouping=mcnc_grouping, std=std)
+            predicted_spike_array.append(spike_array)
+        return predicted_spike_array
 
     def trans_param_to_fr_r2(self, trans_param, quantity_dict_list,
                              target_fr_array):
