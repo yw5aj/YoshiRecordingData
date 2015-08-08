@@ -71,6 +71,7 @@ class SimFiber:
         self.load_traces()
         self.load_trans_params()
         self.get_predicted_fr()
+        self.get_dist_fr()
         self.get_line_fit()
         return
 
@@ -80,7 +81,7 @@ class SimFiber:
         for stim in range(stim_num)[1:]:
             for key in key_list:
                 self.dist[stim][key] = np.loadtxt(
-                    fpath+self.factor+str(self.level)+str(stim-1)+
+                    fpath + self.factor + str(self.level) + str(stim - 1)+
                     self.control + '_'+key+'.csv', delimiter=',')
                 # Change unit to experiment ones
                 if 'y' in key:
@@ -171,6 +172,13 @@ class SimFiber:
         self.static_force_fem = np.array(
             [self.traces[i]['force'][-1] for i in range(stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
+        # Get the avg displ / force rate
+        self.displ_rate_exp = np.array(
+            [self.static_displ_exp[i] / simFiber.traces[i]['max_index'] / DT
+             for i in range(stim_num)])
+        self.force_rate_exp = np.array(
+            [self.static_force_exp[i] / simFiber.traces[i]['max_index'] / DT
+             for i in range(stim_num)])
         return
 
     def get_predicted_fr(self, trans_params=None):
@@ -207,6 +215,40 @@ class SimFiber:
         if update_instance:
             self.predicted_fr = predicted_fr
         return predicted_fr
+
+    def get_dist_fr(self, trans_params=None):
+        # Determine whether a static call or not
+        update_instance = False
+        if trans_params is None:
+            update_instance = True
+            trans_params = self.trans_params
+        # Calculate predicted fr
+        total_elem_num = self.dist[-1]['mstress'].shape[1]
+        dist_fr = [{} for i in range(FIBER_TOT_NUM)]
+        for fiber_id in FIBER_FIT_ID_LIST:
+            for quantity in quantity_list[-3:]:
+                dist_fr[fiber_id][quantity] = np.empty((
+                    stim_num, 2, total_elem_num))
+                for elem in range(total_elem_num):
+                    # Get the quantity_dict_list for input
+                    quantity_dict_list = [{
+                        'quantity_array':
+                            np.interp(np.arange(0, self.dist[i]['time'].max(),
+                                                DT),
+                                      self.dist[i]['time'][:, 0],
+                                      self.dist[i]['m' + quantity][:, elem]),
+                        'max_index': self.traces[i]['max_index']}
+                        for i in range(stim_num)]
+                    # Calculate
+                    lifModel = LifModel(**FIBER_RCV[fiber_id])
+                    dist_fr[fiber_id][quantity][:, :, elem] =\
+                        lifModel.trans_param_to_predicted_fr(
+                            quantity_dict_list,
+                            trans_params[fiber_id][quantity])[:, 1:]
+        # Update instance if needed
+        if update_instance:
+            self.dist_fr = dist_fr
+        return dist_fr
 
     def get_predicted_spike_array(self, trans_params=None):
         # Determine whether a static call or not
@@ -395,7 +437,7 @@ if __name__ == '__main__':
     # Formatting labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Location (mm)')
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
     axs[2, 0].set_ylabel('Internal stress (kPa)')
     axs[3, 0].set_ylabel('Internal strain')
@@ -423,7 +465,7 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=3)
     # Add subtitles
-    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 0].set_title('Deflection controlled')
     axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
@@ -509,7 +551,7 @@ if __name__ == '__main__':
     # Add axes labels
     for axes in axs[-1, :]:
         axes.set_xlabel('Time (s)')
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel(r'Surface pressure (kPa)')
     axs[2, 0].set_ylabel('Internal stress (kPa)')
     axs[3, 0].set_ylabel('Internal strain')
@@ -536,7 +578,7 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=4)
     # Add subtitles
-    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 0].set_title('Deflection controlled')
     axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
@@ -655,7 +697,7 @@ if __name__ == '__main__':
     axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
         'Quartile', 'Median'], loc=1)
     # Add subtitles
-    axs[0, 0].set_title('Deformation controlled')
+    axs[0, 0].set_title('Deflection controlled')
     axs[0, 1].set_title('Pressure controlled')
     # Save figure
     fig.tight_layout()
@@ -972,13 +1014,13 @@ if __name__ == '__main__':
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
     # y-axis for the Stimulus magnitude over time
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel('Internal displacement (mm)')
     # y-axis for the Stimulus rate over time
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal velocity (mm/s)')
     # y-axis for the Stimulus magnitude over space
-    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
     axs[1, 2].set_ylabel('Internal displacement (mm)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
@@ -1059,7 +1101,7 @@ if __name__ == '__main__':
                                    columns=columns, index=index)
     df_jn_sim_table.to_csv('./csvs/jn_sim_table.csv')
     # %% The huge simulation figure in JN paper
-    fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
+    fig, axs = plt.subplots(6, 3, figsize=(7, 8.75))
     for i, factor in enumerate(factor_list[:3]):
         for level in level_plot_list:
             for stim in stim_plot_list:
@@ -1168,7 +1210,7 @@ if __name__ == '__main__':
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
     # y-axis for the Stimulus magnitude over time
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel('Internal strain')
     axs[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 0].set_ylabel(r'Surface pressure (kPa)')
@@ -1182,7 +1224,7 @@ if __name__ == '__main__':
     axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
     axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     # y-axis for the Stimulus magnitude over space
-    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
     axs[1, 2].set_ylabel('Internal strain')
     axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 2].set_ylabel(r'Surface pressure (kPa)')
@@ -1332,7 +1374,7 @@ if __name__ == '__main__':
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
     # y-axis for the Stimulus magnitude over time
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel('Internal strain')
     axs[2, 0].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 0].set_ylabel(r'Surface pressure (kPa)')
@@ -1346,7 +1388,7 @@ if __name__ == '__main__':
     axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
     axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     # y-axis for the Stimulus magnitude over space
-    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
     axs[1, 2].set_ylabel('Internal strain')
     axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[3, 2].set_ylabel(r'Surface pressure (kPa)')
@@ -1438,13 +1480,13 @@ if __name__ == '__main__':
     axs[-1, 1].set_xlabel('Time (s)')
     axs[-1, 2].set_xlabel('Location (mm)')
     # y-axis for the Stimulus magnitude over time
-    axs[0, 0].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 0].set_ylabel(r'Surface deflection (mm)')
     axs[1, 0].set_ylabel('Internal strain')
     # y-axis for the Stimulus rate over time
     axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
     axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
     # y-axis for the Stimulus magnitude over space
-    axs[0, 2].set_ylabel(r'Surface deformation (mm)')
+    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
     axs[1, 2].set_ylabel('Internal strain')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
@@ -1472,3 +1514,134 @@ if __name__ == '__main__':
     fig.savefig('./plots/paper_substrate_short.png', dpi=300)
     fig.savefig('./plots/paper_substrate_short.pdf', dpi=300)
     plt.close(fig)
+    # %% The displ - force part of the encoding plot
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots()
+    for i, factor in enumerate(factor_list[:3]):
+        for level in range(level_num):
+            alpha = 1. - .4 * abs(level-2)
+            color = (0, 0, 0, alpha)
+            fmt = LS_LIST[i]
+            label = quantile_label_list[level]
+            simFiber = simFiberList[i][level][0]
+            axs.plot(
+                simFiber.static_displ_exp,
+                simFiber.static_force_exp,
+                color=color, mec=color, ms=MS,
+                ls=fmt, label=label)
+    # X and Y limits
+    axs.set_ylim(0, 15)
+    axs.set_xlim(.3, .8)
+    # Axes and panel labels
+    axs.set_xlabel(r'Static displacement (mm)')
+    axs.set_xlabel('Static force (mN)')
+    # Legend
+    handles, labels = axs.get_legend_handles_labels()
+    axs.legend(handles[2::5] + handles[:3],
+               ['Thickness', 'Modulus', 'Viscoelasticity'] + [
+                   'Extreme', 'Quartile', 'Median'],
+               loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/encoding_skin.png', dpi=300)
+    fig.savefig('./plots/encoding_skin.pdf', dpi=300)
+    plt.close(fig)
+    # %% Plot the encoding plot with all three features
+    stim = 4
+    for fiber_id in [FIBER_MECH_ID]:
+        fig, axs = plt.subplots(6, 3, figsize=(7, 10))
+        for i, factor in enumerate(factor_list[:3]):
+            for k, quantity in enumerate(quantity_list[-3:]):
+                # for level in level_plot_list:
+                for level in range(level_num):
+                    alpha = 1. - .4 * abs(level-2)
+                    color = (0, 0, 0, alpha)
+                    fmt = LS_LIST[i]
+                    label = quantile_label_list[level]
+                    simFiber = simFiberList[i][level][0]
+                    simFiberForce = simFiberList[i][level][1]
+                    # Static
+                    axs[0, k].plot(
+                        simFiber.static_displ_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[1],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    axs[1, k].plot(
+                        simFiber.static_force_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[1],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    # Dynamic
+                    axs[2, k].plot(
+                        simFiber.displ_rate_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[2],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    axs[3, k].plot(
+                        simFiber.force_rate_exp,
+                        simFiber.predicted_fr[fiber_id][quantity].T[2],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    # Spatial distribution
+                    axs[4, k].plot(
+                        simFiber.dist[stim]['mxold'][0] * 1e3,
+                        simFiber.dist_fr[fiber_id][quantity][stim, 0, :],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+                    axs[5, k].plot(
+                        simFiberForce.dist[stim]['mxold'][0] * 1e3,
+                        simFiberForce.dist_fr[fiber_id][quantity][stim, 0, :],
+                        color=color, mec=color, ms=MS,
+                        ls=fmt, label=label)
+        # X and Y limits
+        for axes in axs[0:2, :].ravel():
+            axes.set_ylim(0, 45)
+        for axes in axs[2:4].ravel():
+            axes.set_ylim(0, 100)
+        for axes in axs[4:6].ravel():
+            axes.set_ylim(0, 80)
+        for axes in axs[0]:
+            axes.set_xlim(.3, .8)
+        for axes in axs[1]:
+            axes.set_xlim(0, 10)
+        for axes in axs[3]:
+            axes.set_xlim(0, 30)
+        for axes in axs[4:6, :].ravel():
+            axes.set_xlim(0., MAX_RADIUS * 1e3)
+        # Axes and panel labels
+        for i, axes in enumerate(axs[0, :].ravel()):
+            axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
+        for axes in axs[4, :]:
+            axes.set_title('Tip displacement = %.2f mm' %
+                           simFiber.static_displ_exp[stim])
+        for axes in axs[5, :]:
+            axes.set_title('Tip force = %.2f mN' %
+                           simFiberForce.static_force_exp[stim])
+        for axes in axs[0]:
+            axes.set_xlabel(r'Static displacement (mm)')
+        for axes in axs[1]:
+            axes.set_xlabel(r'Static force (mN)')
+        for axes in axs[2]:
+            axes.set_xlabel(r'Mean velocity (mm/s)')
+        for axes in axs[3]:
+            axes.set_xlabel(r'Mean force rate (mN/s)')
+        for axes in axs[4:6, :].ravel():
+            axes.set_xlabel('Location (mm)')
+        for axes in axs.ravel():
+            axes.set_ylabel('Predicted mean firing (Hz)')
+        for axes_id, axes in enumerate(axs.ravel()):
+            axes.text(-.11, 1.25, chr(65+axes_id), transform=axes.transAxes,
+                      fontsize=12, fontweight='bold', va='top')
+        # Legend
+        # The line type labels
+        handles, labels = axs[0, 0].get_legend_handles_labels()
+        axs[0, 1].legend(handles[2::5], ['Thickness', 'Modulus', 'Visco.'],
+                         loc=2, fontsize=6)
+        # The 5 quantile labels
+        axs[0, 2].legend(handles[:3], ['Extreme', 'Quartile',
+                         'Median'], loc=2, fontsize=6)
+        # Save
+        fig.tight_layout()
+        fig.savefig('./plots/encoding_neural.png', dpi=300)
+        fig.savefig('./plots/encoding_neural.pdf', dpi=300)
+        plt.close(fig)
