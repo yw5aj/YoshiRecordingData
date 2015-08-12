@@ -44,6 +44,7 @@ level_plot_list = range(level_num)[1:-1]
 dist_key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
                  'mstrain', 'mstress', 'mxnew', 'mxold', 'my',
                  'time']
+stim_in_geom_plot = 4
 
 
 class SimFiber:
@@ -72,6 +73,7 @@ class SimFiber:
         self.load_trans_params()
         self.get_predicted_fr()
         self.get_dist_fr()
+        self.get_mi()
         self.get_line_fit()
         return
 
@@ -81,7 +83,7 @@ class SimFiber:
         for stim in range(stim_num)[1:]:
             for key in key_list:
                 self.dist[stim][key] = np.loadtxt(
-                    fpath + self.factor + str(self.level) + str(stim - 1)+
+                    fpath + self.factor + str(self.level) + str(stim - 1) +
                     self.control + '_'+key+'.csv', delimiter=',')
                 # Change unit to experiment ones
                 if 'y' in key:
@@ -249,6 +251,29 @@ class SimFiber:
         if update_instance:
             self.dist_fr = dist_fr
         return dist_fr
+
+    def get_mi(self):
+        def calculate_m(fr_array):
+            rmax = fr_array.max()
+            rmin = fr_array.min()
+            if rmax != rmin:
+#                max_idx = fr_array.argmax()
+#                rmin = fr_array[:max_idx].min()
+                rmin = fr_array[0]
+                m = (rmax - rmin) / (rmax + rmin)
+            else:
+                m = 0
+            return m
+        mi = [{} for i in range(FIBER_TOT_NUM)]
+        for fiber_id in FIBER_FIT_ID_LIST:
+            for quantity in quantity_list[-3:]:
+                mi[fiber_id][quantity] = np.empty((stim_num, 2))
+                for stim in range(stim_num):
+                    for phase in range(2):
+                        mi[fiber_id][quantity][stim, phase] = calculate_m(
+                            self.dist_fr[fiber_id][quantity][stim, phase, :])
+        self.mi = mi
+        return mi
 
     def get_predicted_spike_array(self, trans_params=None):
         # Determine whether a static call or not
@@ -703,9 +728,8 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)
     plt.close(fig)
-    # %% Plot all simulations together
+    # %% Calculate all the IQRs and compare force vs. displ
     fiber_id = FIBER_MECH_ID
-    # Calculate all the IQRs and compare force vs. displ
 
     def get_slope_iqr(simFiberLevelList, quantity):
         """
@@ -738,6 +762,83 @@ if __name__ == '__main__':
             sim_table[3+k, i] = slope_iqr[1]
     sim_table_sum = sim_table.sum(axis=1)
     np.savetxt('./csvs/sim_table.csv', sim_table, delimiter=',')
+    # %% Calculate all the IQRs and compare force vs. displ rate
+    fiber_id = FIBER_MECH_ID
+
+    def get_slope_iqr_rate(simFiberLevelList, quantity):
+        """
+        Returns
+        -------
+        slope_iqr : list
+            The 1st element for displ., 2nd for force.
+        """
+        slope_list_displ = [np.polyfit(
+            simFiber.displ_rate_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[2], 1)[0]
+            for simFiber in simFiberLevelList]
+        slope_list_force = [np.polyfit(
+            simFiber.force_rate_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[2], 1)[0]
+            for simFiber in simFiberLevelList]
+        slope_iqr = []
+        slope_iqr.append(np.abs(
+            (slope_list_displ[3] - slope_list_displ[1]) / slope_list_displ[2]))
+        slope_iqr.append(np.abs(
+            (slope_list_force[3] - slope_list_force[1]) / slope_list_force[2]))
+        return slope_iqr
+    sim_table_rate = np.empty((6, 3))
+    for i, factor in enumerate(factor_list[:3]):
+        for k, quantity in enumerate(quantity_list[-3:]):
+            simFiberLevelList = [simFiberList[i][level][0] for level in
+                                 range(level_num)]
+            slope_iqr = get_slope_iqr_rate(simFiberLevelList, quantity)
+            sim_table_rate[k, i] = slope_iqr[0]
+            sim_table_rate[3+k, i] = slope_iqr[1]
+    sim_table_rate_sum = sim_table_rate.sum(axis=1)
+    np.savetxt('./csvs/sim_table_rate.csv', sim_table_rate, delimiter=',')
+    # %% Calculate all the IQRs and compare force vs. displ geometry
+    fiber_id = FIBER_MECH_ID
+    stim = stim_in_geom_plot
+
+    def get_dr_iqr_geometry(simFiberLevelListDispl, simFiberLevelListForce,
+                            quantity):
+        """
+        Returns
+        -------
+        dr_iqr : list
+            The 1st element for displ., 2nd for force.
+        """
+
+        def get_dr(fr_array):
+            dr = fr_array.max() - fr_array[0]
+            return dr
+
+        dr_displ_list = [
+            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :])
+            for simFiber in simFiberLevelListDispl]
+        dr_force_list = [
+            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :])
+            for simFiber in simFiberLevelListForce]
+        dr_iqr = []
+        dr_iqr.append(np.abs(
+            (dr_displ_list[3] - dr_displ_list[1]))) #  / dr_displ_list[2]))
+        dr_iqr.append(np.abs(
+            (dr_force_list[3] - dr_force_list[1]))) #  / dr_force_list[2]))
+        return dr_iqr
+    sim_table_geometry = np.empty((6, 3))
+    for i, factor in enumerate(factor_list[:3]):
+        for k, quantity in enumerate(quantity_list[-3:]):
+            simFiberLevelListDispl = [
+                simFiberList[i][level][0] for level in range(level_num)]
+            simFiberLevelListForce = [
+                simFiberList[i][level][1] for level in range(level_num)]
+            dr_iqr = get_dr_iqr_geometry(
+                simFiberLevelListDispl, simFiberLevelListForce, quantity)
+            sim_table_geometry[k, i] = dr_iqr[0]
+            sim_table_geometry[3+k, i] = dr_iqr[1]
+    sim_table_geometry_sum = sim_table_geometry.sum(axis=1)
+    np.savetxt('./csvs/sim_table_geometry.csv', sim_table_geometry,
+               delimiter=',')
     # %% Start plotting
     # Factors explaining the force-alignment - static
     for fiber_id in FIBER_FIT_ID_LIST:
@@ -770,12 +871,12 @@ if __name__ == '__main__':
         for axes in axs[0:, :].ravel():
             axes.set_ylim(0, 15)
         for axes in axs[1:, :].ravel():
-            axes.set_ylim(0, 45)
+            axes.set_ylim(0, 50)
         for axes in axs[:2, :].ravel():
             axes.set_xlim(.35, .75)
             axes.set_xticks(np.arange(.35, .85, .1))
         for axes in axs[2, :].ravel():
-            axes.set_xlim(0, 10)
+            axes.set_xlim(0, 15)
         # Axes and panel labels
         for i, axes in enumerate(axs[0, :].ravel()):
             axes.set_title('%s-based Model' % ['Stress', 'Strain', 'SED'][i])
@@ -840,12 +941,12 @@ if __name__ == '__main__':
         axes.set_xlabel(r'Static displacement (mm)')
     for axes in axs[1, :].ravel():
         axes.set_xlabel(r'Static force (mN)')
-        axes.set_xlim(0, 10)
+        axes.set_xlim(0, 15)
     for row, axes in enumerate(axs[:, 0].ravel()):
         axes.set_ylabel('Predicted mean firing (Hz)\n%s-based model' %
                         ['Strain', 'Stress'][row])
     for axes in axs.ravel():
-        axes.set_ylim(0, 45)
+        axes.set_ylim(0, 50)
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('Fiber #%d' % (i+1))
     for axes_id, axes in enumerate(axs.ravel()):
@@ -903,12 +1004,12 @@ if __name__ == '__main__':
         axes.set_xlabel(r'Static displacement (mm)')
     for axes in axs[1, :].ravel():
         axes.set_xlabel(r'Static force (mN)')
-        axes.set_xlim(0, 10)
+        axes.set_xlim(0, 15)
     for row, axes in enumerate(axs[:, 0].ravel()):
         axes.set_ylabel('Predicted mean firing (Hz)\n%s-based model' %
                         ['Strain', 'Stress'][row])
     for axes in axs.ravel():
-        axes.set_ylim(0, 45)
+        axes.set_ylim(0, 50)
     for i, axes in enumerate(axs[0, :].ravel()):
         axes.set_title('Grouping: %s' % str(grouping_elif_list[i]))
     for axes_id, axes in enumerate(axs.ravel()):
@@ -1547,9 +1648,9 @@ if __name__ == '__main__':
     fig.savefig('./plots/encoding_skin.pdf', dpi=300)
     plt.close(fig)
     # %% Plot the encoding plot with all three features
-    stim = 4
+    stim = stim_in_geom_plot
     for fiber_id in [FIBER_MECH_ID]:
-        fig, axs = plt.subplots(6, 3, figsize=(7, 10))
+        fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
         for i, factor in enumerate(factor_list[:3]):
             for k, quantity in enumerate(quantity_list[-3:]):
                 # for level in level_plot_list:
@@ -1595,17 +1696,17 @@ if __name__ == '__main__':
                         ls=fmt, label=label)
         # X and Y limits
         for axes in axs[0:2, :].ravel():
-            axes.set_ylim(0, 45)
+            axes.set_ylim(0, 50)
         for axes in axs[2:4].ravel():
-            axes.set_ylim(0, 100)
+            axes.set_ylim(0, 150)
         for axes in axs[4:6].ravel():
             axes.set_ylim(0, 80)
         for axes in axs[0]:
             axes.set_xlim(.3, .8)
         for axes in axs[1]:
-            axes.set_xlim(0, 10)
+            axes.set_xlim(0, 15)
         for axes in axs[3]:
-            axes.set_xlim(0, 30)
+            axes.set_xlim(0, 45)
         for axes in axs[4:6, :].ravel():
             axes.set_xlim(0., MAX_RADIUS * 1e3)
         # Axes and panel labels
@@ -1627,8 +1728,12 @@ if __name__ == '__main__':
             axes.set_xlabel(r'Mean force rate (mN/s)')
         for axes in axs[4:6, :].ravel():
             axes.set_xlabel('Location (mm)')
-        for axes in axs.ravel():
-            axes.set_ylabel('Predicted mean firing (Hz)')
+        for axes in axs[0:2, 0].ravel():
+            axes.set_ylabel('Predicted static firing (Hz)')
+        for axes in axs[2:4, 0].ravel():
+            axes.set_ylabel('Predicted dynamic firing (Hz)')
+        for axes in axs[4:6, 0].ravel():
+            axes.set_ylabel('Predicted static firing (Hz)')
         for axes_id, axes in enumerate(axs.ravel()):
             axes.text(-.11, 1.25, chr(65+axes_id), transform=axes.transAxes,
                       fontsize=12, fontweight='bold', va='top')
@@ -1645,3 +1750,30 @@ if __name__ == '__main__':
         fig.savefig('./plots/encoding_neural.png', dpi=300)
         fig.savefig('./plots/encoding_neural.pdf', dpi=300)
         plt.close(fig)
+    # %% Make the table for encoding neural spatial part
+    jn_sim_table = np.empty((6, 12))
+    for row in range(6):
+        control_id = row % 2
+        for quantity_id in range(3):
+            if row <= 1:
+                jn_sim_table[row, quantity_id * 4:quantity_id * 4 + 3] =\
+                    sim_table[3 * control_id + quantity_id]
+                jn_sim_table[row, quantity_id * 4 + 3] = sim_table[
+                    3 * control_id + quantity_id].sum()
+            elif row <= 3:
+                jn_sim_table[row, quantity_id * 4:quantity_id * 4 + 3] =\
+                    sim_table_rate[3 * control_id + quantity_id]
+                jn_sim_table[row, quantity_id * 4 + 3] = sim_table_rate[
+                    3 * control_id + quantity_id].sum()
+            elif row <= 5:
+                jn_sim_table[row, quantity_id * 4:quantity_id * 4 + 3] =\
+                    sim_table_geometry[3 * control_id + quantity_id]
+                jn_sim_table[row, quantity_id * 4 + 3] = sim_table_geometry[
+                    3 * control_id + quantity_id].sum()
+    columns = []
+    [columns.extend(['T', 'M', 'V', 'Sum']) for i in range(3)]
+    index = []
+    [index.extend(['Displacement', 'Force']) for i in range(3)]
+    df_jn_sim_table = pd.DataFrame(jn_sim_table,
+                                   columns=columns, index=index)
+    df_jn_sim_table.to_csv('./csvs/jn_sim_table_three_aspects.csv')
