@@ -171,15 +171,21 @@ class SimFiber:
         # Get the FEM and corresponding displ / force
         self.static_displ_exp = np.array(
             [self.traces[i]['displ'][-1] for i in range(stim_num)]) * 1e3
+        self.dynamic_displ_exp = np.array(
+            [self.traces[i]['displ'][self.traces[i]['max_index']]
+             for i in range(stim_num)]) * 1e3
         self.static_force_fem = np.array(
             [self.traces[i]['force'][-1] for i in range(stim_num)])
+        self.dynamic_force_fem = np.array(
+            [self.traces[i]['force'].max() for i in range(stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
+        self.dynamic_force_exp = self.dynamic_force_fem * 1e3
         # Get the avg displ / force rate
         self.displ_rate_exp = np.array(
-            [self.static_displ_exp[i] / simFiber.traces[i]['max_index'] / DT
+            [self.dynamic_displ_exp[i] / simFiber.traces[i]['max_index'] / DT
              for i in range(stim_num)])
         self.force_rate_exp = np.array(
-            [self.static_force_exp[i] / simFiber.traces[i]['max_index'] / DT
+            [self.dynamic_force_exp[i] / simFiber.traces[i]['max_index'] / DT
              for i in range(stim_num)])
         return
 
@@ -307,13 +313,13 @@ class SimFiber:
             for quantity in quantity_list[-3:]:
                 self.line_fit[fiber_id][quantity] = {
                     'displ_dynamic': np.polyfit(
-                        self.static_displ_exp,
+                        self.dynamic_displ_exp,
                         self.predicted_fr[fiber_id][quantity][:, 2], 1),
                     'displ_static': np.polyfit(
                         self.static_displ_exp,
                         self.predicted_fr[fiber_id][quantity][:, 1], 1),
                     'force_dynamic': np.polyfit(
-                        self.static_force_exp,
+                        self.dynamic_force_exp,
                         self.predicted_fr[fiber_id][quantity][:, 2], 1),
                     'force_static': np.polyfit(
                         self.static_force_exp,
@@ -728,6 +734,18 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/temporal_rate_distribution.png', dpi=300)
     plt.close(fig)
+    # %% The function to calculate the supra-threshold sensitivity
+
+    def get_sensitivity_function(x, y, supra_threshold=False):
+        if y.any():
+            start_index = 0
+            if supra_threshold:
+                start_index = y.nonzero()[0][0]
+            slope = np.polyfit(
+                x[start_index:], y[start_index:], 1)[0]
+        else:
+            slope = 0
+        return slope
     # %% Calculate all the IQRs and compare force vs. displ
     fiber_id = FIBER_MECH_ID
 
@@ -738,13 +756,15 @@ if __name__ == '__main__':
         slope_iqr : list
             The 1st element for displ., 2nd for force.
         """
-        slope_list_displ = [np.polyfit(
+        slope_list_displ = [get_sensitivity_function(
             simFiber.static_displ_exp,
-            simFiber.predicted_fr[fiber_id][quantity].T[1], 1)[0]
+            simFiber.predicted_fr[fiber_id][quantity].T[1],
+            supra_threshold=False)
             for simFiber in simFiberLevelList]
-        slope_list_force = [np.polyfit(
+        slope_list_force = [get_sensitivity_function(
             simFiber.static_force_exp,
-            simFiber.predicted_fr[fiber_id][quantity].T[1], 1)[0]
+            simFiber.predicted_fr[fiber_id][quantity].T[1],
+            supra_threshold=False)
             for simFiber in simFiberLevelList]
         slope_iqr = []
         slope_iqr.append(np.abs(
@@ -772,13 +792,16 @@ if __name__ == '__main__':
         slope_iqr : list
             The 1st element for displ., 2nd for force.
         """
-        slope_list_displ = [np.polyfit(
+
+        slope_list_displ = [get_sensitivity_function(
             simFiber.displ_rate_exp,
-            simFiber.predicted_fr[fiber_id][quantity].T[2], 1)[0]
+            simFiber.predicted_fr[fiber_id][quantity][:, 2],
+            supra_threshold=False)
             for simFiber in simFiberLevelList]
-        slope_list_force = [np.polyfit(
+        slope_list_force = [get_sensitivity_function(
             simFiber.force_rate_exp,
-            simFiber.predicted_fr[fiber_id][quantity].T[2], 1)[0]
+            simFiber.predicted_fr[fiber_id][quantity][:, 2],
+            supra_threshold=False)
             for simFiber in simFiberLevelList]
         slope_iqr = []
         slope_iqr.append(np.abs(
@@ -809,21 +832,27 @@ if __name__ == '__main__':
             The 1st element for displ., 2nd for force.
         """
 
-        def get_dr(fr_array):
-            dr = fr_array.max() - fr_array[0]
+        def get_dr(fr_coarse, x_coarse, res=0.1):
+            x_fine = np.arange(0, 1, res)
+            fr_fine = np.interp(x_fine, x_coarse, fr_coarse)
+            max_index = fr_fine.argmax()
+            dr = fr_fine[max_index] - fr_fine[max_index - 1] +\
+                fr_fine[max_index] - fr_fine[max_index + 1]
             return dr
 
         dr_displ_list = [
-            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :])
+            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :],
+                   simFiber.dist[-1]['mxold'][0] * 1e-3)
             for simFiber in simFiberLevelListDispl]
         dr_force_list = [
-            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :])
+            get_dr(simFiber.dist_fr[fiber_id][quantity][stim, 0, :],
+                   simFiber.dist[-1]['mxold'][0] * 1e-3)
             for simFiber in simFiberLevelListForce]
         dr_iqr = []
         dr_iqr.append(np.abs(
-            (dr_displ_list[3] - dr_displ_list[1]))) #  / dr_displ_list[2]))
+            (dr_displ_list[3] - dr_displ_list[1]) / dr_displ_list[2]))
         dr_iqr.append(np.abs(
-            (dr_force_list[3] - dr_force_list[1]))) #  / dr_force_list[2]))
+            (dr_force_list[3] - dr_force_list[1]) / dr_force_list[2]))
         return dr_iqr
     sim_table_geometry = np.empty((6, 3))
     for i, factor in enumerate(factor_list[:3]):
@@ -1751,8 +1780,8 @@ if __name__ == '__main__':
         fig.savefig('./plots/encoding_neural.pdf', dpi=300)
         plt.close(fig)
     # %% Make the table for encoding neural spatial part
-    jn_sim_table = np.empty((6, 12))
-    for row in range(6):
+    jn_sim_table = np.empty((8, 12))
+    for row in range(8):
         control_id = row % 2
         for quantity_id in range(3):
             if row <= 1:
@@ -1770,10 +1799,12 @@ if __name__ == '__main__':
                     sim_table_geometry[3 * control_id + quantity_id]
                 jn_sim_table[row, quantity_id * 4 + 3] = sim_table_geometry[
                     3 * control_id + quantity_id].sum()
+            elif row <= 7:
+                jn_sim_table[row] = jn_sim_table[row % 2:6:2].sum(axis=0)
     columns = []
     [columns.extend(['T', 'M', 'V', 'Sum']) for i in range(3)]
     index = []
-    [index.extend(['Displacement', 'Force']) for i in range(3)]
+    [index.extend(['Displacement', 'Force']) for i in range(4)]
     df_jn_sim_table = pd.DataFrame(jn_sim_table,
                                    columns=columns, index=index)
     df_jn_sim_table.to_csv('./csvs/jn_sim_table_three_aspects.csv')
