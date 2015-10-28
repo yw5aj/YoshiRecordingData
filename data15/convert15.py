@@ -24,12 +24,9 @@ NEW_INDENTER = ['2014-07-11-01', '2014-07-11-02']
 
 class CleanFiber:
 
-    def __init__(self, mat_filename, mat_pathname, threshold=150, pad=500.,
-                 make_plot=False, no_force=False):
-        self.contact_standard = {'threshold': threshold, 'pad': pad}
+    def __init__(self, mat_filename, mat_pathname, make_plot=False):
         self.mat_filename = mat_filename
         self.mat_pathname = mat_pathname
-        self.no_force = no_force
         if self.mat_filename[:13] in NEW_INDENTER:
             self.fs = int(20e3)
         else:
@@ -37,7 +34,7 @@ class CleanFiber:
         self.get_animal_info()
         self.get_mat_data()
         self.sort_traces()
-        self.find_contact_by_force(threshold, pad)
+        self.find_contact_by_spike()
         if not np.isnan(self.contact_pos):
             self.cut_traces(make_plot=make_plot)
         return
@@ -113,28 +110,19 @@ class CleanFiber:
         spike_fr = 1. / spike_isi
         return spike_time, spike_isi, spike_fr
 
-    def find_contact_by_force(self, threshold, pad):
+    def find_contact_by_spike(self):
         self.contact_pos = []
         for stim_id, stim_traces_full in enumerate(self.traces_full):
-            # try-except is used in case some force traces are too trivial &
-            # below threshold force
             try:
-                contact_index = np.nonzero(
-                    stim_traces_full['force'] > threshold)[0][0]
+                contact_index = stim_traces_full['spike_trace'].nonzero()[0][0]
             except:
                 continue
             self.contact_pos.append(stim_traces_full['displ'][contact_index])
-        self.contact_pos = np.array(self.contact_pos)
-        if len(self.contact_pos) > 0:
-            self.contact_pos = np.median(self.contact_pos) - pad
-        else:
-            self.contact_pos = np.nan
-        # Hard code for two fibers w/o force traces
-        if self.no_force:
-            if '2014-01-10-01' in self.mat_filename:
-                self.contact_pos = 445.
-            elif '2013-03-19-01' in self.mat_filename:
-                self.contact_pos = 686.
+        self.contact_pos = np.percentile(self.contact_pos, 15)
+        for stim_id, stim_traces_full in enumerate(self.traces_full):
+            if not np.any(stim_traces_full['displ'] >= self.contact_pos):
+                self.contact_pos = np.nan
+                break
         return self.contact_pos
 
     def cut_traces(self, make_plot=False):
@@ -663,14 +651,14 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
     fig.savefig('./plots/repsample/all_%s' % figname, dpi=300)
     plt.close(fig)
     return (displ_static_fit_resvar, force_static_fit_resvar,
-            displvar_array, forcevar_array)
+            displvar_array, forcevar_array, fiber_list)
 
 
 if __name__ == '__main__':
     # Set the flags
-    make_plot = False
-    no_force = False  # Include fibers with no force traces?
-    exclude_inhibition = True  # Exclude fibers with inhibition traces?
+    make_plot = True
+    exclude_no_force = True
+    exclude_inhibition = True
     run_fiber = True
     pickle_fname = './data/cleanFiber_list.pkl'
     if make_plot:
@@ -684,15 +672,24 @@ if __name__ == '__main__':
             inhibit_list = ['2013-12-21-02', '2014-01-10-01']
         else:
             inhibit_list = []
+        if exclude_no_force:
+            no_force_list = ['2013-03-19-01']
+        else:
+            no_force_list = []
+        odd_list = []  # ['2014-07-11-02']
         fiber_table = {}
         for root, subdirs, files in os.walk('data'):
             for fname in files:
                 if fname.endswith('.mat') and 'calibrated.mat' in fname\
                         and 'CONT' in fname and 'inhibition' not in fname:
                     cleanFiber = CleanFiber(
-                        fname, root, make_plot=make_plot, no_force=no_force)
+                        fname, root, make_plot=make_plot)
                     if not np.isnan(cleanFiber.contact_pos) and\
-                            cleanFiber.mat_filename[:13] not in inhibit_list:
+                            cleanFiber.mat_filename[:13] not in inhibit_list\
+                            and cleanFiber.mat_filename[
+                                :13] not in no_force_list\
+                            and cleanFiber.mat_filename[
+                                :13] not in odd_list:
                         cleanFiber_list.append(cleanFiber)
         for i, cleanFiber in enumerate(cleanFiber_list):
             cleanFiber.fiber_id = i
@@ -715,23 +712,25 @@ if __name__ == '__main__':
     ramp_time_list = extract_ramp_time(cleanFiber_list)
     displ_list = static_dynamic_array[:, 1]
     ramp_time_coeff = np.polyfit(displ_list, ramp_time_list, 1)
-    regulated_ramp_curve_list, median_regulated_ramp_curve, popt =\
-        extract_regulated_ramp_curve(cleanFiber_list)
+#    regulated_ramp_curve_list, median_regulated_ramp_curve, popt =\
+#        extract_regulated_ramp_curve(cleanFiber_list)
     # %% Get grouped view
-    displvar, forcevar, displvar_array, forcevar_array = group_fr(
+    displvar, forcevar, displvar_array, forcevar_array, fiber_list = group_fr(
         static_dynamic_array, 'compare_variance.png')
     displvar_gross = get_resvar(static_dynamic_array.T[2],
                                 static_dynamic_array.T[4])
     forcevar_gross = get_resvar(static_dynamic_array.T[3],
                                 static_dynamic_array.T[4])
-    # %% Pick three best fibers
-    rep_fiber_list = []
-    include_list = ['2014-07-11-02', '2014-01-16-01',
-                    '2013-12-07-01']
-    for cleanFiber in cleanFiber_list:
-        if cleanFiber.mat_filename[:13] in include_list:
-            rep_fiber_list.append(copy.deepcopy(cleanFiber))
-    for i, fiber in enumerate(rep_fiber_list):
-        fiber.fiber_id = i
-    _, _, sd_rep = plot_static_dynamic(rep_fiber_list, fname='sd_rep')
-    displvar_rep, forcevar_rep, _, _ = group_fr(sd_rep, 'var_rp.png')
+    # %% Compare each fiber
+    slope_displ_list, slope_force_list = [], []
+    for fiber in fiber_list:
+        slope_displ = np.polyfit(fiber.binned_exp['displ_mean'],
+                                 fiber.binned_exp['static_fr_mean'], 1)[0]
+        slope_force = np.polyfit(fiber.binned_exp['force_mean'],
+                                 fiber.binned_exp['static_fr_mean'], 1)[0]
+        slope_displ_list.append(slope_displ)
+        slope_force_list.append(slope_force)
+    slope_displ_arr = np.array(slope_displ_list)
+    slope_force_arr = np.array(slope_force_list)
+    print(sorted(slope_displ_arr) / np.median(slope_displ_arr))
+    print(sorted(slope_force_arr) / np.median(slope_force_arr))
