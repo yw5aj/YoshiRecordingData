@@ -9,13 +9,31 @@ from scipy.signal import butter, filtfilt
 from scipy.optimize import curve_fit
 from lmfit import Model
 import pandas as pd
-
+from collections import defaultdict
 
 # Import my own packages
 MARKER_LIST = ['v', 'D', 'o', 's', '*', 'h', '.', 'x', 'h', '+']
 COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':']
 MS = 6
+START_STATIC = 0
+END_STATIC = 5
+rep_stim_id_dict = {
+    '2014-07-11-01': 20,
+    '2014-07-11-02': 1,
+    '2013-12-07-01': 11,
+    '2013-12-21-01': 7,
+    '2014-01-16-01': 7,
+    }
+rep_stim_id_dict = defaultdict(lambda: 0, rep_stim_id_dict)
+rep_spike_id_dict = {
+    '2014-07-11-01': 0,
+    '2014-07-11-02': 0,
+    '2013-12-07-01': 0,
+    '2013-12-21-01': 0,
+    '2014-01-16-01': 0,
+    }
+rep_spike_id_dict = defaultdict(lambda: 0, rep_spike_id_dict)
 
 
 # New indenter list
@@ -61,7 +79,7 @@ class CleanFiber:
         return self.mat_data, self.stim_block
 
     def sort_traces(self):
-        b, a = butter(8, 1 / 64)  # Fs = fs/64 = 250 Hz
+        b, a = butter(8, 250 / self.fs)  # Fs = 250 Hz
         self.traces_full = []
         for i, j_num in enumerate(self.stim_block):
             for j in range(j_num):
@@ -111,18 +129,12 @@ class CleanFiber:
         return spike_time, spike_isi, spike_fr
 
     def find_contact_by_spike(self):
-        self.contact_pos = []
-        for stim_id, stim_traces_full in enumerate(self.traces_full):
-            try:
-                contact_index = stim_traces_full['spike_trace'].nonzero()[0][0]
-            except:
-                continue
-            self.contact_pos.append(stim_traces_full['displ'][contact_index])
-        self.contact_pos = np.percentile(self.contact_pos, 15)
-        for stim_id, stim_traces_full in enumerate(self.traces_full):
-            if not np.any(stim_traces_full['displ'] >= self.contact_pos):
-                self.contact_pos = np.nan
-                break
+        rep_stim_id = rep_stim_id_dict[self.mat_filename[:13]]
+        rep_spike_id = rep_spike_id_dict[self.mat_filename[:13]]
+        stim_traces_full = self.traces_full[rep_stim_id]
+        contact_index = stim_traces_full['spike_trace'].nonzero(
+            )[0][rep_spike_id]
+        self.contact_pos = stim_traces_full['displ'][contact_index]
         return self.contact_pos
 
     def cut_traces(self, make_plot=False):
@@ -142,12 +154,12 @@ class CleanFiber:
                 'time': np.arange(6 * self.fs) / self.fs,
                 'ramp_time': (max_force_index - contact_index) / self.fs,
                 'static_force': stim_traces_full['force'][
-                    max_force_index + 2 * self.fs:max_force_index + int(
-                        4.5 * self.fs)].mean(),
+                    max_force_index + START_STATIC * self.fs:max_force_index +
+                    int(END_STATIC * self.fs)].mean(),
                 'static_displ': stim_traces_full['displ'][
-                    max_force_index + 2 * self.fs:max_force_index + int(
-                        4.5 * self.fs)].mean() - stim_traces_full['displ'][
-                        contact_index],
+                    max_force_index + START_STATIC * self.fs:max_force_index +
+                    int(END_STATIC * self.fs)].mean() - stim_traces_full[
+                        'displ'][contact_index],
                 'dynamic_force_rate': np.diff(
                     stim_traces_full['force'][
                         contact_index:max_force_index]).mean() * self.fs,
@@ -161,8 +173,9 @@ class CleanFiber:
                 pass
             trace['static_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][
-                    max_force_index + int(2. * self.fs):max_force_index + int(
-                        4.5 * self.fs)])
+                    max_force_index + int(START_STATIC * self.fs):
+                    max_force_index + int(
+                        END_STATIC * self.fs)])
             trace['dynamic_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][contact_index:max_force_index])
             if np.any(trace['spike_trace']):
@@ -173,14 +186,11 @@ class CleanFiber:
                 fig, axs = plt.subplots(3, 1, figsize=(6.83, 9.19))
                 for i, item in enumerate(['displ', 'force', 'spike_trace']):
                     axs[i].plot(
-                        stim_traces_full['time'][
-                            contact_index - .5 * self.fs:contact_index +
-                            6.5 * self.fs],
-                        stim_traces_full[item][
-                            contact_index - .5 * self.fs:contact_index +
-                            6.5 * self.fs], '-k', color='.0')
+                        stim_traces_full['time'],
+                        stim_traces_full[item], '-k', color='.0')
                     axs[i].axvline(contact_index / self.fs, color='.0')
-                    axs[i].axvline(contact_index / self.fs + 6., color='.0')
+                    axs[i].axvline(contact_index / self.fs + END_STATIC,
+                                   color='.0')
                     axs[i].set_xlabel('Time (s)')
                 axs[0].set_title(
                     'displ = %f, force = %f, missed spikes = %d' % (
@@ -220,7 +230,7 @@ def linear(x, a, b):
     return a * x + b
 
 
-def get_resvar(x, y, predict=False, fine_predict=False, mod='sigmoid'):
+def get_resvar(x, y, mod='sigmoid'):
     assert len(x) == len(y)
     if len(x) < 3 or mod == 'linear':
         sigmoidmod = Model(linear)
@@ -231,13 +241,15 @@ def get_resvar(x, y, predict=False, fine_predict=False, mod='sigmoid'):
         sigmoidmod = Model(sigmoid)
         modfit = sigmoidmod.fit(y, x=x, a=y.max(), b=1 / (x.max() - x.min()),
                                 c=x.max())
-    if not predict:
-        return modfit.residual.var()
-    elif not fine_predict:
-        return (modfit.residual.var(), modfit.best_fit)
-    else:
-        finex = np.linspace(x.min(), x.max(), 50)
-        return (modfit.residual.var(), modfit.eval(x=finex), finex)
+    finex = np.linspace(x.min(), x.max(), 50)
+    result = {
+        'mod': mod,
+        'params': modfit.best_values,
+        'resvar': modfit.residual.var(),
+        'y': modfit.best_fit,
+        'finex': finex,
+        'finey': modfit.eval(x=finex)}
+    return result
 
 
 def plot_specific_fibers(fiber_list, fname='temp'):
@@ -520,16 +532,20 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
                 self.binned_exp['displ_mean']))
 
         def get_var(self):
-            displvar, displfit, displfine = get_resvar(
-                self.static_displ, self.static_avg_fr,
-                predict=True, fine_predict=True)
-            forcevar, forcefit, forcefine = get_resvar(
-                self.static_force, self.static_avg_fr,
-                predict=True, fine_predict=True)
+            displ_result = get_resvar(
+                self.static_displ, self.static_avg_fr)
+            displvar = displ_result['resvar']
+            displfit = displ_result['finey']
+            displfine = displ_result['finex']
+            force_result = get_resvar(
+                self.static_force, self.static_avg_fr)
+            forcevar = force_result['resvar']
+            forcefit = force_result['finey']
+            forcefine = force_result['finex']
             for key, item in locals().items():
                 if 'displ' in key or 'force' in key:
                     setattr(self, key, item)
-            return displvar, forcevar, displfit, forcefit
+            return
 
     # Collect fiber data
     fiber_list = []
@@ -542,10 +558,12 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
         force_list.extend(fiber.binned_exp['force_mean'])
         static_fr_list.extend(fiber.binned_exp['static_fr_mean'])
     # Perform fitting
-    displ_static_fit_resvar, displ_static_predict = get_resvar(
-        np.array(displ_list), np.array(static_fr_list), predict=True)
-    force_static_fit_resvar, force_static_predict = get_resvar(
-        np.array(force_list), np.array(static_fr_list), predict=True)
+    displ_result = get_resvar(np.array(displ_list), np.array(static_fr_list))
+    displ_static_fit_resvar = displ_result['resvar']
+    displ_static_predict = displ_result['y']
+    force_result = get_resvar(np.array(force_list), np.array(static_fr_list))
+    force_static_fit_resvar = force_result['resvar']
+    force_static_predict = force_result['y']
     # Get resvar for each fiber
     displvar_list, forcevar_list = [], []
     for fiber in fiber_list:
@@ -656,7 +674,7 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
 
 if __name__ == '__main__':
     # Set the flags
-    make_plot = True
+    make_plot = False
     exclude_no_force = True
     exclude_inhibition = True
     run_fiber = True
@@ -718,10 +736,10 @@ if __name__ == '__main__':
     displvar, forcevar, displvar_array, forcevar_array, fiber_list = group_fr(
         static_dynamic_array, 'compare_variance.png')
     displvar_gross = get_resvar(static_dynamic_array.T[2],
-                                static_dynamic_array.T[4])
+                                static_dynamic_array.T[4])['resvar']
     forcevar_gross = get_resvar(static_dynamic_array.T[3],
-                                static_dynamic_array.T[4])
-    # %% Compare each fiber
+                                static_dynamic_array.T[4])['resvar']
+    # %% Compare each fiber by linear fit
     slope_displ_list, slope_force_list = [], []
     for fiber in fiber_list:
         slope_displ = np.polyfit(fiber.binned_exp['displ_mean'],
@@ -734,3 +752,10 @@ if __name__ == '__main__':
     slope_force_arr = np.array(slope_force_list)
     print(sorted(slope_displ_arr) / np.median(slope_displ_arr))
     print(sorted(slope_force_arr) / np.median(slope_force_arr))
+    # %% Compare each fiber by sigmoidal parameters
+    force_params_list, displ_params_list = [], []
+    for fiber in fiber_list:
+        force_params_list.append(fiber.force_result['params'])
+        displ_params_list.append(fiber.displ_result['params'])
+    force_params_df = pd.DataFrame(force_params_list)
+    displ_params_df = pd.DataFrame(displ_params_list)
