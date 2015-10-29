@@ -3,7 +3,6 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
 from scipy.io import loadmat
 from scipy.signal import butter, filtfilt
 from scipy.optimize import curve_fit
@@ -17,7 +16,7 @@ COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':']
 MS = 6
 START_STATIC = 0
-END_STATIC = 5
+END_STATIC = 2
 rep_stim_id_dict = {
     '2014-07-11-01': 20,
     '2014-07-11-02': 1,
@@ -142,7 +141,9 @@ class CleanFiber:
         for stim_id, stim_traces_full in enumerate(self.traces_full):
             contact_index = np.nonzero(
                 stim_traces_full['displ'] >= self.contact_pos)[0][0]
-            max_force_index = stim_traces_full['force'].argmax()
+            max_force_index = stim_traces_full['force'][
+                contact_index:contact_index + self.fs * 2].argmax(
+                ) + contact_index
             trace = {
                 'force': stim_traces_full['force'][
                     contact_index:contact_index + 6 * self.fs],
@@ -154,10 +155,10 @@ class CleanFiber:
                 'time': np.arange(6 * self.fs) / self.fs,
                 'ramp_time': (max_force_index - contact_index) / self.fs,
                 'static_force': stim_traces_full['force'][
-                    contact_index + START_STATIC * self.fs:contact_index +
+                    max_force_index + START_STATIC * self.fs:max_force_index +
                     int(END_STATIC * self.fs)].mean(),
                 'static_displ': stim_traces_full['displ'][
-                    contact_index + START_STATIC * self.fs:contact_index +
+                    max_force_index + START_STATIC * self.fs:max_force_index +
                     int(END_STATIC * self.fs)].mean() - stim_traces_full[
                         'displ'][contact_index],
                 'dynamic_force_rate': np.diff(
@@ -173,8 +174,8 @@ class CleanFiber:
                 pass
             trace['static_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][
-                    contact_index + int(START_STATIC * self.fs):
-                    contact_index + int(
+                    max_force_index + int(START_STATIC * self.fs):
+                    max_force_index + int(
                         END_STATIC * self.fs)])
             trace['dynamic_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][contact_index:max_force_index])
@@ -189,8 +190,9 @@ class CleanFiber:
                         stim_traces_full['time'],
                         stim_traces_full[item], '-k', color='.0')
                     axs[i].axvline(contact_index / self.fs, color='.0')
-                    axs[i].axvline(contact_index / self.fs + END_STATIC,
-                                   color='.0')
+                    axs[i].axvspan(max_force_index / self.fs + END_STATIC,
+                                   max_force_index / self.fs + START_STATIC,
+                                   color='k', alpha=.5)
                     axs[i].set_xlabel('Time (s)')
                 axs[0].set_title(
                     'displ = %f, force = %f, missed spikes = %d' % (
@@ -674,7 +676,7 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
 
 if __name__ == '__main__':
     # Set the flags
-    make_plot = False
+    make_plot = True
     exclude_no_force = True
     exclude_inhibition = True
     run_fiber = True
