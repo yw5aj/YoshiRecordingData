@@ -16,7 +16,7 @@ COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':']
 MS = 6
 START_STATIC = 0
-END_STATIC = 2
+END_STATIC = 5
 rep_stim_id_dict = {
     '2014-07-11-01': 20,
     '2014-07-11-02': 1,
@@ -155,10 +155,10 @@ class CleanFiber:
                 'time': np.arange(6 * self.fs) / self.fs,
                 'ramp_time': (max_force_index - contact_index) / self.fs,
                 'static_force': stim_traces_full['force'][
-                    max_force_index + START_STATIC * self.fs:max_force_index +
+                    contact_index + START_STATIC * self.fs:max_force_index +
                     int(END_STATIC * self.fs)].mean(),
                 'static_displ': stim_traces_full['displ'][
-                    max_force_index + START_STATIC * self.fs:max_force_index +
+                    contact_index + START_STATIC * self.fs:max_force_index +
                     int(END_STATIC * self.fs)].mean() - stim_traces_full[
                         'displ'][contact_index],
                 'dynamic_force_rate': np.diff(
@@ -174,8 +174,8 @@ class CleanFiber:
                 pass
             trace['static_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][
-                    max_force_index + int(START_STATIC * self.fs):
-                    max_force_index + int(
+                    contact_index + int(START_STATIC * self.fs):
+                    contact_index + int(
                         END_STATIC * self.fs)])
             trace['dynamic_avg_fr'] = self._get_avg_fr(
                 stim_traces_full['spike_trace'][contact_index:max_force_index])
@@ -676,7 +676,7 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
 
 if __name__ == '__main__':
     # Set the flags
-    make_plot = True
+    make_plot = False
     exclude_no_force = True
     exclude_inhibition = True
     run_fiber = True
