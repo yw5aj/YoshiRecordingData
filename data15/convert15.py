@@ -617,11 +617,17 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
         axes.set_ylabel('Mean firing (Hz)')
         axes.set_title(r'Within-fiber variance = %.0f $Hz^2$' %
                        displvar_array[i])
+        axes.text(.1, .9, 'Slope = %.2f Hz/mm' %
+                  fiber_list[i].displ_result['params']['a'],
+                  transform=axes.transAxes, va='top')
     for i, axes in enumerate(axs[2].ravel()):
         axes.set_xlabel('Force (N)')
         axes.set_ylabel('Mean firing (Hz)')
         axes.set_title(r'Within-fiber variance = %.0f $Hz^2$' %
                        forcevar_array[i])
+        axes.text(.1, .9, 'Slope = %.2f Hz/N' %
+                  fiber_list[i].force_result['params']['a'],
+                  transform=axes.transAxes, va='top')
     fig.tight_layout()
     fig.savefig('./plots/repsample/each_%s' % figname, dpi=300)
     plt.close(fig)
@@ -687,6 +693,7 @@ if __name__ == '__main__':
     exclude_no_force = True
     exclude_inhibition = True
     run_fiber = True
+    save_pickle = False
     pickle_fname = './data/cleanFiber_list.pkl'
     if make_plot:
         # Clear all old plots
@@ -723,8 +730,9 @@ if __name__ == '__main__':
             fiber_table['#%d' % (i + 1)] = cleanFiber.mat_filename
         fiber_series = pd.Series(fiber_table)
         fiber_series.to_csv('./csvs/repsample/fiber_series.csv')
-        with open(pickle_fname, 'wb') as f:
-            pickle.dump(cleanFiber_list, f)
+        if save_pickle:
+            with open(pickle_fname, 'wb') as f:
+                pickle.dump(cleanFiber_list, f)
     else:
         with open(pickle_fname, 'rb') as f:
             cleanFiber_list = pickle.load(f)
