@@ -767,8 +767,12 @@ if __name__ == '__main__':
         slope_force_list.append(slope_force)
     slope_displ_arr = np.array(slope_displ_list)
     slope_force_arr = np.array(slope_force_list)
-    print(sorted(slope_displ_arr) / np.median(slope_displ_arr))
-    print(sorted(slope_force_arr) / np.median(slope_force_arr))
+    sensitivity_df = pd.DataFrame(
+        np.c_[slope_displ_arr, slope_force_arr],
+        index=['#' + str(i+1) for i in range(5)],
+        columns=['Displacement sensitivity (Hz/mm)',
+                 'Force sensitivity (Hz/N)'])
+    sensitivity_df.transpose().to_excel('./csvs/sensitivity.xlsx')
     # %% Compare each fiber by sigmoidal parameters
     force_params_list, displ_params_list = [], []
     for fiber in fiber_list:
