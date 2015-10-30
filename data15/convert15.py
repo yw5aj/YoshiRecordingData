@@ -15,14 +15,14 @@ MARKER_LIST = ['v', 'D', 'o', 's', '*', 'h', '.', 'x', 'h', '+']
 COLOR_LIST = ['k', 'r', 'g', 'b', 'c', 'm', 'y', 'r', 'g', 'b']
 LS_LIST = ['-', '--', '-.', ':']
 MS = 6
-START_STATIC = 0
-END_STATIC = 5
+START_STATIC = 2
+END_STATIC = 4.5
 rep_stim_id_dict = {
     '2014-07-11-01': 20,
     '2014-07-11-02': 1,
     '2013-12-07-01': 11,
     '2013-12-21-01': 7,
-    '2014-01-16-01': 7,
+    '2014-01-16-01': 9,
     }
 rep_stim_id_dict = defaultdict(lambda: 0, rep_stim_id_dict)
 rep_spike_id_dict = {
@@ -30,7 +30,7 @@ rep_spike_id_dict = {
     '2014-07-11-02': 0,
     '2013-12-07-01': 0,
     '2013-12-21-01': 0,
-    '2014-01-16-01': 0,
+    '2014-01-16-01': 3,
     }
 rep_spike_id_dict = defaultdict(lambda: 0, rep_spike_id_dict)
 
@@ -139,8 +139,11 @@ class CleanFiber:
     def cut_traces(self, make_plot=False):
         self.traces = []
         for stim_id, stim_traces_full in enumerate(self.traces_full):
-            contact_index = np.nonzero(
-                stim_traces_full['displ'] >= self.contact_pos)[0][0]
+            try:
+                contact_index = np.nonzero(
+                    stim_traces_full['displ'] >= self.contact_pos)[0][0]
+            except IndexError:
+                continue
             max_force_index = stim_traces_full['force'][
                 contact_index:contact_index + self.fs * 2].argmax(
                 ) + contact_index
@@ -155,10 +158,10 @@ class CleanFiber:
                 'time': np.arange(6 * self.fs) / self.fs,
                 'ramp_time': (max_force_index - contact_index) / self.fs,
                 'static_force': stim_traces_full['force'][
-                    contact_index + START_STATIC * self.fs:max_force_index +
+                    contact_index + START_STATIC * self.fs:contact_index +
                     int(END_STATIC * self.fs)].mean(),
                 'static_displ': stim_traces_full['displ'][
-                    contact_index + START_STATIC * self.fs:max_force_index +
+                    contact_index + START_STATIC * self.fs:contact_index +
                     int(END_STATIC * self.fs)].mean() - stim_traces_full[
                         'displ'][contact_index],
                 'dynamic_force_rate': np.diff(
@@ -190,8 +193,8 @@ class CleanFiber:
                         stim_traces_full['time'],
                         stim_traces_full[item], '-k', color='.0')
                     axs[i].axvline(contact_index / self.fs, color='.0')
-                    axs[i].axvspan(max_force_index / self.fs + END_STATIC,
-                                   max_force_index / self.fs + START_STATIC,
+                    axs[i].axvspan(contact_index / self.fs + END_STATIC,
+                                   contact_index / self.fs + START_STATIC,
                                    color='k', alpha=.5)
                     axs[i].set_xlabel('Time (s)')
                 axs[0].set_title(
@@ -232,7 +235,11 @@ def linear(x, a, b):
     return a * x + b
 
 
-def get_resvar(x, y, mod='sigmoid'):
+def get_resvar(x, y, mod='linear'):
+    """
+    If `mod == 'linear'` then uses linear regression; otherwise
+    `mod == 'sigmoid'` and uses sigmoid regression.
+    """
     assert len(x) == len(y)
     if len(x) < 3 or mod == 'linear':
         sigmoidmod = Model(linear)
@@ -593,13 +600,13 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
             fiber.static_avg_fr[fiber.static_force.argsort()],
             fmt, color=color,
             mec=color, ms=MS, label='#%d' % (i + 1))
-        axs[0, i].plot([], [], '-', color='.5', label='Sigmoidal regression')
+        axs[0, i].plot([], [], '-', color='.5', label='Regression')
         axs[1, i].plot(fiber.displfine * 1e-3,
                        fiber.displfit,
-                       '-', color='.5', label='Sigmoidal regression')
+                       '-', color='.5', label='Regression')
         axs[2, i].plot(fiber.forcefine * 1e-3,
                        fiber.forcefit,
-                       '-', color='.5', label='Sigmoidal regression')
+                       '-', color='.5', label='Regression')
     # Formatting
     for i, axes in enumerate(axs[0].ravel()):
         axes.set_xlabel('Displacement (mm)')
@@ -608,12 +615,12 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
     for i, axes in enumerate(axs[1].ravel()):
         axes.set_xlabel('Displacement (mm)')
         axes.set_ylabel('Mean firing (Hz)')
-        axes.set_title(r'Within-fiber variance = %.2f $Hz^2$' %
+        axes.set_title(r'Within-fiber variance = %.0f $Hz^2$' %
                        displvar_array[i])
     for i, axes in enumerate(axs[2].ravel()):
         axes.set_xlabel('Force (N)')
         axes.set_ylabel('Mean firing (Hz)')
-        axes.set_title(r'Within-fiber variance = %.2f $Hz^2$' %
+        axes.set_title(r'Within-fiber variance = %.0f $Hz^2$' %
                        forcevar_array[i])
     fig.tight_layout()
     fig.savefig('./plots/repsample/each_%s' % figname, dpi=300)
@@ -639,17 +646,17 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
                             fiber.binned_exp['force_mean'].argsort()],
                         fmt=fmt, color=color, mec=color, ms=MS,
                         label='Fiber #%d' % (i + 1))
-    axs[0].plot([], [], '-', color='.5', label='Sigmoidal regression')
+    axs[0].plot([], [], '-', color='.5', label='Regression')
     axs[1].plot(np.sort(displ_list) * 1e-3,
                 np.sort(displ_static_predict), '-', color='.5',
-                label='Sigmoidal regression')
+                label='Regression')
     axs[2].plot(np.sort(force_list) * 1e-3, np.sort(force_static_predict),
                 '-', color='.5',
-                label='Sigmoidal regression')
+                label='Regression')
     # Formatting
-    axs[1].set_title(r'Between-fiber variance = %.2f $Hz^2$'
+    axs[1].set_title(r'Between-fiber variance = %.0f $Hz^2$'
                      % displ_static_fit_resvar)
-    axs[2].set_title(r'Between-fiber variance = %.2f $Hz^2$'
+    axs[2].set_title(r'Between-fiber variance = %.0f $Hz^2$'
                      % force_static_fit_resvar)
     axs[0].set_xlabel('Static displ. (mm)')
     axs[1].set_xlabel('Static displ. (mm)')
