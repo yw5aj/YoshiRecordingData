@@ -754,19 +754,6 @@ if __name__ == '__main__':
                                 sd_arr.T[4])['resvar']
     forcevar_gross = get_resvar(sd_arr.T[3],
                                 sd_arr.T[4])['resvar']
-    # %% Test robustness
-
-    def test_robust(index):
-        robustset = copy.deepcopy(cleanFiber_list)
-        del robustset[index]
-        for i, cleanFiber in enumerate(robustset):
-            cleanFiber.fiber_id = i
-        _, _, sd_robust = plot_static_dynamic(robustset, save_data=True,
-                                              fname='%d_sd' % (index + 1))
-        _, _, _, _, _ = group_fr(sd_robust, 'robust_%d.png' % (index + 1))
-        return
-    for i in range(len(cleanFiber_list)):
-        test_robust(i)
     # %% Compare each fiber by linear fit
     slope_displ_list, slope_force_list = [], []
     for fiber in fiber_all_list:
