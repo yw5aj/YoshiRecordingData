@@ -1,6 +1,6 @@
 # Import installed packages
 import os
-import pickle
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
@@ -21,18 +21,30 @@ rep_stim_id_dict = {
     '2014-07-11-01': 20,
     '2014-07-11-02': 1,
     '2013-12-07-01': 11,
-    '2013-12-21-01': 7,
+    '2013-12-21-01': 8,
     '2014-01-16-01': 9,
+    '2013-03-19-01': 3,  # no force
+    '2013-12-21-02': 9,
+    '2014-01-10-01': 3,  # no force + inhibition
     }
 rep_stim_id_dict = defaultdict(lambda: 0, rep_stim_id_dict)
 rep_spike_id_dict = {
     '2014-07-11-01': 0,
     '2014-07-11-02': 0,
     '2013-12-07-01': 0,
-    '2013-12-21-01': 0,
+    '2013-12-21-01': 1,
     '2014-01-16-01': 3,
+    '2013-03-19-01': 1,  # no force
+    '2013-12-21-02': 2,
+    '2014-01-10-01': 0,  # no force + inhibition
     }
 rep_spike_id_dict = defaultdict(lambda: 0, rep_spike_id_dict)
+
+# Data to exclude
+inhibit_list = ['2014-01-10-01']
+no_force_list = ['2013-03-19-01', '2014-01-10-01']
+odd_list = ['2014-07-11-01']
+exclude_list = list(set(inhibit_list + no_force_list + odd_list))
 
 
 # New indenter list
@@ -235,21 +247,25 @@ def linear(x, a, b):
     return a * x + b
 
 
-def get_resvar(x, y, mod='linear'):
+def get_resvar(x, y, mod='linear', zero_intercept=True):
     """
     If `mod == 'linear'` then uses linear regression; otherwise
     `mod == 'sigmoid'` and uses sigmoid regression.
     """
     assert len(x) == len(y)
     if len(x) < 3 or mod == 'linear':
-        sigmoidmod = Model(linear)
-        modfit = sigmoidmod.fit(y, x=x,
-                                a=(y.max() - y.min()) / (x.max() - x.min()),
-                                b=y.min())
+        model = Model(linear)
+        params = model.make_params()
+        params['a'].value = (y.max() - y.min()) / (x.max() - x.min())
+        params['b'].value = y.min()
+        if zero_intercept:
+            params['b'].value = 0
+            params['b'].vary = False
+        modfit = model.fit(y, x=x, params=params)
     else:
-        sigmoidmod = Model(sigmoid)
-        modfit = sigmoidmod.fit(y, x=x, a=y.max(), b=1 / (x.max() - x.min()),
-                                c=x.max())
+        model = Model(sigmoid)
+        modfit = model.fit(y, x=x, a=y.max(), b=1 / (x.max() - x.min()),
+                           c=x.max())
     finex = np.linspace(x.min(), x.max(), 50)
     result = {
         'mod': mod,
@@ -690,9 +706,6 @@ def group_fr(static_dynamic_array, figname='compare_variance.png'):
 if __name__ == '__main__':
     # Set the flags
     make_plot = False
-    exclude_no_force = True
-    exclude_inhibition = True
-    run_fiber = True
     save_pickle = False
     pickle_fname = './data/cleanFiber_list.pkl'
     if make_plot:
@@ -700,83 +713,77 @@ if __name__ == '__main__':
         for file_name in os.listdir('./plots/repsample/traces'):
             if file_name.endswith('.png'):
                 os.remove('./plots/repsample/traces/'+file_name)
-    if run_fiber:
-        cleanFiber_list = []
-        if exclude_inhibition:
-            inhibit_list = ['2013-12-21-02', '2014-01-10-01']
-        else:
-            inhibit_list = []
-        if exclude_no_force:
-            no_force_list = ['2013-03-19-01']
-        else:
-            no_force_list = []
-        odd_list = []  # ['2014-07-11-02']
-        fiber_table = {}
-        for root, subdirs, files in os.walk('data'):
-            for fname in files:
-                if fname.endswith('.mat') and 'calibrated.mat' in fname\
-                        and 'CONT' in fname and 'inhibition' not in fname:
-                    cleanFiber = CleanFiber(
-                        fname, root, make_plot=make_plot)
-                    if not np.isnan(cleanFiber.contact_pos) and\
-                            cleanFiber.mat_filename[:13] not in inhibit_list\
-                            and cleanFiber.mat_filename[
-                                :13] not in no_force_list\
-                            and cleanFiber.mat_filename[
-                                :13] not in odd_list:
-                        cleanFiber_list.append(cleanFiber)
-        for i, cleanFiber in enumerate(cleanFiber_list):
-            cleanFiber.fiber_id = i
-            fiber_table['#%d' % (i + 1)] = cleanFiber.mat_filename
-        fiber_series = pd.Series(fiber_table)
-        fiber_series.to_csv('./csvs/repsample/fiber_series.csv')
-        if save_pickle:
-            with open(pickle_fname, 'wb') as f:
-                pickle.dump(cleanFiber_list, f)
-    else:
-        with open(pickle_fname, 'rb') as f:
-            cleanFiber_list = pickle.load(f)
-    fig, axs, static_dynamic_array = plot_static_dynamic(
-        cleanFiber_list, save_data=True)
-    # Get the variance
+    # %% Run the fiber
+    cleanFiber_list, cleanFiber_all_list = [], []
+    fiber_table, fiber_all_table = {}, {}
+    for root, subdirs, files in os.walk('data'):
+        for fname in files:
+            if fname.endswith('.mat') and 'calibrated.mat' in fname\
+                    and 'CONT' in fname and 'inhibition' not in fname:
+                cleanFiber = CleanFiber(
+                    fname, root, make_plot=make_plot)
+                cleanFiber_all_list.append(copy.deepcopy(cleanFiber))
+                if cleanFiber.mat_filename[:13] not in exclude_list:
+                    cleanFiber_list.append(copy.deepcopy(cleanFiber))
+    for i, cleanFiber in enumerate(cleanFiber_list):
+        cleanFiber.fiber_id = i
+        fiber_table['#%d' % (i + 1)] = cleanFiber.mat_filename
+    for i, cleanFiber in enumerate(cleanFiber_all_list):
+        cleanFiber.fiber_id = i
+        fiber_all_table['#%d' % (i + 1)] = cleanFiber.mat_filename
+    fiber_series = pd.Series(fiber_table)
+    fiber_series.to_csv('./csvs/repsample/fiber_series.csv')
+    fiber_all_series = pd.Series(fiber_all_table)
+    fiber_all_series.to_csv('./csvs/repsample/fiber_series_all.csv')
+    # %% Plot scatter plot for all fibers together
+    fig, axs, sd_arr = plot_static_dynamic(
+        cleanFiber_list, save_data=True, fname='subset_sd')
+    fig, axs, sd_all_arr = plot_static_dynamic(
+        cleanFiber_all_list, save_data=True, fname='all_sd')
+    # Get the gross variance
     _, displ_res, _, _, _ = np.polyfit(
-        static_dynamic_array.T[2], static_dynamic_array.T[4], 1, full=True)
+        sd_arr.T[2], sd_arr.T[4], 1, full=True)
     _, force_res, _, _, _ = np.polyfit(
-        static_dynamic_array.T[3], static_dynamic_array.T[4], 1, full=True)
-    # Get extra data
-    ramp_time_list = extract_ramp_time(cleanFiber_list)
-    displ_list = static_dynamic_array[:, 1]
-    ramp_time_coeff = np.polyfit(displ_list, ramp_time_list, 1)
-#    regulated_ramp_curve_list, median_regulated_ramp_curve, popt =\
-#        extract_regulated_ramp_curve(cleanFiber_list)
+        sd_arr.T[3], sd_arr.T[4], 1, full=True)
     # %% Get grouped view
     displvar, forcevar, displvar_array, forcevar_array, fiber_list = group_fr(
-        static_dynamic_array, 'compare_variance.png')
-    displvar_gross = get_resvar(static_dynamic_array.T[2],
-                                static_dynamic_array.T[4])['resvar']
-    forcevar_gross = get_resvar(static_dynamic_array.T[3],
-                                static_dynamic_array.T[4])['resvar']
+        sd_arr, 'subset.png')
+    displvar, forcevar, displvar_array, forcevar_array, fiber_all_list = \
+        group_fr(sd_all_arr, 'all.png')
+    displvar_gross = get_resvar(sd_arr.T[2],
+                                sd_arr.T[4])['resvar']
+    forcevar_gross = get_resvar(sd_arr.T[3],
+                                sd_arr.T[4])['resvar']
+    # %% Test robustness
+
+    def test_robust(index):
+        robustset = copy.deepcopy(cleanFiber_list)
+        del robustset[index]
+        for i, cleanFiber in enumerate(robustset):
+            cleanFiber.fiber_id = i
+        _, _, sd_robust = plot_static_dynamic(robustset, save_data=True,
+                                              fname='%d_sd' % (index + 1))
+        _, _, _, _, _ = group_fr(sd_robust, 'robust_%d.png' % (index + 1))
+        return
+    for i in range(len(cleanFiber_list)):
+        test_robust(i)
     # %% Compare each fiber by linear fit
     slope_displ_list, slope_force_list = [], []
-    for fiber in fiber_list:
-        slope_displ = np.polyfit(fiber.binned_exp['displ_mean'],
-                                 fiber.binned_exp['static_fr_mean'], 1)[0]
-        slope_force = np.polyfit(fiber.binned_exp['force_mean'],
-                                 fiber.binned_exp['static_fr_mean'], 1)[0]
+    for fiber in fiber_all_list:
+        mod = Model(lambda x, a, b: a * x + b)
+        slope_displ = mod.fit(fiber.binned_exp['static_fr_mean'],
+                              x=fiber.binned_exp['displ_mean'],
+                              a=1, b=1).best_values['a']
+        slope_force = mod.fit(fiber.binned_exp['static_fr_mean'],
+                              x=fiber.binned_exp['force_mean'],
+                              a=1, b=1).best_values['a']
         slope_displ_list.append(slope_displ)
         slope_force_list.append(slope_force)
     slope_displ_arr = np.array(slope_displ_list)
     slope_force_arr = np.array(slope_force_list)
     sensitivity_df = pd.DataFrame(
         np.c_[slope_displ_arr, slope_force_arr],
-        index=['#' + str(i+1) for i in range(5)],
+        index=['#' + str(i+1) for i in range(slope_displ_arr.size)],
         columns=['Displacement sensitivity (Hz/mm)',
                  'Force sensitivity (Hz/N)'])
     sensitivity_df.transpose().to_excel('./csvs/sensitivity.xlsx')
-    # %% Compare each fiber by sigmoidal parameters
-    force_params_list, displ_params_list = [], []
-    for fiber in fiber_list:
-        force_params_list.append(fiber.force_result['params'])
-        displ_params_list.append(fiber.displ_result['params'])
-    force_params_df = pd.DataFrame(force_params_list)
-    displ_params_df = pd.DataFrame(displ_params_list)
