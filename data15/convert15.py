@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.signal import butter, filtfilt
-from scipy.optimize import curve_fit
 from lmfit import Model
 import pandas as pd
 from collections import defaultdict
@@ -277,14 +276,6 @@ def get_resvar(x, y, mod='linear', zero_intercept=True):
     return result
 
 
-def plot_specific_fibers(fiber_list, fname='temp'):
-    if not isinstance(fiber_list, list):
-        fiber_list = [fiber_list]
-    fig, axs, static_dynamic_array = plot_static_dynamic(
-        fiber_list, save_data=False, fname=fname)
-    return fig, axs, static_dynamic_array
-
-
 def plot_static_dynamic(cleanFiber_list, save_data=False,
                         fname='static_dynamic'):
     fig, axs = plt.subplots(3, 1, figsize=(3.5, 6.83))
@@ -343,44 +334,6 @@ def plot_static_dynamic(cleanFiber_list, save_data=False,
         np.savetxt('./csvs/repsample%s.csv' % fname, static_dynamic_array,
                    delimiter=',')
     return fig, axs, static_dynamic_array
-
-
-def extract_ramp_time(cleanFiber_list):
-    ramp_time_list = []
-    for cleanFiber in cleanFiber_list:
-        for stim_id, stim_traces in enumerate(cleanFiber.traces):
-            ramp_time_list.append(stim_traces['ramp_time'])
-    return ramp_time_list
-
-
-def extract_regulated_ramp_curve(cleanFiber_list):
-    regulated_ramp_curve_list = []
-    for cleanFiber in cleanFiber_list:
-        for stim_id, stim_traces in enumerate(cleanFiber.traces):
-            max_force_index = stim_traces['force'].argmax()
-            ramp_curve = stim_traces['displ'][:max_force_index]
-            regulated_ramp_curve_list.append(ramp_curve / ramp_curve.max())
-
-    def ramp_curve_func(xdata, a):
-        """
-        Parabola form of y = a * x**2 + (1 - a) * x
-        """
-        ydata = a * xdata**2 + (1. - a) * xdata
-        return ydata
-    xdata = np.r_[0:1:1000j]
-    median_regulated_ramp_curve = get_median_curve(regulated_ramp_curve_list)
-    popt = curve_fit(ramp_curve_func, xdata, median_regulated_ramp_curve)[0]
-    return regulated_ramp_curve_list, median_regulated_ramp_curve, popt
-
-
-def get_median_curve(curve_list, xnew=np.r_[0:1:1000j]):
-    ynew = []
-    for ydata in curve_list:
-        xdata = np.linspace(0, 1, ydata.shape[0])
-        ynew.append(np.interp(xnew, xdata, ydata))
-    ynew = np.array(ynew)
-    median_curve = np.median(ynew, axis=0)
-    return median_curve
 
 
 def group_fr(static_dynamic_array, figname='compare_variance.png'):

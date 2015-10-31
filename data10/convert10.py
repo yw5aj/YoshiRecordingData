@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.signal import butter, filtfilt
-from scipy.optimize import curve_fit
 from lmfit import Model
 import pandas as pd
 from collections import defaultdict
