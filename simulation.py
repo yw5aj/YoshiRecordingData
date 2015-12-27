@@ -1664,7 +1664,7 @@ if __name__ == '__main__':
     axs.set_xlim(.3, .8)
     # Axes and panel labels
     axs.set_xlabel(r'Static displacement (mm)')
-    axs.set_xlabel('Static force (mN)')
+    axs.set_ylabel('Static force (mN)')
     # Legend
     handles, labels = axs.get_legend_handles_labels()
     axs.legend(handles[2::5] + handles[:3],
@@ -1675,6 +1675,31 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/encoding_skin.png', dpi=300)
     fig.savefig('./plots/encoding_skin.pdf', dpi=300)
+    plt.close(fig)
+    # %% The displ - force part of the encoding plot, filled
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots()
+    for i, factor in enumerate(factor_list[:3]):
+        x_fill = np.r_[simFiberList[i][0][0].static_displ_exp,
+                       simFiberList[i][-1][0].static_displ_exp[::-1]]
+        y_fill = np.r_[simFiberList[i][0][0].static_force_exp,
+                       simFiberList[i][-1][0].static_force_exp[::-1]]
+        axs.fill(x_fill, y_fill, '.75', ec='none')
+        simFiber = simFiberList[i][level_num // 2][0]
+        axs.plot(
+            simFiber.static_displ_exp,
+            simFiber.static_force_exp,
+            '-k', label='Median')
+    # X and Y limits
+    axs.set_ylim(0, 15)
+    axs.set_xlim(.3, .8)
+    # Axes and panel labels
+    axs.set_xlabel(r'Static displacement (mm)')
+    axs.set_ylabel('Static force (mN)')
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/encoding_skin_filled.png', dpi=300)
+    fig.savefig('./plots/encoding_skin_filled.pdf', dpi=300)
     plt.close(fig)
     # %% Plot the encoding plot with all three features
     stim = stim_in_geom_plot
@@ -1779,6 +1804,95 @@ if __name__ == '__main__':
         fig.savefig('./plots/encoding_neural.png', dpi=300)
         fig.savefig('./plots/encoding_neural.pdf', dpi=300)
         plt.close(fig)
+    # %% Plot the encoding plot with only the samllest subset
+    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.ops import cascaded_union
+
+    def plot_polygons(polygons, axes, **kwargs):
+        if isinstance(polygons, MultiPolygon):
+            for polygon in polygons:
+                axes.fill(*polygon.exterior.xy, **kwargs)
+        elif isinstance(polygons, Polygon):
+            axes.fill(*polygons.exterior.xy, **kwargs)
+        return
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    for i, factor in enumerate(factor_list[:3]):
+        color = COLOR_LIST[i]
+        for k, quantity in enumerate(quantity_list[-3:-1]):
+            polygon_displ_list = []
+            polygon_force_list = []
+            for level in range(1, level_num - 2):
+                x_displ_fill = np.r_[
+                    simFiberList[i][level][0].static_displ_exp,
+                    simFiberList[i][level + 1][0].static_displ_exp[::-1]]
+                x_force_fill = np.r_[
+                    simFiberList[i][level][0].static_force_exp,
+                    simFiberList[i][level + 1][0].static_force_exp[::-1]]
+                y_displ_fill = np.r_[
+                    simFiberList[i][level][0].predicted_fr[fiber_id][
+                        quantity].T[1],
+                    simFiberList[i][level + 1][0].predicted_fr[fiber_id][
+                        quantity].T[1][::-1]]
+                y_force_fill = np.r_[
+                    simFiberList[i][level][0].predicted_fr[fiber_id][
+                        quantity].T[1],
+                    simFiberList[i][level + 1][0].predicted_fr[fiber_id][
+                        quantity].T[1][::-1]]
+                displ_polygon = Polygon(
+                    np.c_[x_displ_fill, y_displ_fill]).buffer(0)
+                polygon_displ_list.append(displ_polygon)
+                force_polygon = Polygon(
+                    np.c_[x_force_fill, y_force_fill]).buffer(0)
+                polygon_force_list.append(force_polygon)
+            union_displ = cascaded_union(polygon_displ_list)
+            union_force = cascaded_union(polygon_force_list)
+            plot_polygons(union_displ, axs[0, k],
+                          color=color, alpha=.25,
+                          label=factor)
+            plot_polygons(union_force, axs[1, k],
+                          color=color, alpha=.25,
+                          label=factor)
+            # Plot median
+            simFiber = simFiberList[i][level_num // 2][0]
+            axs[0, k].plot(
+                simFiber.static_displ_exp,
+                simFiber.predicted_fr[fiber_id][quantity].T[1],
+                '-k', label='Median skin mechanics')
+            axs[1, k].plot(
+                simFiber.static_force_exp,
+                simFiber.predicted_fr[fiber_id][quantity].T[1],
+                '-k', label='Median skin mechanics')
+    # X and Y limits
+    for axes in axs[0:2].ravel():
+        axes.set_ylim(0, 50)
+    for axes in axs[0]:
+        axes.set_xlim(.3, .8)
+    for axes in axs[1]:
+        axes.set_xlim(0, 12)
+    # Axes and panel labels
+    for i, axes in enumerate(axs[0, :].ravel()):
+        axes.set_title('%s-based Model' % ['Stress', 'Strain'][i])
+    for axes in axs[0]:
+        axes.set_xlabel(r'Static displacement (mm)')
+    for axes in axs[1]:
+        axes.set_xlabel(r'Static force (mN)')
+    for axes in axs[0:2, 0].ravel():
+        axes.set_ylabel('Predicted static firing (Hz)')
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Legends
+    handels, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(
+        handels[2::],
+        ['Median skin', 'Thickness', 'Modulus', 'Viscoelasticity'],
+        loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/encoding_neural_filled.png', dpi=300)
+    fig.savefig('./plots/encoding_neural_filled.pdf', dpi=300)
+    plt.close(fig)
     # %% Make the table for encoding neural spatial part
     jn_sim_table = np.empty((8, 12))
     for row in range(8):

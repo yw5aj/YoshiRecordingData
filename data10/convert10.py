@@ -278,7 +278,7 @@ def get_resvar(x, y, mod='linear', zero_intercept=False):
 
 
 def plot_static_dynamic(cleanFiber_list, save_data=False,
-                        fname='static_dynamic'):
+                        plot_regression=True, fname='static_dynamic'):
     fig, axs = plt.subplots(3, 1, figsize=(3.5, 6.83))
     static_dynamic_list = [[] for i in range(cleanFiber_list[-1].fiber_id + 1)]
     fname_list = []
@@ -306,6 +306,15 @@ def plot_static_dynamic(cleanFiber_list, save_data=False,
                     fmt, color=color, ms=6, label=label_text)
         axs[2].plot(static_force_list, static_avg_fr_list,
                     fmt, color=color, ms=6, label=label_text)
+        if plot_regression:
+            displ_fit = np.polyfit(static_displ_list, static_avg_fr_list, 1)
+            axs[1].plot(static_displ_list,
+                        np.polyval(displ_fit, static_displ_list),
+                        '-', color=color)
+            force_fit = np.polyfit(static_force_list, static_avg_fr_list, 1)
+            axs[2].plot(static_force_list,
+                        np.polyval(force_fit, static_force_list),
+                        '-', color=color)
         static_dynamic_list[fiber_id] = np.c_[fiber_id * np.ones(len(
             static_displ_list)), range(len(static_displ_list)),
             static_displ_list, static_force_list, static_avg_fr_list,
