@@ -1421,142 +1421,156 @@ if __name__ == '__main__':
     axs[0, 0].set_ylim(.2, .625)
     fig.savefig('./plots/paper_simulation_prez.png', dpi=300)
     plt.close(fig)
-    # %% The small simulation figures
+    # %% The small simulation figures - variance
     fig, axs = plt.subplots(3, 1, figsize=(3.5, 6))
     for stim in stim_plot_list:
         if stim == 2:
-            color = (0, 0, 0)
+            color = (0, 1, 0)
         elif stim == 1:
             color = (1, 0, 0)
         elif stim == 3:
             color = (0, 0, 1)
-        time_array_list, strain_array_list, stress_array_list,\
-            sener_array_list = [], [], [], []
+        displ_time_array_list = []
+        displ_strain_array_list = []
+        displ_sener_array_list = []
+        force_time_array_list = []
+        force_stress_array_list = []
         for i, factor in enumerate(factor_list[:3]):
             for level in level_plot_list:
-                simFiber = simFiberList[i][level][0]
-                time_array_list.append(simFiber.traces[stim]['time'])
-                strain_array_list.append(simFiber.traces[stim]['strain'])
-                stress_array_list.append(simFiber.traces[stim]['stress'] / 1e3)
-                sener_array_list.append(simFiber.traces[stim]['sener'] / 1e3)
-        kwargs = dict(ls='-', alpha=.75, color=color, label=stim)
-        fill_between_curves(time_array_list, strain_array_list,
+                simFiberDispl = simFiberList[i][level][0]
+                simFiberForce = simFiberList[i][level][1]
+                displ_time_array_list.append(
+                    simFiberDispl.traces[stim]['time'][::100])
+                displ_strain_array_list.append(
+                    simFiberDispl.traces[stim]['strain'][::100])
+                displ_sener_array_list.append(
+                    simFiberDispl.traces[stim]['sener'][::100] / 1e3)
+                force_time_array_list.append(
+                    simFiberForce.traces[stim]['time'][::100])
+                force_stress_array_list.append(
+                    simFiberForce.traces[stim]['stress'][::100] / 1e3)
+        kwargs = dict(alpha=.25, color=color, label=stim)
+        fill_between_curves(displ_time_array_list, displ_strain_array_list,
                             axs[0], **kwargs)
-        fill_between_curves(time_array_list, stress_array_list,
+        fill_between_curves(displ_time_array_list, displ_sener_array_list,
                             axs[1], **kwargs)
-        fill_between_curves(time_array_list, sener_array_list,
+        fill_between_curves(force_time_array_list, force_stress_array_list,
                             axs[2], **kwargs)
-#                # Second column, Stimulus rate over time
-#                simFiber = simFiberList[i][level][0]
-#                axs[0, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['displ'] * 1e3,
-#                    **kwargs)
-#                axs[1, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['strain'],
-#                    **kwargs)
-#                axs[2, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['sener'] * 1e-3,
-#                    **kwargs)
-#                simFiber = simFiberList[i][level][1]
-#                axs[3, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['press'] * 1e-3,
-#                    **kwargs)
-#                axs[4, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['stress'] * 1e-3,
-#                    **kwargs)
-#                axs[5, 1].plot(
-#                    simFiber.traces_rate[stim]['time'],
-#                    simFiber.traces_rate[stim]['sener'] * 1e-3,
-#                    **kwargs)
-#                # Third column, Stimulus magnitude over space
-#                xscale = 1e3
-#                dist = simFiberList[i][level][0].dist[stim]
-#                axs[0, 2].plot(
-#                    dist['cxold'][-1, :] * xscale,
-#                    dist['cy'][-1, :] * 1e-3,
-#                    **kwargs)
-#                axs[1, 2].plot(
-#                    dist['mxold'][-1, :] * xscale,
-#                    dist['mstrain'][-1, :],
-#                    **kwargs)
-#                axs[2, 2].plot(
-#                    dist['mxold'][-1, :] * xscale,
-#                    dist['msener'][-1, :] * 1e-3,
-#                    **kwargs)
-#                dist = simFiberList[i][level][1].dist[stim]
-#                axs[3, 2].plot(
-#                    dist['cxold'][-1, :] * xscale,
-#                    dist['cpress'][-1, :] * 1e-3,
-#                    **kwargs)
-#                axs[4, 2].plot(
-#                    dist['mxold'][-1, :] * xscale,
-#                    dist['mstress'][-1, :] * 1e-3,
-#                    **kwargs)
-#                axs[5, 2].plot(
-#                    dist['mxold'][-1, :] * xscale,
-#                    dist['msener'][-1, :] * 1e-3,
-#                    **kwargs)
+        axs[0].plot(simFiberList[0][level_num // 2][0].traces[stim]['time'],
+                    simFiberList[0][level_num // 2][0].traces[stim]['strain'],
+                    '-', color=color, label='Median skin')
+        axs[1].plot(simFiberList[0][level_num // 2][0].traces[stim]['time'],
+                    simFiberList[0][level_num // 2][0].traces[stim][
+                        'sener'] / 1e3,
+                    '-', color=color, label='Median skin')
+        axs[2].plot(simFiberList[0][level_num // 2][1].traces[stim]['time'],
+                    simFiberList[0][level_num // 2][1].traces[stim][
+                        'stress'] / 1e3,
+                    '-', color=color, label='Median skin')
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_TIME)
-#    for axes in axs[:, 1].ravel():
-#        axes.set_xlim(0, MAX_RATE_TIME)
-#    for axes in axs[:, 2].ravel():
-#        axes.set_xlim(0, MAX_RADIUS*1e3)
     # Formatting labels
     # x-axis
     axs[-1].set_xlabel('Time (s)')
-#    axs[-1, 1].set_xlabel('Time (s)')
-#    axs[-1, 2].set_xlabel('Location (mm)')
     # y-axis for the Stimulus magnitude over time
     axs[0].set_ylabel('Internal strain')
     axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)')
     axs[2].set_ylabel('Internal stress (kPa)')
-    # y-axis for the Stimulus rate over time
-#    axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
-#    axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
-#    axs[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
-#    axs[3, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
-#    axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
-#    axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
-    # y-axis for the Stimulus magnitude over space
-#    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
-#    axs[1, 2].set_ylabel('Internal strain')
-#    axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
-#    axs[3, 2].set_ylabel(r'Surface pressure (kPa)')
-#    axs[4, 2].set_ylabel('Internal stress (kPa)')
-#    axs[5, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.375, 1.13, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
-    # Add legends
-    # The line type labels
-#    handles, labels = axs[0, 0].get_legend_handles_labels()
-#    axs[0, 0].set_ylim(.225, .625)
-#    axs[0, 0].legend(
-#        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
-#                len(stim_plot_list)//2::len(stim_plot_list)*len(
-#                level_plot_list)],
-#        [factor_display[5:].capitalize()
-#         for factor_display in factor_display_list[:3]], loc=4, fontsize=6)
-#    # The 5 quantile labels
-#    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
-#        'Quartile', 'Median'], loc=1, fontsize=6)
-    # Add subtitles
-#    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
-#    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
-#    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
     # Save figure
     fig.tight_layout()
     fig.savefig('./plots/simulated_variance.png', dpi=300)
     fig.savefig('./plots/simulated_variance.pdf', dpi=300)
     plt.close(fig)
+    # %% The small simulation figures - shape
+    fig_rate, axs_rate = plt.subplots(2, 1, figsize=(3.5, 4))
+    fig_geom, axs_geom = plt.subplots(2, 1, figsize=(3.5, 4))
+    stim = stim_num // 2
+    i, factor = 0, 'SkinThick'
+    level = level_num // 2
+    simFiberDispl = simFiberList[i][level][0]
+    simFiberForce = simFiberList[i][level][1]
+    axs_rate[0].plot(simFiberDispl.traces_rate[stim]['time'],
+                     simFiberDispl.traces_rate[stim]['strain'],
+                     '-k', label='Internal strain rate')
+    axs_rate_0_twin = axs_rate[0].twinx()
+    axs_rate_0_twin.plot(simFiberDispl.traces_rate[stim]['time'],
+                         simFiberDispl.traces_rate[stim]['displ'] * 1e3,
+                         '--k', label='Surface velocity')
+    axs_rate[1].plot(simFiberForce.traces_rate[stim]['time'],
+                     simFiberForce.traces_rate[stim]['stress'] * 1e-3,
+                     '-k', label='Internal stress rate')
+    axs_rate_1_twin = axs_rate[1].twinx()
+    axs_rate_1_twin.plot(simFiberForce.traces_rate[stim]['time'],
+                         simFiberForce.traces_rate[stim]['press'] * 1e-3,
+                         '--k', label='Surface pressure')
+    dist_displ = simFiberDispl.dist[stim]
+    dist_force = simFiberForce.dist[stim]
+    axs_geom[0].plot(dist_displ['mxold'][-1, :] * 1e3,
+                     dist_displ['mstrain'][-1, :],
+                     '-k', label='Internal strain')
+    axs_geom_0_twin = axs_geom[0].twinx()
+    axs_geom_0_twin.plot(dist_displ['cxold'][-1, :] * 1e3,
+                         dist_displ['cy'][-1, :] * 1e-3,
+                         '--k', label='Surface deflection')
+    axs_geom[1].plot(dist_force['mxold'][-1, :] * 1e3,
+                     dist_force['mstress'][-1, :] * 1e-3,
+                     '-k', label='Internal stress')
+    axs_geom_1_twin = axs_geom[1].twinx()
+    axs_geom_1_twin.plot(dist_force['cxold'][-1, :] * 1e3,
+                         dist_force['cpress'][-1, :] * 1e-3,
+                         '--k', label='Surface pressure')
+    # Set x and y lim
+    for axes in axs_rate.ravel():
+        axes.set_xlim(0, MAX_RATE_TIME)
+    for axes in axs_geom.ravel():
+        axes.set_xlim(0, MAX_RADIUS * 1e3)
+    # Formatting labels
+    # x-axis
+    axs_rate[-1].set_xlabel('Time (s)')
+    axs_geom[-1].set_xlabel('Location (mm)')
+    # y-axis
+    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs_rate_0_twin.set_ylabel(r'Surface velocity (mm/s)')
+    axs_rate[1].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs_rate_1_twin.set_ylabel(r'Surface pressure rate (kPa/s)')
+    axs_geom[0].set_ylabel('Internal strain')
+    axs_geom_0_twin.set_ylabel(r'Surface deflection (mm)')
+    axs_geom[1].set_ylabel('Internal stress (kPa)')
+    axs_geom_1_twin.set_ylabel(r'Surface pressure (kPa)')
+    # Add legends
+    h1, l1 = axs_rate[0].get_legend_handles_labels()
+    h2, l2 = axs_rate_0_twin.get_legend_handles_labels()
+    axs_rate[0].legend(h1 + h2, l1 + l2, loc=3)
+    h1, l1 = axs_rate[1].get_legend_handles_labels()
+    h2, l2 = axs_rate_1_twin.get_legend_handles_labels()
+    axs_rate[1].legend(h1 + h2, l1 + l2, loc=1)
+    h1, l1 = axs_geom[0].get_legend_handles_labels()
+    h2, l2 = axs_geom_0_twin.get_legend_handles_labels()
+    axs_geom[0].legend(h1 + h2, l1 + l2, loc=3)
+    h1, l1 = axs_geom[1].get_legend_handles_labels()
+    h2, l2 = axs_geom_1_twin.get_legend_handles_labels()
+    axs_geom[1].legend(h1 + h2, l1 + l2, loc=3)
+    # Add panel labels
+    for axes_id, axes in enumerate(axs_rate.ravel()):
+        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    for axes_id, axes in enumerate(axs_geom.ravel()):
+        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Save figure
+    fig_rate.tight_layout()
+    fig_geom.tight_layout()
+    fig_rate.savefig('./plots/simulated_shape_rate.png', dpi=300)
+    fig_rate.savefig('./plots/simulated_shape_rate.pdf', dpi=300)
+    fig_geom.savefig('./plots/simulated_shape_geom.png', dpi=300)
+    fig_geom.savefig('./plots/simulated_shape_geom.pdf', dpi=300)
+    plt.close(fig_rate)
+    plt.close(fig_geom)
     # %% The figure for substrate simulations
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[-2:]):
@@ -1843,17 +1857,16 @@ if __name__ == '__main__':
     # %% The displ - force part of the encoding plot, filled
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots()
+    x_array_list, y_array_list = [], []
     for i, factor in enumerate(factor_list[:3]):
-        x_fill = np.r_[simFiberList[i][0][0].static_displ_exp,
-                       simFiberList[i][-1][0].static_displ_exp[::-1]]
-        y_fill = np.r_[simFiberList[i][0][0].static_force_exp,
-                       simFiberList[i][-1][0].static_force_exp[::-1]]
-        axs.fill(x_fill, y_fill, '.75', ec='none')
-        simFiber = simFiberList[i][level_num // 2][0]
-        axs.plot(
-            simFiber.static_displ_exp,
-            simFiber.static_force_exp,
-            '-k', label='Median')
+        x_array_list.append(simFiberList[i][0][0].static_displ_exp)
+        y_array_list.append(simFiberList[i][0][0].static_force_exp)
+    fill_between_curves(x_array_list, y_array_list, axs, alpha=.25, color='k')
+    simFiber = simFiberList[i][level_num // 2][0]
+    axs.plot(
+        simFiber.static_displ_exp,
+        simFiber.static_force_exp,
+        '-k', label='Median')
     # X and Y limits
     axs.set_ylim(0, 15)
     axs.set_xlim(.3, .8)
