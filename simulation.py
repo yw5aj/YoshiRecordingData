@@ -52,6 +52,31 @@ dist_key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
 stim_in_geom_plot = 4
 
 
+def fill_between_curves(x_array_list, y_array_list, axes, **kwargs):
+    polygons = []
+    for i, x_array in enumerate(x_array_list):
+        y_array = y_array_list[i]
+        if i + 1 < len(x_array_list):
+            j = i + 1
+        else:
+            break
+        x_array_next = x_array_list[j]
+        y_array_next = y_array_list[j]
+        x = np.r_[x_array, x_array_next[::-1]]
+        y = np.r_[y_array, y_array_next[::-1]]
+        polygons.append(Polygon(np.c_[x, y]).buffer(0))
+    polygons = cascaded_union(polygons)
+    fill_polygons(polygons, axes, **kwargs)
+
+
+def fill_polygons(polygons, axes, **kwargs):
+    if isinstance(polygons, MultiPolygon):
+        for polygon in polygons:
+            axes.fill(*polygon.exterior.xy, **kwargs)
+    elif isinstance(polygons, Polygon):
+        axes.fill(*polygons.exterior.xy, **kwargs)
+
+
 class SimFiber:
 
     def __init__(self, factor, level, control):
@@ -356,30 +381,6 @@ class SimFiber:
                     self.static_force_exp,
                     self.predicted_fr[fiber_id][quantity][:, 2],
                     **kwargs)
-
-
-def fill_multiple_curves(x_array_list, y_array_list, axes, **kwargs):
-    polygons = []
-    for i, x_array in enumerate(x_array_list):
-        y_array = y_array_list[i]
-        if i + 1 < len(x_array_list):
-            j = i + 1
-        else:
-            break
-        x_array_next = x_array_list[j]
-        y_array_next = y_array_list[j]
-        x = np.r_[x_array, x_array_next[::-1]]
-        y = np.r_[y_array, y_array_next[::-1]]
-        polygons.append(Polygon(np.c_[x, y]).buffer(0))
-    fill_polygons(polygons, axes, **kwargs)
-
-
-def fill_polygons(polygons, axes, **kwargs):
-    if isinstance(polygons, MultiPolygon):
-        for polygon in polygons:
-            axes.fill(*polygon.exterior.xy, **kwargs)
-    elif isinstance(polygons, Polygon):
-        axes.fill(*polygons.exterior.xy, **kwargs)
 
 
 if __name__ == '__main__':
@@ -1420,6 +1421,142 @@ if __name__ == '__main__':
     axs[0, 0].set_ylim(.2, .625)
     fig.savefig('./plots/paper_simulation_prez.png', dpi=300)
     plt.close(fig)
+    # %% The small simulation figures
+    fig, axs = plt.subplots(3, 1, figsize=(3.5, 6))
+    for stim in stim_plot_list:
+        if stim == 2:
+            color = (0, 0, 0)
+        elif stim == 1:
+            color = (1, 0, 0)
+        elif stim == 3:
+            color = (0, 0, 1)
+        time_array_list, strain_array_list, stress_array_list,\
+            sener_array_list = [], [], [], []
+        for i, factor in enumerate(factor_list[:3]):
+            for level in level_plot_list:
+                simFiber = simFiberList[i][level][0]
+                time_array_list.append(simFiber.traces[stim]['time'])
+                strain_array_list.append(simFiber.traces[stim]['strain'])
+                stress_array_list.append(simFiber.traces[stim]['stress'] / 1e3)
+                sener_array_list.append(simFiber.traces[stim]['sener'] / 1e3)
+        kwargs = dict(ls='-', alpha=.75, color=color, label=stim)
+        fill_between_curves(time_array_list, strain_array_list,
+                            axs[0], **kwargs)
+        fill_between_curves(time_array_list, stress_array_list,
+                            axs[1], **kwargs)
+        fill_between_curves(time_array_list, sener_array_list,
+                            axs[2], **kwargs)
+#                # Second column, Stimulus rate over time
+#                simFiber = simFiberList[i][level][0]
+#                axs[0, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['displ'] * 1e3,
+#                    **kwargs)
+#                axs[1, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['strain'],
+#                    **kwargs)
+#                axs[2, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['sener'] * 1e-3,
+#                    **kwargs)
+#                simFiber = simFiberList[i][level][1]
+#                axs[3, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['press'] * 1e-3,
+#                    **kwargs)
+#                axs[4, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['stress'] * 1e-3,
+#                    **kwargs)
+#                axs[5, 1].plot(
+#                    simFiber.traces_rate[stim]['time'],
+#                    simFiber.traces_rate[stim]['sener'] * 1e-3,
+#                    **kwargs)
+#                # Third column, Stimulus magnitude over space
+#                xscale = 1e3
+#                dist = simFiberList[i][level][0].dist[stim]
+#                axs[0, 2].plot(
+#                    dist['cxold'][-1, :] * xscale,
+#                    dist['cy'][-1, :] * 1e-3,
+#                    **kwargs)
+#                axs[1, 2].plot(
+#                    dist['mxold'][-1, :] * xscale,
+#                    dist['mstrain'][-1, :],
+#                    **kwargs)
+#                axs[2, 2].plot(
+#                    dist['mxold'][-1, :] * xscale,
+#                    dist['msener'][-1, :] * 1e-3,
+#                    **kwargs)
+#                dist = simFiberList[i][level][1].dist[stim]
+#                axs[3, 2].plot(
+#                    dist['cxold'][-1, :] * xscale,
+#                    dist['cpress'][-1, :] * 1e-3,
+#                    **kwargs)
+#                axs[4, 2].plot(
+#                    dist['mxold'][-1, :] * xscale,
+#                    dist['mstress'][-1, :] * 1e-3,
+#                    **kwargs)
+#                axs[5, 2].plot(
+#                    dist['mxold'][-1, :] * xscale,
+#                    dist['msener'][-1, :] * 1e-3,
+#                    **kwargs)
+    # Set x and y lim
+    for axes in axs.ravel():
+        axes.set_xlim(0, MAX_TIME)
+#    for axes in axs[:, 1].ravel():
+#        axes.set_xlim(0, MAX_RATE_TIME)
+#    for axes in axs[:, 2].ravel():
+#        axes.set_xlim(0, MAX_RADIUS*1e3)
+    # Formatting labels
+    # x-axis
+    axs[-1].set_xlabel('Time (s)')
+#    axs[-1, 1].set_xlabel('Time (s)')
+#    axs[-1, 2].set_xlabel('Location (mm)')
+    # y-axis for the Stimulus magnitude over time
+    axs[0].set_ylabel('Internal strain')
+    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[2].set_ylabel('Internal stress (kPa)')
+    # y-axis for the Stimulus rate over time
+#    axs[0, 1].set_ylabel(r'Surface velocity (mm/s)')
+#    axs[1, 1].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+#    axs[2, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+#    axs[3, 1].set_ylabel(r'Surface pressure rate (kPa/s)')
+#    axs[4, 1].set_ylabel(r'Internal stress rate (kPa/s)')
+#    axs[5, 1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    # y-axis for the Stimulus magnitude over space
+#    axs[0, 2].set_ylabel(r'Surface deflection (mm)')
+#    axs[1, 2].set_ylabel('Internal strain')
+#    axs[2, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
+#    axs[3, 2].set_ylabel(r'Surface pressure (kPa)')
+#    axs[4, 2].set_ylabel('Internal stress (kPa)')
+#    axs[5, 2].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    # Added panel labels
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.375, 1.13, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Add legends
+    # The line type labels
+#    handles, labels = axs[0, 0].get_legend_handles_labels()
+#    axs[0, 0].set_ylim(.225, .625)
+#    axs[0, 0].legend(
+#        handles[len(stim_plot_list)*(len(level_plot_list)//2) +
+#                len(stim_plot_list)//2::len(stim_plot_list)*len(
+#                level_plot_list)],
+#        [factor_display[5:].capitalize()
+#         for factor_display in factor_display_list[:3]], loc=4, fontsize=6)
+#    # The 5 quantile labels
+#    axs[0, 1].legend(handles[1:3*len(level_plot_list)+1:3], [
+#        'Quartile', 'Median'], loc=1, fontsize=6)
+    # Add subtitles
+#    axs[0, 0].set_title('Stimulus magnitude over time', fontsize=8)
+#    axs[0, 1].set_title('Stimulus rate over time', fontsize=8)
+#    axs[0, 2].set_title('Stimulus magnitude over space', fontsize=8)
+    # Save figure
+    fig.tight_layout()
+    fig.savefig('./plots/simulated_variance.png', dpi=300)
+    fig.savefig('./plots/simulated_variance.pdf', dpi=300)
+    plt.close(fig)
     # %% The figure for substrate simulations
     fig, axs = plt.subplots(6, 3, figsize=(7, 9.19))
     for i, factor in enumerate(factor_list[-2:]):
@@ -1837,39 +1974,25 @@ if __name__ == '__main__':
     for i, factor in enumerate(factor_list[:3]):
         color = COLOR_LIST[i]
         for k, quantity in enumerate(quantity_list[-3:-1]):
-            polygon_displ_list = []
-            polygon_force_list = []
-            for level in range(1, level_num - 2):
-                x_displ_fill = np.r_[
-                    simFiberList[i][level][0].static_displ_exp,
-                    simFiberList[i][level + 1][0].static_displ_exp[::-1]]
-                x_force_fill = np.r_[
-                    simFiberList[i][level][0].static_force_exp,
-                    simFiberList[i][level + 1][0].static_force_exp[::-1]]
-                y_displ_fill = np.r_[
-                    simFiberList[i][level][0].predicted_fr[fiber_id][
-                        quantity].T[1],
-                    simFiberList[i][level + 1][0].predicted_fr[fiber_id][
-                        quantity].T[1][::-1]]
-                y_force_fill = np.r_[
-                    simFiberList[i][level][0].predicted_fr[fiber_id][
-                        quantity].T[1],
-                    simFiberList[i][level + 1][0].predicted_fr[fiber_id][
-                        quantity].T[1][::-1]]
-                displ_polygon = Polygon(
-                    np.c_[x_displ_fill, y_displ_fill]).buffer(0)
-                polygon_displ_list.append(displ_polygon)
-                force_polygon = Polygon(
-                    np.c_[x_force_fill, y_force_fill]).buffer(0)
-                polygon_force_list.append(force_polygon)
-            union_displ = cascaded_union(polygon_displ_list)
-            union_force = cascaded_union(polygon_force_list)
-            fill_polygons(union_displ, axs[0, k],
-                          color=color, alpha=.25,
-                          label=factor)
-            fill_polygons(union_force, axs[1, k],
-                          color=color, alpha=.25,
-                          label=factor)
+            x_displ_array_list, x_force_array_list = [], []
+            y_displ_array_list, y_force_array_list = [], []
+            for level in range(1, level_num - 1):
+                x_displ_array_list.append(
+                    simFiberList[i][level][0].static_displ_exp)
+                y_displ_array_list.append(
+                    simFiberList[i][level][0].predicted_fr[
+                        fiber_id][quantity].T[1])
+                x_force_array_list.append(
+                    simFiberList[i][level][0].static_force_exp)
+                y_force_array_list.append(
+                    simFiberList[i][level][0].predicted_fr[
+                        fiber_id][quantity].T[1])
+            fill_between_curves(
+                x_displ_array_list, y_displ_array_list,
+                axs[0, k], color=color, alpha=.25, label=factor)
+            fill_between_curves(
+                x_force_array_list, y_force_array_list,
+                axs[1, k], color=color, alpha=.25, label=factor)
             # Plot median
             simFiber = simFiberList[i][level_num // 2][0]
             axs[0, k].plot(
@@ -1909,6 +2032,68 @@ if __name__ == '__main__':
     fig.tight_layout()
     fig.savefig('./plots/encoding_neural_filled.png', dpi=300)
     fig.savefig('./plots/encoding_neural_filled.pdf', dpi=300)
+    plt.close(fig)
+    # %% Plot the encoding plot with only the samllest subset
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    for k, quantity in enumerate(quantity_list[-3:-1]):
+        color = 'k'
+        x_displ_array_list, x_force_array_list = [], []
+        y_displ_array_list, y_force_array_list = [], []
+        for i, factor in enumerate(factor_list[:3]):
+            for level in range(1, level_num - 1):
+                x_displ_array_list.append(
+                    simFiberList[i][level][0].static_displ_exp)
+                y_displ_array_list.append(
+                    simFiberList[i][level][0].predicted_fr[
+                        fiber_id][quantity].T[1])
+                x_force_array_list.append(
+                    simFiberList[i][level][0].static_force_exp)
+                y_force_array_list.append(
+                    simFiberList[i][level][0].predicted_fr[
+                        fiber_id][quantity].T[1])
+        fill_between_curves(
+            x_displ_array_list, y_displ_array_list,
+            axs[0, k], color=color, alpha=.25, label=factor)
+        fill_between_curves(
+            x_force_array_list, y_force_array_list,
+            axs[1, k], color=color, alpha=.25, label=factor)
+        # Plot median
+        simFiber = simFiberList[i][level_num // 2][0]
+        axs[0, k].plot(
+            simFiber.static_displ_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[1],
+            '-k', label='Median skin mechanics')
+        axs[1, k].plot(
+            simFiber.static_force_exp,
+            simFiber.predicted_fr[fiber_id][quantity].T[1],
+            '-k', label='Median skin mechanics')
+    # X and Y limits
+    for axes in axs[0:2].ravel():
+        axes.set_ylim(0, 50)
+    for axes in axs[0]:
+        axes.set_xlim(.3, .8)
+    for axes in axs[1]:
+        axes.set_xlim(0, 12)
+    # Axes and panel labels
+    for i, axes in enumerate(axs[0, :].ravel()):
+        axes.set_title('%s-based Model' % ['Stress', 'Strain'][i])
+    for axes in axs[0]:
+        axes.set_xlabel(r'Static displacement (mm)')
+    for axes in axs[1]:
+        axes.set_xlabel(r'Static force (mN)')
+    for axes in axs[0:2, 0].ravel():
+        axes.set_ylabel('Predicted static firing (Hz)')
+    for axes_id, axes in enumerate(axs.ravel()):
+        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    # Legends
+    handels, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handels[0:1], ['Median skin'], loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/encoding_neural_filled_grey.png', dpi=300)
+    fig.savefig('./plots/encoding_neural_filled_grey.pdf', dpi=300)
     plt.close(fig)
     # %% Make the table for encoding neural spatial part
     jn_sim_table = np.empty((8, 12))
