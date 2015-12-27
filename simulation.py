@@ -6,17 +6,22 @@ Created on Sun May  4 22:38:40 2014
 """
 
 # %%
+import pickle
+import copy
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.integrate import quad, dblquad
 from scipy.stats import pearsonr
-import pickle
+from shapely.geometry import Polygon, MultiPolygon
+from shapely.ops import cascaded_union
+
 from constants import (
     DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS, FIBER_MECH_ID,
     FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE, FIBER_RCV)
 from fitlif import LifModel
-import copy
+
 
 
 BASE_CSV_PATH = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
@@ -329,7 +334,6 @@ class SimFiber:
                         self.line_fit[fiber_id][quantity][key],
                         globals()['EVAL_' + key[:5].upper()])
                     for key in iter(self.line_fit[fiber_id][quantity])}
-        return
 
     def plot_predicted_fr(self, axs, fiber_id, **kwargs):
         if self.control is 'Displ':
@@ -352,7 +356,30 @@ class SimFiber:
                     self.static_force_exp,
                     self.predicted_fr[fiber_id][quantity][:, 2],
                     **kwargs)
-        return
+
+
+def fill_multiple_curves(x_array_list, y_array_list, axes, **kwargs):
+    polygons = []
+    for i, x_array in enumerate(x_array_list):
+        y_array = y_array_list[i]
+        if i + 1 < len(x_array_list):
+            j = i + 1
+        else:
+            break
+        x_array_next = x_array_list[j]
+        y_array_next = y_array_list[j]
+        x = np.r_[x_array, x_array_next[::-1]]
+        y = np.r_[y_array, y_array_next[::-1]]
+        polygons.append(Polygon(np.c_[x, y]).buffer(0))
+    fill_polygons(polygons, axes, **kwargs)
+
+
+def fill_polygons(polygons, axes, **kwargs):
+    if isinstance(polygons, MultiPolygon):
+        for polygon in polygons:
+            axes.fill(*polygon.exterior.xy, **kwargs)
+    elif isinstance(polygons, Polygon):
+        axes.fill(*polygons.exterior.xy, **kwargs)
 
 
 if __name__ == '__main__':
@@ -1805,16 +1832,6 @@ if __name__ == '__main__':
         fig.savefig('./plots/encoding_neural.pdf', dpi=300)
         plt.close(fig)
     # %% Plot the encoding plot with only the samllest subset
-    from shapely.geometry import Polygon, MultiPolygon
-    from shapely.ops import cascaded_union
-
-    def plot_polygons(polygons, axes, **kwargs):
-        if isinstance(polygons, MultiPolygon):
-            for polygon in polygons:
-                axes.fill(*polygon.exterior.xy, **kwargs)
-        elif isinstance(polygons, Polygon):
-            axes.fill(*polygons.exterior.xy, **kwargs)
-        return
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(2, 2, figsize=(5, 5))
     for i, factor in enumerate(factor_list[:3]):
@@ -1847,10 +1864,10 @@ if __name__ == '__main__':
                 polygon_force_list.append(force_polygon)
             union_displ = cascaded_union(polygon_displ_list)
             union_force = cascaded_union(polygon_force_list)
-            plot_polygons(union_displ, axs[0, k],
+            fill_polygons(union_displ, axs[0, k],
                           color=color, alpha=.25,
                           label=factor)
-            plot_polygons(union_force, axs[1, k],
+            fill_polygons(union_force, axs[1, k],
                           color=color, alpha=.25,
                           label=factor)
             # Plot median
