@@ -91,15 +91,15 @@ if __name__ == '__main__':
                             axs[2], **kwargs)
         axs[0].plot(repSample_list[0][0].traces[stim]['time'],
                     repSample_list[0][0].traces[stim]['strain'],
-                    '-', color=color, label='Median skin')
+                    '-', color=color, label='Average skin')
         axs[1].plot(repSample_list[0][0].traces[stim]['time'],
                     repSample_list[0][0].traces[stim][
                         'sener'] / 1e3,
-                    '-', color=color, label='Median skin')
+                    '-', color=color, label='Average skin')
         axs[2].plot(repSample_list[0][1].traces[stim]['time'],
                     repSample_list[0][1].traces[stim][
                         'stress'] / 1e3,
-                    '-', color=color, label='Median skin')
+                    '-', color=color, label='Average skin')
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_TIME)
@@ -218,13 +218,15 @@ if __name__ == '__main__':
     axs.plot(
         repSample.static_displ_exp,
         repSample.static_force_exp,
-        '-k', label='Median')
+        '-k', label='Average skin')
     # X and Y limits
     axs.set_ylim(0, 15)
     axs.set_xlim(.3, .8)
     # Axes and panel labels
     axs.set_xlabel(r'Static displacement (mm)')
     axs.set_ylabel('Static force (mN)')
+    # Legend
+    axs.legend(loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/RepSample/encoding_skin_filled.png', dpi=300)
@@ -259,11 +261,11 @@ if __name__ == '__main__':
         axs[0, k].plot(
             simFiber.static_displ_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
-            '-k', label='Median skin mechanics')
+            '-k', label='Average skin mechanics')
         axs[1, k].plot(
             simFiber.static_force_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
-            '-k', label='Median skin mechanics')
+            '-k', label='Average skin mechanics')
     # X and Y limits
     for axes in axs[0:2].ravel():
         axes.set_ylim(0, 50)
@@ -285,7 +287,7 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     # Legends
     handels, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handels[0:1], ['Median skin'], loc=2)
+    axs[0, 0].legend(handels[0:1], ['Average skin'], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/RepSample/encoding_neural_filled_grey.png', dpi=300)

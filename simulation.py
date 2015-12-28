@@ -1862,13 +1862,49 @@ if __name__ == '__main__':
     axs.plot(
         simFiber.static_displ_exp,
         simFiber.static_force_exp,
-        '-k', label='Median')
+        '-k', label='Median skin')
     # X and Y limits
     axs.set_ylim(0, 15)
     axs.set_xlim(.3, .8)
     # Axes and panel labels
     axs.set_xlabel(r'Static displacement (mm)')
     axs.set_ylabel('Static force (mN)')
+    # Legend
+    axs.legend(loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/encoding_skin_filled_grey.png', dpi=300)
+    fig.savefig('./plots/encoding_skin_filled_grey.pdf', dpi=300)
+    plt.close(fig)
+    # %% The displ - force part of the encoding plot, filled
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots()
+    for i, factor in enumerate(factor_list[:3]):
+        color_list = [0, 0, 0]
+        color_list[i] = 1
+        color = tuple(color_list)
+        x_array_list, y_array_list = [], []
+        for level in level_plot_list:
+            x_array_list.append(simFiberList[i][level][0].static_displ_exp)
+            y_array_list.append(simFiberList[i][level][0].static_force_exp)
+        fill_between_curves(x_array_list, y_array_list, axs,
+                            color=color,  alpha=.25, label=factor)
+        print(color)
+    simFiber = simFiberList[i][level_num // 2][0]
+    axs.plot(
+        simFiber.static_displ_exp,
+        simFiber.static_force_exp,
+        '-k', label='Median skin')
+    # X and Y limits
+    axs.set_ylim(0, 15)
+    axs.set_xlim(.3, .8)
+    # Axes and panel labels
+    axs.set_xlabel(r'Static displacement (mm)')
+    axs.set_ylabel('Static force (mN)')
+    # Legend
+    handles, labels = axs.get_legend_handles_labels()
+    axs.legend(handles, ['Median skin', 'Thickness', 'Modulus',
+                         'Viscoelasticity'], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/encoding_skin_filled.png', dpi=300)
