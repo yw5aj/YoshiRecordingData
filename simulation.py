@@ -8,6 +8,7 @@ Created on Sun May  4 22:38:40 2014
 # %%
 import pickle
 import copy
+from itertools import combinations
 
 import numpy as np
 import pandas as pd
@@ -148,7 +149,6 @@ class SimFiber:
                 self.dist[0][key] = np.zeros_like(value)
             elif key == 'time':
                 self.dist[0][key] = value
-        return
 
     def load_trans_params(self):
         self.trans_params = []
@@ -212,10 +212,10 @@ class SimFiber:
         self.dynamic_force_exp = self.dynamic_force_fem * 1e3
         # Get the avg displ / force rate
         self.displ_rate_exp = np.array(
-            [self.dynamic_displ_exp[i] / simFiber.traces[i]['max_index'] / DT
+            [self.dynamic_displ_exp[i] / self.traces[i]['max_index'] / DT
              for i in range(stim_num)])
         self.force_rate_exp = np.array(
-            [self.dynamic_force_exp[i] / simFiber.traces[i]['max_index'] / DT
+            [self.dynamic_force_exp[i] / self.traces[i]['max_index'] / DT
              for i in range(stim_num)])
         return
 
@@ -1859,8 +1859,9 @@ if __name__ == '__main__':
     fig, axs = plt.subplots()
     x_array_list, y_array_list = [], []
     for i, factor in enumerate(factor_list[:3]):
-        x_array_list.append(simFiberList[i][0][0].static_displ_exp)
-        y_array_list.append(simFiberList[i][0][0].static_force_exp)
+        for level in level_plot_list:
+            x_array_list.append(simFiberList[i][level][0].static_displ_exp)
+            y_array_list.append(simFiberList[i][level][0].static_force_exp)
     fill_between_curves(x_array_list, y_array_list, axs, alpha=.25, color='k')
     simFiber = simFiberList[i][level_num // 2][0]
     axs.plot(
@@ -1989,7 +1990,7 @@ if __name__ == '__main__':
         for k, quantity in enumerate(quantity_list[-3:-1]):
             x_displ_array_list, x_force_array_list = [], []
             y_displ_array_list, y_force_array_list = [], []
-            for level in range(1, level_num - 1):
+            for level in level_plot_list:
                 x_displ_array_list.append(
                     simFiberList[i][level][0].static_displ_exp)
                 y_displ_array_list.append(
@@ -2054,7 +2055,7 @@ if __name__ == '__main__':
         x_displ_array_list, x_force_array_list = [], []
         y_displ_array_list, y_force_array_list = [], []
         for i, factor in enumerate(factor_list[:3]):
-            for level in range(1, level_num - 1):
+            for level in level_plot_list:
                 x_displ_array_list.append(
                     simFiberList[i][level][0].static_displ_exp)
                 y_displ_array_list.append(

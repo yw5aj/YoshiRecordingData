@@ -6,7 +6,7 @@ Created on Tue May  5 21:58:07 2015
 """
 
 from constants import FIBER_TOT_NUM, DT, FIBER_MECH_ID, COLOR_LIST
-from simulation import SimFiber, level_num, stim_num
+from simulation import SimFiber, level_num, stim_num, control_list
 from fitlnp import stress2response
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +14,6 @@ import pickle
 
 
 factor_list = ['RaThick', 'RaInd']
-control_list = ['Displ', 'Force']
 
 
 rathick_thick_array = np.loadtxt(
