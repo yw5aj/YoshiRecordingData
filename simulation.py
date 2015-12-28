@@ -55,16 +55,11 @@ stim_in_geom_plot = 4
 
 def fill_between_curves(x_array_list, y_array_list, axes, **kwargs):
     polygons = []
-    for i, x_array in enumerate(x_array_list):
-        y_array = y_array_list[i]
-        if i + 1 < len(x_array_list):
-            j = i + 1
-        else:
-            break
-        x_array_next = x_array_list[j]
-        y_array_next = y_array_list[j]
-        x = np.r_[x_array, x_array_next[::-1]]
-        y = np.r_[y_array, y_array_next[::-1]]
+    for (i1, x1), (i2, x2) in combinations(enumerate(x_array_list), 2):
+        y1 = y_array_list[i1]
+        y2 = y_array_list[i2]
+        x = np.r_[x1, x2[::-1]]
+        y = np.r_[y1, y2[::-1]]
         polygons.append(Polygon(np.c_[x, y]).buffer(0))
     polygons = cascaded_union(polygons)
     fill_polygons(polygons, axes, **kwargs)

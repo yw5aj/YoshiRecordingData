@@ -13,8 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from simulation import (
-    repSample, fill_between_curves,
-    control_list, stim_num, stim_plot_list,
+    SimFiber, fill_between_curves,
+    control_list, stim_num, stim_plot_list, quantity_list,
     MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, DT, FIBER_MECH_ID)
 
 
@@ -22,7 +22,7 @@ level_num = 10
 level_plot_list = range(5)
 
 
-class RepSample(repSample):
+class RepSample(SimFiber):
 
     def __init__(self, sample_id, control):
         self.factor = 'RepSample'
@@ -233,22 +233,21 @@ if __name__ == '__main__':
     # %% Plot the encoding plot with only the samllest subset
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    color = 'k'
     for k, quantity in enumerate(quantity_list[-3:-1]):
-        color = 'k'
         x_displ_array_list, x_force_array_list = [], []
         y_displ_array_list, y_force_array_list = [], []
-        for i, factor in enumerate(factor_list[:3]):
-            for level in range(1, level_num - 1):
-                x_displ_array_list.append(
-                    simFiberList[i][level][0].static_displ_exp)
-                y_displ_array_list.append(
-                    simFiberList[i][level][0].predicted_fr[
-                        fiber_id][quantity].T[1])
-                x_force_array_list.append(
-                    simFiberList[i][level][0].static_force_exp)
-                y_force_array_list.append(
-                    simFiberList[i][level][0].predicted_fr[
-                        fiber_id][quantity].T[1])
+        for level in level_plot_list:
+            x_displ_array_list.append(
+                repSample_list[level][0].static_displ_exp)
+            y_displ_array_list.append(
+                repSample_list[level][0].predicted_fr[
+                    fiber_id][quantity].T[1])
+            x_force_array_list.append(
+                repSample_list[level][0].static_force_exp)
+            y_force_array_list.append(
+                repSample_list[level][0].predicted_fr[
+                    fiber_id][quantity].T[1])
         fill_between_curves(
             x_displ_array_list, y_displ_array_list,
             axs[0, k], color=color, alpha=.25, label=factor)
@@ -256,7 +255,7 @@ if __name__ == '__main__':
             x_force_array_list, y_force_array_list,
             axs[1, k], color=color, alpha=.25, label=factor)
         # Plot median
-        simFiber = simFiberList[i][level_num // 2][0]
+        simFiber = repSample_list[0][0]
         axs[0, k].plot(
             simFiber.static_displ_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
@@ -289,6 +288,6 @@ if __name__ == '__main__':
     axs[0, 0].legend(handels[0:1], ['Median skin'], loc=2)
     # Save
     fig.tight_layout()
-    fig.savefig('./plots/encoding_neural_filled_grey.png', dpi=300)
-    fig.savefig('./plots/encoding_neural_filled_grey.pdf', dpi=300)
+    fig.savefig('./plots/RepSample/encoding_neural_filled_grey.png', dpi=300)
+    fig.savefig('./plots/RepSample/encoding_neural_filled_grey.pdf', dpi=300)
     plt.close(fig)
