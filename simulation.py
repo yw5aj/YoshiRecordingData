@@ -1880,9 +1880,7 @@ if __name__ == '__main__':
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots()
     for i, factor in enumerate(factor_list[:3]):
-        color_list = [0, 0, 0]
-        color_list[i] = 1
-        color = tuple(color_list)
+        color = COLOR_LIST[i]
         x_array_list, y_array_list = [], []
         for level in level_plot_list:
             x_array_list.append(simFiberList[i][level][0].static_displ_exp)
