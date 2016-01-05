@@ -14,12 +14,13 @@ import matplotlib.pyplot as plt
 
 from simulation import (
     SimFiber, fill_between_curves,
-    control_list, stim_num, stim_plot_list, quantity_list,
+    control_list, stim_num, quantity_list,
     MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, DT, FIBER_MECH_ID)
 
 
 level_num = 10
 level_plot_list = range(5)
+stim_plot_list = [2, 3, 4]
 
 
 class RepSample(SimFiber):
@@ -41,10 +42,10 @@ def plot_variance(repSample_list):
     fig, axs = plt.subplots(3, 1, figsize=(3.5, 6))
     for stim in stim_plot_list:
         if stim == 2:
-            color = (0, 1, 0)
-        elif stim == 1:
             color = (1, 0, 0)
         elif stim == 3:
+            color = (0, 1, 0)
+        elif stim == 4:
             color = (0, 0, 1)
         displ_time_array_list = []
         displ_strain_array_list = []
@@ -276,9 +277,26 @@ def plot_neural(repSample_list):
             simFiber.static_force_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
             '-k', label='Average skin mechanics')
+    # Plot lines for connecting traces figure
+    for stim in stim_plot_list:
+        if stim == 2:
+            color = (1, 0, 0)
+        elif stim == 3:
+            color = (0, 1, 0)
+        elif stim == 4:
+            color = (0, 0, 1)
+        x = repSample_list[0][0].static_displ_exp[stim]
+        y = repSample_list[0][0].predicted_fr[fiber_id]['strain'].T[1][stim]
+        y_all = [
+            repSample_list[i][0].predicted_fr[fiber_id]['strain'].T[1][stim]
+            for i in level_plot_list]
+        y_err = np.array([y_all[0] - np.min(y_all), np.max(y_all) - y_all[0]])
+        y_err = y_err[:, np.newaxis]
+        axs[0, 1].errorbar(x, y, y_err,
+                           alpha=.25, c=color, capsize=0, elinewidth=2)
     # X and Y limits
     for axes in axs[0:2].ravel():
-        axes.set_ylim(0, 50)
+        axes.set_ylim(0, 80)
     for axes in axs[0]:
         axes.set_xlim(.3, .8)
     for axes in axs[1]:
