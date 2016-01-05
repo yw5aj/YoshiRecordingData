@@ -23,6 +23,13 @@ level_plot_list = range(5)
 stim_plot_list = [2, 3, 4]
 
 
+def get_color(stim):
+    color = np.zeros(3, dtype='i')
+    color[stim_plot_list.index(stim)] = 1
+    color = tuple(color)
+    return color
+
+
 class RepSample(SimFiber):
 
     def __init__(self, sample_id, control):
@@ -41,12 +48,7 @@ class RepSample(SimFiber):
 def plot_variance(repSample_list):
     fig, axs = plt.subplots(3, 1, figsize=(3.5, 6))
     for stim in stim_plot_list:
-        if stim == 2:
-            color = (1, 0, 0)
-        elif stim == 3:
-            color = (0, 1, 0)
-        elif stim == 4:
-            color = (0, 0, 1)
+        color = get_color(stim)
         displ_time_array_list = []
         displ_strain_array_list = []
         displ_sener_array_list = []
@@ -109,7 +111,7 @@ def plot_shape(repSample_list):
     fig_geom, axs_geom = plt.subplots(3, 1, figsize=(3.5, 6))
     stim = stim_num // 2
     level = 0
-    color = (0, 0, 1)
+    color = get_color(stim)
     repSampleDispl = repSample_list[level][0]
     repSampleForce = repSample_list[level][1]
     axs_rate[0].plot(repSampleDispl.traces_rate[stim]['time'],
@@ -279,12 +281,7 @@ def plot_neural(repSample_list):
             '-k', label='Average skin mechanics')
     # Plot lines for connecting traces figure
     for stim in stim_plot_list:
-        if stim == 2:
-            color = (1, 0, 0)
-        elif stim == 3:
-            color = (0, 1, 0)
-        elif stim == 4:
-            color = (0, 0, 1)
+        color = get_color(stim)
         x = repSample_list[0][0].static_displ_exp[stim]
         y = repSample_list[0][0].predicted_fr[fiber_id]['strain'].T[1][stim]
         y_all = [
