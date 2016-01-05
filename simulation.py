@@ -44,7 +44,7 @@ stim_num = 6
 AREA = np.pi * 1e-3**2 / 4
 MAX_RADIUS = .6e-3
 MAX_TIME = 5.
-MAX_RATE_TIME = .3
+MAX_RATE_TIME = .25
 stim_plot_list = [1, 2, 3]  # Stims to be plotted
 level_plot_list = range(level_num)[1:-1]
 dist_key_list = ['cpress', 'cxnew', 'cxold', 'cy', 'msener',
@@ -1444,7 +1444,7 @@ if __name__ == '__main__':
                     simFiberForce.traces[stim]['time'][::100])
                 force_stress_array_list.append(
                     simFiberForce.traces[stim]['stress'][::100] / 1e3)
-        kwargs = dict(alpha=.25, color=color, label=stim)
+        kwargs = dict(alpha=.25, fc=color, ec='none', label=stim)
         fill_between_curves(displ_time_array_list, displ_strain_array_list,
                             axs[0], **kwargs)
         fill_between_curves(displ_time_array_list, displ_sener_array_list,
@@ -1851,13 +1851,14 @@ if __name__ == '__main__':
     plt.close(fig)
     # %% The displ - force part of the encoding plot, filled
     fiber_id = FIBER_MECH_ID
-    fig, axs = plt.subplots()
+    fig, axs = plt.subplots(figsize=(3., 3.))
     x_array_list, y_array_list = [], []
     for i, factor in enumerate(factor_list[:3]):
         for level in level_plot_list:
             x_array_list.append(simFiberList[i][level][0].static_displ_exp)
             y_array_list.append(simFiberList[i][level][0].static_force_exp)
-    fill_between_curves(x_array_list, y_array_list, axs, alpha=.25, color='k')
+    fill_between_curves(x_array_list, y_array_list, axs,
+                        alpha=.25, fc='k', ec='none')
     simFiber = simFiberList[i][level_num // 2][0]
     axs.plot(
         simFiber.static_displ_exp,
@@ -2055,7 +2056,8 @@ if __name__ == '__main__':
         axes.set_xlim(0, 12)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
-        axes.set_title('%s-based Model' % ['Stress', 'Strain'][i])
+        axes.set_title(['Prediction with internal stress',
+                        'Prediction with internal strain'][i])
     for axes in axs[0]:
         axes.set_xlabel(r'Static displacement (mm)')
     for axes in axs[1]:
@@ -2097,10 +2099,10 @@ if __name__ == '__main__':
                         fiber_id][quantity].T[1])
         fill_between_curves(
             x_displ_array_list, y_displ_array_list,
-            axs[0, k], color=color, alpha=.25, label=factor)
+            axs[0, k], fc=color, ec='none', alpha=.25, label=factor)
         fill_between_curves(
             x_force_array_list, y_force_array_list,
-            axs[1, k], color=color, alpha=.25, label=factor)
+            axs[1, k], fc=color, ec='none', alpha=.25, label=factor)
         # Plot median
         simFiber = simFiberList[i][level_num // 2][0]
         axs[0, k].plot(
@@ -2120,7 +2122,8 @@ if __name__ == '__main__':
         axes.set_xlim(0, 12)
     # Axes and panel labels
     for i, axes in enumerate(axs[0, :].ravel()):
-        axes.set_title('%s-based Model' % ['Stress', 'Strain'][i])
+        axes.set_title(['Prediction with internal stress',
+                        'Prediction with internal strain'][i])
     for axes in axs[0]:
         axes.set_xlabel(r'Static displacement (mm)')
     for axes in axs[1]:

@@ -1,6 +1,7 @@
 # Figures
 *.png
 *.pdf
+*.svg
 
 # Archive
 *archive*
