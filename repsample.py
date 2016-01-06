@@ -168,22 +168,17 @@ def plot_shape(repSample_list):
     axs_rate[-1].set_xlabel('Time (s)')
     axs_geom[-1].set_xlabel('Location (mm)')
     # y-axis
-    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)' +
-                           '\nControlled surface deflection')
+    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
     axs_rate_0_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)' +
-                           '\nControlled surface deflection')
+    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
     axs_rate_1_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)' +
-                           '\nControlled surface pressure')
+    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)')
     axs_rate_2_twin.set_ylabel(r'Surface pressure rate (kPa/s)')
     axs_geom[0].set_ylabel('Internal strain\nControlled surface deflection')
     axs_geom_0_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)' +
-                           '\nControlled surface deflection')
+    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)')
     axs_geom_1_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[2].set_ylabel('Internal stress (kPa)' +
-                           '\nControlled surface pressure')
+    axs_geom[2].set_ylabel('Internal stress (kPa)')
     axs_geom_2_twin.set_ylabel(r'Surface pressure (kPa)')
     # Add legends
     h1, l1 = axs_rate[0].get_legend_handles_labels()
