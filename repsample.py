@@ -5,8 +5,6 @@ Created on Sat Dec 26 22:27:13 2015
 @author: Administrator
 """
 
-# %% Set-up
-
 import pickle
 
 import numpy as np
@@ -15,12 +13,13 @@ import matplotlib.pyplot as plt
 from simulation import (
     SimFiber, fill_between_curves,
     control_list, stim_num, quantity_list,
-    MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, DT, FIBER_MECH_ID)
+    MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, FIBER_MECH_ID)
 
 
 level_num = 10
-level_plot_list = range(5)
+level_plot_list = range(6)
 stim_plot_list = [2, 3, 4]
+quantity_plot_list = ['strain', 'sener', 'stress']
 
 
 def get_color(stim):
@@ -92,12 +91,13 @@ def plot_variance(repSample_list):
     # x-axis
     axs[-1].set_xlabel('Time (s)')
     # y-axis for the Stimulus magnitude over time
-    axs[0].set_ylabel('Internal strain')
-    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)')
-    axs[2].set_ylabel('Internal stress (kPa)')
+    axs[0].set_ylabel('Internal strain\nControlled surface deflection')
+    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)' +
+                      '\nControlled surface deflection')
+    axs[2].set_ylabel('Internal stress (kPa)\nControlled surface pressure')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.15, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     # Save figure
     fig.tight_layout()
@@ -168,17 +168,22 @@ def plot_shape(repSample_list):
     axs_rate[-1].set_xlabel('Time (s)')
     axs_geom[-1].set_xlabel('Location (mm)')
     # y-axis
-    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)' +
+                           '\nControlled surface deflection')
     axs_rate_0_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)' +
+                           '\nControlled surface deflection')
     axs_rate_1_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[2].set_ylabel(r'Internal stress rate (kPa/s)')
+    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)' +
+                           '\nControlled surface pressure')
     axs_rate_2_twin.set_ylabel(r'Surface pressure rate (kPa/s)')
-    axs_geom[0].set_ylabel('Internal strain')
+    axs_geom[0].set_ylabel('Internal strain\nControlled surface deflection')
     axs_geom_0_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)')
+    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)' +
+                           '\nControlled surface deflection')
     axs_geom_1_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[2].set_ylabel('Internal stress (kPa)')
+    axs_geom[2].set_ylabel('Internal stress (kPa)' +
+                           '\nControlled surface pressure')
     axs_geom_2_twin.set_ylabel(r'Surface pressure (kPa)')
     # Add legends
     h1, l1 = axs_rate[0].get_legend_handles_labels()
@@ -231,13 +236,13 @@ def plot_neural_mechanics(repSample_list):
         repSample.static_force_exp,
         '-k', label='Average skin')
     # X and Y limits
-    axs.set_ylim(0, 15)
     axs.set_xlim(.3, .8)
     # Axes and panel labels
-    axs.set_xlabel(r'Static displacement (mm)')
-    axs.set_ylabel('Static force (mN)')
+    axs.set_xlabel(r'Static tip displacement (mm)')
+    axs.set_ylabel('Static tip force (mN)')
     # Legend
     axs.legend(loc=2)
+    axs.set_title('Controlled tip displacement')
     # Save
     fig.tight_layout()
     fig.savefig('./plots/RepSample/neural_mechanics.png', dpi=300)
@@ -245,11 +250,12 @@ def plot_neural_mechanics(repSample_list):
     plt.close(fig)
 
 
-def plot_neural(repSample_list):
+def plot_neural(repSample_list, force_control=False):
+    control = int(force_control)
     fiber_id = FIBER_MECH_ID
-    fig, axs = plt.subplots(2, 2, figsize=(5, 5))
+    fig, axs = plt.subplots(3, 2, figsize=(5, 6))
     kwargs = dict(fc='k', ec='none', alpha=.25)
-    for k, quantity in enumerate(quantity_list[-3:-1]):
+    for k, quantity in enumerate(quantity_plot_list):
         x_displ_array_list, x_force_array_list = [], []
         y_displ_array_list, y_force_array_list = [], []
         for level in level_plot_list:
@@ -259,23 +265,24 @@ def plot_neural(repSample_list):
                 repSample_list[level][0].predicted_fr[
                     fiber_id][quantity].T[1])
             x_force_array_list.append(
-                repSample_list[level][0].static_force_exp)
+                repSample_list[level][control].static_force_exp)
             y_force_array_list.append(
-                repSample_list[level][0].predicted_fr[
+                repSample_list[level][control].predicted_fr[
                     fiber_id][quantity].T[1])
         fill_between_curves(
             x_displ_array_list, y_displ_array_list,
-            axs[0, k], **kwargs)
+            axs[k, 0], **kwargs)
         fill_between_curves(
             x_force_array_list, y_force_array_list,
-            axs[1, k], **kwargs)
+            axs[k, 1], **kwargs)
         # Plot median
         simFiber = repSample_list[0][0]
-        axs[0, k].plot(
+        axs[k, 0].plot(
             simFiber.static_displ_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
             '-k', label='Average skin mechanics')
-        axs[1, k].plot(
+        simFiber = repSample_list[0][control]
+        axs[k, 1].plot(
             simFiber.static_force_exp,
             simFiber.predicted_fr[fiber_id][quantity].T[1],
             '-k', label='Average skin mechanics')
@@ -289,27 +296,30 @@ def plot_neural(repSample_list):
             for i in level_plot_list]
         y_err = np.array([y_all[0] - np.min(y_all), np.max(y_all) - y_all[0]])
         y_err = y_err[:, np.newaxis]
-        axs[0, 1].errorbar(x, y, y_err,
-                           alpha=.25, c=color, capsize=0, elinewidth=2)
+        axs[0, 0].errorbar(x, y, y_err,
+                           alpha=.25, c=color, capsize=0, elinewidth=4)
     # X and Y limits
-    for axes in axs[0:2].ravel():
+    for axes in axs.ravel():
+        axes.set_ylim(0, 50)
+    for axes in axs[0].ravel():
         axes.set_ylim(0, 80)
-    for axes in axs[0]:
+    for axes in axs[:, 0]:
         axes.set_xlim(.3, .8)
-    for axes in axs[1]:
-        axes.set_xlim(0, 12)
+    for axes in axs[:, 1]:
+        axes.set_xlim(0, 7)
     # Axes and panel labels
-    for i, axes in enumerate(axs[0, :].ravel()):
-        axes.set_title('%s-based Model' % ['Stress', 'Strain'][i])
-    for axes in axs[0]:
-        axes.set_xlabel(r'Static displacement (mm)')
-    for axes in axs[1]:
-        axes.set_xlabel(r'Static force (mN)')
-    for axes in axs[0:2, 0].ravel():
-        axes.set_ylabel('Predicted static firing (Hz)')
+    for axes in axs[:, 0]:
+        axes.set_xlabel(r'Static tip displacement (mm)')
+    for axes in axs[:, 1]:
+        axes.set_xlabel(r'Static tip force (mN)')
+    for i, axes in enumerate(axs[:, 0].ravel()):
+        axes.set_ylabel('Static firing (Hz) \nPredicted from internal %s' %
+                        (['strain', 'SED', 'stress'][i]))
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
+    axs[0, 0].set_title('Controlled tip displacement')
+    axs[0, 1].set_title('Controlled tip force')
     # Legends
     handels, labels = axs[0, 0].get_legend_handles_labels()
     axs[0, 0].legend(handels[0:1], ['Average skin'], loc=2)
@@ -341,4 +351,4 @@ if __name__ == '__main__':
     plot_variance(repSample_list)
     plot_shape(repSample_list)
     plot_neural_mechanics(repSample_list)
-    plot_neural(repSample_list)
+    plot_neural(repSample_list, force_control=True)
