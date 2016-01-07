@@ -75,7 +75,7 @@ def fill_polygons(polygons, axes, **kwargs):
 
 class SimFiber:
 
-    def __init__(self, factor, level, control):
+    def __init__(self, factor, level, control, stim_num):
         """
         Class for simulated model from Abaqus.
 
@@ -94,6 +94,7 @@ class SimFiber:
         self.factor = factor
         self.level = level
         self.control = control
+        self.stim_num = stim_num
         self.get_dist()
         self.load_traces()
         self.load_trans_params()
@@ -105,8 +106,8 @@ class SimFiber:
 
     def get_dist(self, key_list=dist_key_list):
         fpath = BASE_CSV_PATH
-        self.dist = [{} for i in range(stim_num)]
-        for stim in range(stim_num)[1:]:
+        self.dist = [{} for i in range(self.stim_num)]
+        for stim in range(self.stim_num)[1:]:
             for key in key_list:
                 self.dist[stim][key] = np.loadtxt(
                     fpath + self.factor + str(self.level) + str(stim - 1) +
@@ -156,9 +157,9 @@ class SimFiber:
         fpath = BASE_CSV_PATH
         # Use stim_num - 1 to leave space for the zero-stim trace
         fname_list = [self.factor + str(self.level) + str(stim) +
-                      self.control + '.csv' for stim in range(stim_num-1)]
-        self.traces = [{} for i in range(stim_num)]
-        self.traces_rate = [{} for i in range(stim_num)]
+                      self.control + '.csv' for stim in range(self.stim_num-1)]
+        self.traces = [{} for i in range(self.stim_num)]
+        self.traces_rate = [{} for i in range(self.stim_num)]
         # Read the non-zero output from FEM
         for i, fname in enumerate(fname_list):
             # Get all quantities
@@ -190,28 +191,28 @@ class SimFiber:
             self.traces_rate[0][quantity] = np.zeros_like(
                 self.traces_rate[0]['time'])
         # Scale the displ
-        for i in range(stim_num):
+        for i in range(self.stim_num):
             self.traces[i]['displ'] = displcoeff[0] * 1e-6 +\
                 displcoeff[1] * self.traces[i]['displ']
         # Get the FEM and corresponding displ / force
         self.static_displ_exp = np.array(
-            [self.traces[i]['displ'][-1] for i in range(stim_num)]) * 1e3
+            [self.traces[i]['displ'][-1] for i in range(self.stim_num)]) * 1e3
         self.dynamic_displ_exp = np.array(
             [self.traces[i]['displ'][self.traces[i]['max_index']]
-             for i in range(stim_num)]) * 1e3
+             for i in range(self.stim_num)]) * 1e3
         self.static_force_fem = np.array(
-            [self.traces[i]['force'][-1] for i in range(stim_num)])
+            [self.traces[i]['force'][-1] for i in range(self.stim_num)])
         self.dynamic_force_fem = np.array(
-            [self.traces[i]['force'].max() for i in range(stim_num)])
+            [self.traces[i]['force'].max() for i in range(self.stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3
         self.dynamic_force_exp = self.dynamic_force_fem * 1e3
         # Get the avg displ / force rate
         self.displ_rate_exp = np.array(
             [self.dynamic_displ_exp[i] / self.traces[i]['max_index'] / DT
-             for i in range(stim_num)])
+             for i in range(self.stim_num)])
         self.force_rate_exp = np.array(
             [self.dynamic_force_exp[i] / self.traces[i]['max_index'] / DT
-             for i in range(stim_num)])
+             for i in range(self.stim_num)])
         return
 
     def get_predicted_fr(self, trans_params=None):
@@ -238,7 +239,7 @@ class SimFiber:
                 quantity_dict_list = [{
                     'quantity_array': self.traces[i][quantity],
                     'max_index': self.traces[i]['max_index']}
-                    for i in range(stim_num)]
+                    for i in range(self.stim_num)]
                 # Calculate
                 lifModel = LifModel(**FIBER_RCV[fiber_id])
                 predicted_fr[fiber_id][quantity] =\
@@ -261,7 +262,7 @@ class SimFiber:
         for fiber_id in FIBER_FIT_ID_LIST:
             for quantity in quantity_list[-3:]:
                 dist_fr[fiber_id][quantity] = np.empty((
-                    stim_num, 2, total_elem_num))
+                    self.stim_num, 2, total_elem_num))
                 for elem in range(total_elem_num):
                     # Get the quantity_dict_list for input
                     quantity_dict_list = [{
@@ -271,7 +272,7 @@ class SimFiber:
                                       self.dist[i]['time'][:, 0],
                                       self.dist[i]['m' + quantity][:, elem]),
                         'max_index': self.traces[i]['max_index']}
-                        for i in range(stim_num)]
+                        for i in range(self.stim_num)]
                     # Calculate
                     lifModel = LifModel(**FIBER_RCV[fiber_id])
                     dist_fr[fiber_id][quantity][:, :, elem] =\
@@ -288,8 +289,6 @@ class SimFiber:
             rmax = fr_array.max()
             rmin = fr_array.min()
             if rmax != rmin:
-#                max_idx = fr_array.argmax()
-#                rmin = fr_array[:max_idx].min()
                 rmin = fr_array[0]
                 m = (rmax - rmin) / (rmax + rmin)
             else:
@@ -298,8 +297,8 @@ class SimFiber:
         mi = [{} for i in range(FIBER_TOT_NUM)]
         for fiber_id in FIBER_FIT_ID_LIST:
             for quantity in quantity_list[-3:]:
-                mi[fiber_id][quantity] = np.empty((stim_num, 2))
-                for stim in range(stim_num):
+                mi[fiber_id][quantity] = np.empty((self.stim_num, 2))
+                for stim in range(self.stim_num):
                     for phase in range(2):
                         mi[fiber_id][quantity][stim, phase] = calculate_m(
                             self.dist_fr[fiber_id][quantity][stim, phase, :])
@@ -320,7 +319,7 @@ class SimFiber:
                 quantity_dict_list = [{
                     'quantity_array': self.traces[i][quantity],
                     'max_index': self.traces[i]['max_index']}
-                    for i in range(stim_num)]
+                    for i in range(self.stim_num)]
                 # Calculate
                 lifModel = LifModel(**FIBER_RCV[fiber_id])
                 predicted_spike_array[fiber_id][quantity] =\
@@ -394,7 +393,7 @@ if __name__ == '__main__':
             for level in range(level_num):
                 j = level
                 for k, control in enumerate(control_list):
-                    simFiber = SimFiber(factor, level, control)
+                    simFiber = SimFiber(factor, level, control, stim_num)
                     simFiberList[i][j].append(simFiber)
                     print(factor+str(level)+control+' is done.')
         # Store data
