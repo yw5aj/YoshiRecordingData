@@ -741,7 +741,6 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
-    fig.savefig('./plots/paper_plot_fitting_mechanical.tif', dpi=300)
     fig.savefig('./plots/paper_plot_fitting_mechanical.pdf')
     plt.close(fig)
     # %% Plot experiment data with displ / force aligned - static, separate

@@ -211,7 +211,7 @@ def plot_shape(repSample_list):
         axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     for axes_id, axes in enumerate(axs_geom.ravel()):
-        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     # Save figure
     fig_rate.tight_layout()
@@ -240,8 +240,8 @@ def plot_neural_mechanics(repSample_list):
     # X and Y limits
     axs.set_xlim(.3, .8)
     # Axes and panel labels
-    axs.set_xlabel(r'Static tip displacement (mm)')
-    axs.set_ylabel('Static tip force (mN)')
+    axs.set_xlabel(r'Steady-state tip displacement (mm)')
+    axs.set_ylabel('Steady-state tip force (mN)')
     # Legend
     axs.legend(loc=2)
     axs.set_title('Controlled tip displacement')
@@ -309,6 +309,7 @@ def plot_neural(repSample_list, force_control=False):
             axes.errorbar(x, y, y_err,
                           alpha=.25, c=color, capsize=0, elinewidth=4)
     add_colored_bands(axs[0, 0], 'strain', 0)
+    add_colored_bands(axs[1, 0], 'sener', 0)
     if force_control:
         add_colored_bands(axs[2, 1], 'stress', 1)
     # X and Y limits
@@ -322,14 +323,18 @@ def plot_neural(repSample_list, force_control=False):
         axes.set_xlim(0, 8)
     # Axes and panel labels
     for axes in axs[:, 0]:
-        axes.set_xlabel(r'Static tip displacement (mm)')
+        axes.set_xlabel(r'Steady-state tip displacement (mm)')
     for axes in axs[:, 1]:
-        axes.set_xlabel(r'Static tip force (mN)')
+        axes.set_xlabel(r'Steady-state tip force (mN)')
     for i, axes in enumerate(axs[:, 0].ravel()):
         axes.set_ylabel('Static firing (Hz) \nPredicted from internal %s' %
                         (['strain', 'SED', 'stress'][i]))
     for axes_id, axes in enumerate(axs.ravel()):
-        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
+        if axes_id % 2:
+            x = -.15
+        else:
+            x = -.2
+        axes.text(x, 1.125, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     axs[0, 0].set_title('Controlled tip displacement')
     axs[0, 1].set_title('Controlled tip force')

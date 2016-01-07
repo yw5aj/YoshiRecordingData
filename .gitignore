@@ -2,6 +2,7 @@
 *.png
 *.pdf
 *.svg
+*.tif
 
 # Archive
 *archive*

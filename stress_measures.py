@@ -8,7 +8,7 @@ Created on Wed Jul 29 12:29:12 2015
 import numpy as np
 import matplotlib.pyplot as plt
 from simulation import MAX_RADIUS, dist_key_list
-from simulation import SimFiber
+from simulation import SimFiber, stim_num
 
 
 measure_list = ['msmaxprin', 'msmidprin', 'msminprin', 'msmises']
@@ -17,7 +17,7 @@ measure_list = ['msmaxprin', 'msmidprin', 'msminprin', 'msmises']
 class StressMeasureFiber(SimFiber):
 
     def __init__(self, factor='SkinThick', level=2, control='Displ'):
-        SimFiber.__init__(self, factor, level, control)
+        SimFiber.__init__(self, factor, level, control, stim_num)
         self.get_stress_measures()
         return
 
@@ -62,4 +62,4 @@ if __name__ == '__main__':
     ratio_int = np.array([stressMeasureFiber.dist[2]['msminprinint'],
                           stressMeasureFiber.dist[2]['msmidprinint'],
                           stressMeasureFiber.dist[2]['msmaxprinint']]
-                          ) / total_int
+                         ) / total_int
