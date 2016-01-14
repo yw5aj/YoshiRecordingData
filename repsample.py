@@ -9,6 +9,7 @@ import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import pearsonr
 
 from simulation import (
     SimFiber, fill_between_curves,
@@ -18,9 +19,11 @@ from simulation import (
 
 stim_num = 7
 level_num = 6
-level_plot_list = range(6)
+level_plot_iter = range(6)
 stim_plot_list = [3, 4, 5]
 quantity_plot_list = ['strain', 'sener', 'stress']
+stim_neural_quant_iter = range(2, stim_num)
+transform_list = [(0, 'strain'), (0, 'sener'), (1, 'stress')]
 
 
 def get_color(stim):
@@ -106,6 +109,31 @@ def plot_variance(repSample_list):
     fig.savefig('./plots/RepSample/variance.png', dpi=300)
     fig.savefig('./plots/RepSample/variance.pdf', dpi=300)
     plt.close(fig)
+
+
+def quantify_variance(repSample_list):
+
+    def get_inter_skin(control, quantity, stim):
+        quantity_arr = np.array([
+            repSample_list[level][control].traces[stim][quantity][-1]
+            for level in range(level_num)])
+        return quantity_arr.max() - quantity_arr.min()
+
+    def get_inter_stimulus(control, quantity, level):
+        quantity_arr = np.array([
+            repSample_list[level][control].traces[stim][quantity][-1]
+            for stim in range(stim_num)])
+        return np.diff(quantity_arr[stim_plot_list]).mean()
+
+    def get_isrd(control, quantity):
+        inter_skin = get_inter_skin(control, quantity, stim_plot_list[1])
+        inter_stimulus = get_inter_stimulus(control, quantity, 0)
+        return inter_skin / inter_stimulus
+
+    isrd_list = []
+    for control, quantity in transform_list:
+        isrd_list.append(get_isrd(control, quantity))
+    return isrd_list
 
 
 def plot_shape(repSample_list):
@@ -224,10 +252,59 @@ def plot_shape(repSample_list):
     plt.close(fig_geom)
 
 
+def quantify_shape(repSample_list):
+
+    def get_corr(repSample, domain, stim, quantity):
+        if domain == 'rate':
+            surface = 'displ' if repSample.control == 'Displ' else 'press'
+            time_arr = np.linspace(0, MAX_RATE_TIME, 100)
+            stimulus = np.interp(time_arr,
+                                 repSample.traces_rate[stim]['time'],
+                                 repSample.traces_rate[stim][surface])
+            response = np.interp(time_arr,
+                                 repSample.traces_rate[stim]['time'],
+                                 repSample.traces_rate[stim][quantity])
+        if domain == 'geom':
+            surface = 'cy' if repSample.control == 'Displ' else 'cpress'
+            dist = repSample.dist[stim]
+            xcoord = np.linspace(0, MAX_RADIUS, 100)
+            stimulus = np.interp(xcoord, dist['cxold'][-1], dist[surface][-1])
+            response = np.interp(xcoord, dist['mxold'][-1],
+                                 dist['m' + quantity][-1])
+        return pearsonr(stimulus, response)[0]
+
+    stim = stim_num // 2
+    r2_dict = dict(rate=[], geom=[])
+    for control, quantity in transform_list:
+        repSample = repSample_list[0][control]
+        for key, item in r2_dict.items():
+            item.append(get_corr(repSample, key, stim, quantity) ** 2)
+    return r2_dict
+
+
+def quantify_neural(repSample_list):
+    fiber_id = FIBER_MECH_ID
+
+    def get_range(stim, quantity, control):
+        repSample_control_list = [
+            repSample_list[level][control] for level in range(level_num)]
+        response_arr = np.array(
+            [repSample.predicted_fr[fiber_id][quantity].T[1][stim]
+             for repSample in repSample_control_list])
+        return response_arr.max() - response_arr.min()
+    range_avg_list = []
+    for control, quantity in transform_list:
+        range_list = []
+        for stim in stim_neural_quant_iter:
+            range_list.append(get_range(stim, quantity, control))
+        range_avg_list.append(np.mean(range_list))
+    return range_avg_list
+
+
 def plot_neural_mechanics(repSample_list):
     fig, axs = plt.subplots()
     x_array_list, y_array_list = [], []
-    for level in level_plot_list:
+    for level in level_plot_iter:
         x_array_list.append(repSample_list[level][0].static_displ_exp)
         y_array_list.append(repSample_list[level][0].static_force_exp)
     fill_between_curves(x_array_list, y_array_list, axs,
@@ -252,7 +329,7 @@ def plot_neural_mechanics(repSample_list):
     plt.close(fig)
 
 
-def plot_neural(repSample_list, force_control=False):
+def plot_neural(repSample_list, force_control):
     control = int(force_control)
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(3, 2, figsize=(5, 6))
@@ -260,7 +337,7 @@ def plot_neural(repSample_list, force_control=False):
     for k, quantity in enumerate(quantity_plot_list):
         x_displ_array_list, x_force_array_list = [], []
         y_displ_array_list, y_force_array_list = [], []
-        for level in level_plot_list:
+        for level in level_plot_iter:
             x_displ_array_list.append(
                 repSample_list[level][0].static_displ_exp)
             y_displ_array_list.append(
@@ -302,7 +379,7 @@ def plot_neural(repSample_list, force_control=False):
             y_all = [
                 repSample_list[i][control].predicted_fr[fiber_id][
                     quantity].T[1][stim]
-                for i in level_plot_list]
+                for i in level_plot_iter]
             y_err = np.array(
                 [y_all[0] - np.min(y_all), np.max(y_all) - y_all[0]])
             y_err = y_err[:, np.newaxis]
@@ -366,7 +443,10 @@ if __name__ == '__main__':
     else:
         with open(fname, 'rb') as f:
             repSample_list = pickle.load(f)
+    # %% Plot and calculate mech
     plot_variance(repSample_list)
     plot_shape(repSample_list)
+    # %% Plt and calculate neural
     plot_neural_mechanics(repSample_list)
     plot_neural(repSample_list, force_control=True)
+    # %% Make quantification table
