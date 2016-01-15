@@ -8,6 +8,7 @@ Created on Sat Dec 26 22:27:13 2015
 import pickle
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
@@ -443,10 +444,25 @@ if __name__ == '__main__':
     else:
         with open(fname, 'rb') as f:
             repSample_list = pickle.load(f)
-    # %% Plot and calculate mech
+    # %% Ploting
     plot_variance(repSample_list)
     plot_shape(repSample_list)
-    # %% Plt and calculate neural
     plot_neural_mechanics(repSample_list)
     plot_neural(repSample_list, force_control=True)
     # %% Make quantification table
+    # Obtain values
+    range_avg_list = quantify_neural(repSample_list)
+    isrd_list = quantify_variance(repSample_list)
+    r2_dict = quantify_shape(repSample_list)
+    # Make dataframe
+    table_dict = r2_dict.copy()
+    table_dict.update({'isrd': isrd_list, 'range_avg': range_avg_list})
+    table_df = pd.DataFrame(table_dict)
+    # Reorder columns and add indices
+    columns = ['range_avg', 'isrd', 'rate', 'geom']
+    table_df = table_df[columns]
+    table_df.columns = ['Encoding', 'Conveyance',
+                        'Rate preservation', 'Geometry preservation']
+    table_df.index = ['Deflection-to-strain', 'Deflection-to-SED',
+                      'Pressure-to-stress']
+    table_df.to_csv('./csvs/RepSample/table_df.csv')
