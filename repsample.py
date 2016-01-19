@@ -302,6 +302,21 @@ def quantify_neural(repSample_list):
     return range_avg_list
 
 
+def quantify_neural_mechanics(repSample_list):
+
+    def get_range(stim, control):
+        repSample_control_list = [
+            repSample_list[level][control] for level in range(level_num)]
+        response_arr = np.array(
+            [repSample.static_force_exp[stim]
+             for repSample in repSample_control_list])
+        return response_arr.max() - response_arr.min()
+    range_list = []
+    for stim in stim_neural_quant_iter:
+        range_list.append(get_range(stim, 0))
+    return range_list
+
+
 def plot_neural_mechanics(repSample_list):
     fig, axs = plt.subplots()
     x_array_list, y_array_list = [], []
@@ -466,3 +481,10 @@ if __name__ == '__main__':
     table_df.index = ['Deflection-to-strain', 'Deflection-to-SED',
                       'Pressure-to-stress']
     table_df.to_csv('./csvs/RepSample/table_df.csv')
+    # Data for writing but not in table
+    range_mechanics_list = quantify_neural_mechanics(repSample_list)
+    displ_stim_list = [repSample_list[0][0].static_displ_exp[i]
+                       for i in stim_neural_quant_iter]
+    force_stim_list = [repSample_list[0][1].static_force_exp[i]
+                       for i in stim_neural_quant_iter]
+    ratio_arr = np.array(range_mechanics_list) / np.array(force_stim_list)
