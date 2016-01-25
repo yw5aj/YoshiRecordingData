@@ -6,6 +6,7 @@ Created on Sat Dec 26 22:27:13 2015
 """
 
 import pickle
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,10 @@ level_plot_iter = range(6)
 stim_plot_list = [3, 4, 5]
 quantity_plot_list = ['strain', 'sener', 'stress']
 stim_neural_quant_iter = range(2, stim_num)
+stim_neural_quant_median = 5
 transform_list = [(0, 'strain'), (0, 'sener'), (1, 'stress')]
+transform_list_full = list(itertools.product((0, 1),
+                                             ('strain', 'sener', 'stress')))
 
 
 def get_color(stim):
@@ -283,7 +287,7 @@ def quantify_shape(repSample_list):
     return r2_dict
 
 
-def quantify_neural(repSample_list):
+def quantify_neural(repSample_list, full):
     fiber_id = FIBER_MECH_ID
 
     def get_range(stim, quantity, control):
@@ -293,13 +297,26 @@ def quantify_neural(repSample_list):
             [repSample.predicted_fr[fiber_id][quantity].T[1][stim]
              for repSample in repSample_control_list])
         return response_arr.max() - response_arr.min()
-    range_avg_list = []
-    for control, quantity in transform_list:
+    range_avg_dict = {'0_abs': [], '0_rel': [],
+                      '1_abs': [], '1_rel': []}
+    # This is a hack to use `iter()`, because if I try to still use
+    # `transform_list` it will become a local variable, and may be referenced
+    # before definition when `full == False`
+    if full:
+        transform_iter = iter(transform_list_full)
+    else:
+        transform_iter = iter(transform_list)
+    for control, quantity in transform_iter:
         range_list = []
         for stim in stim_neural_quant_iter:
             range_list.append(get_range(stim, quantity, control))
-        range_avg_list.append(np.mean(range_list))
-    return range_avg_list
+        range_avg_abs = np.mean(range_list)
+        range_avg_rel = range_avg_abs / repSample_list[0][
+            control].predicted_fr[fiber_id][quantity].T[1][
+                stim_neural_quant_median]
+        range_avg_dict['%d_abs' % control].append(range_avg_abs)
+        range_avg_dict['%d_rel' % control].append(range_avg_rel)
+    return range_avg_dict
 
 
 def quantify_neural_mechanics(repSample_list):
@@ -314,7 +331,10 @@ def quantify_neural_mechanics(repSample_list):
     range_list = []
     for stim in stim_neural_quant_iter:
         range_list.append(get_range(stim, 0))
-    return range_list
+    range_avg_abs = np.mean(range_list)
+    range_avg_rel = range_avg_abs / repSample_list[0][0].static_force_exp[
+        stim_neural_quant_median]
+    return range_avg_abs, range_avg_rel
 
 
 def plot_neural_mechanics(repSample_list):
@@ -466,25 +486,25 @@ if __name__ == '__main__':
     plot_neural(repSample_list, force_control=True)
     # %% Make quantification table
     # Obtain values
-    range_avg_list = quantify_neural(repSample_list)
     isrd_list = quantify_variance(repSample_list)
     r2_dict = quantify_shape(repSample_list)
     # Make dataframe
     table_dict = r2_dict.copy()
-    table_dict.update({'isrd': isrd_list, 'range_avg': range_avg_list})
+    table_dict.update({'isrd': isrd_list})
     table_df = pd.DataFrame(table_dict)
     # Reorder columns and add indices
-    columns = ['range_avg', 'isrd', 'rate', 'geom']
+    columns = ['isrd', 'rate', 'geom']
     table_df = table_df[columns]
-    table_df.columns = ['Encoding', 'Conveyance',
+    table_df.columns = ['Magnitude conveyance',
                         'Rate preservation', 'Geometry preservation']
     table_df.index = ['Deflection-to-strain', 'Deflection-to-SED',
                       'Pressure-to-stress']
     table_df.to_csv('./csvs/RepSample/table_df.csv')
     # Data for writing but not in table
-    range_mechanics_list = quantify_neural_mechanics(repSample_list)
-    displ_stim_list = [repSample_list[0][0].static_displ_exp[i]
-                       for i in stim_neural_quant_iter]
-    force_stim_list = [repSample_list[0][1].static_force_exp[i]
-                       for i in stim_neural_quant_iter]
-    ratio_arr = np.array(range_mechanics_list) / np.array(force_stim_list)
+    range_mechanics_abs, range_mechanics_rel = quantify_neural_mechanics(
+        repSample_list)
+    # %% Make the new table - with full neural quantification
+    range_avg_dict = quantify_neural(repSample_list, full=True)
+    range_avg_df = pd.DataFrame(range_avg_dict,
+                                index=['Strain', 'SED', 'Stress'])
+    range_avg_df.to_csv('./csvs/RepSample/neural_table.csv')
