@@ -25,7 +25,7 @@ level_plot_iter = range(6)
 stim_plot_list = [3, 4, 5]
 quantity_plot_list = ['strain', 'sener', 'stress']
 stim_neural_quant_iter = range(2, stim_num)
-stim_neural_quant_median = 5
+representative_stim_num = 5
 transform_list = [(0, 'strain'), (0, 'sener'), (1, 'stress')]
 transform_list_full = list(itertools.product((0, 1),
                                              ('strain', 'sener', 'stress')))
@@ -144,7 +144,7 @@ def quantify_variance(repSample_list):
 def plot_shape(repSample_list):
     fig_rate, axs_rate = plt.subplots(3, 1, figsize=(3.5, 6))
     fig_geom, axs_geom = plt.subplots(3, 1, figsize=(3.5, 6))
-    stim = stim_num // 2
+    stim = representative_stim_num
     level = 0
     color = get_color(stim)
     repSampleDispl = repSample_list[level][0]
@@ -278,7 +278,7 @@ def quantify_shape(repSample_list):
                                  dist['m' + quantity][-1])
         return pearsonr(stimulus, response)[0]
 
-    stim = stim_num // 2
+    stim = representative_stim_num
     r2_dict = dict(rate=[], geom=[])
     for control, quantity in transform_list:
         repSample = repSample_list[0][control]
@@ -313,7 +313,7 @@ def quantify_neural(repSample_list, full):
         range_avg_abs = np.mean(range_list)
         range_avg_rel = range_avg_abs / repSample_list[0][
             control].predicted_fr[fiber_id][quantity].T[1][
-                stim_neural_quant_median]
+                representative_stim_num]
         range_avg_dict['%d_abs' % control].append(range_avg_abs)
         range_avg_dict['%d_rel' % control].append(range_avg_rel)
     return range_avg_dict
@@ -333,7 +333,7 @@ def quantify_neural_mechanics(repSample_list):
         range_list.append(get_range(stim, 0))
     range_avg_abs = np.mean(range_list)
     range_avg_rel = range_avg_abs / repSample_list[0][0].static_force_exp[
-        stim_neural_quant_median]
+        representative_stim_num]
     return range_avg_abs, range_avg_rel
 
 
@@ -503,6 +503,14 @@ if __name__ == '__main__':
     # Data for writing but not in table
     range_mechanics_abs, range_mechanics_rel = quantify_neural_mechanics(
         repSample_list)
+    stim_neural_quant_displ_list = [repSample_list[0][0].static_displ_exp[i]
+                                    for i in stim_neural_quant_iter]
+    stim_neural_quant_force_list = [repSample_list[0][1].static_force_exp[i]
+                                    for i in stim_neural_quant_iter]
+    representative_stim_num_displ = repSample_list[0][0].static_displ_exp[
+        representative_stim_num]
+    representative_stim_num_force = repSample_list[0][1].static_force_exp[
+        representative_stim_num]
     # %% Make the new table - with full neural quantification
     range_avg_dict = quantify_neural(repSample_list, full=True)
     range_avg_df = pd.DataFrame(range_avg_dict,
