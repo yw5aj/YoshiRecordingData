@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
 from simulation import (
-    SimFiber, fill_between_curves,
+    SimFiber, fill_between_curves, fill_between_geom_curves,
     control_list, quantity_list,
     MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, FIBER_MECH_ID)
 
@@ -461,6 +461,67 @@ def plot_neural(repSample_list, force_control):
     plt.close(fig)
 
 
+def plot_neural_geom(repSample_list):
+    fiber_id = FIBER_MECH_ID
+    fig, axs = plt.subplots(3, 2, figsize=(5, 6))
+    kwargs = dict(fc='k', ec='none', alpha=.25)
+    stim = representative_stim_num
+    for row, quantity in enumerate(quantity_plot_list):
+        x_displ_array_list, x_force_array_list = [], []
+        y_displ_array_list, y_force_array_list = [], []
+        for level in level_plot_iter:
+            dist_displ = repSample_list[level][0].dist[stim]
+            dist_force = repSample_list[level][1].dist[stim]
+            dist_fr_displ = repSample_list[level][0].dist_fr[
+                fiber_id][quantity][stim, 0, :]
+            dist_fr_force = repSample_list[level][1].dist_fr[
+                fiber_id][quantity][stim, 0, :]
+            x_displ_array_list.append(dist_displ['mxold'][-1, :] * 1e3)
+            x_force_array_list.append(dist_force['mxold'][-1, :] * 1e3)
+            y_displ_array_list.append(dist_fr_displ)
+            y_force_array_list.append(dist_fr_force)
+        fill_between_geom_curves(
+            x_displ_array_list, y_displ_array_list,
+            axs[row, 0], **kwargs)
+        fill_between_geom_curves(
+            x_force_array_list, y_force_array_list,
+            axs[row, 1], **kwargs)
+        # Plot median
+        axs[row, 0].plot(
+            x_displ_array_list[0], y_displ_array_list[0],
+            '-k', label='Average skin mechanics')
+        axs[row, 1].plot(
+            x_force_array_list[0], y_force_array_list[0],
+            '-k', label='Average skin mechanics')
+    # X and Y limits
+    for axes in axs.ravel():
+        axes.set_xlim(right=MAX_RADIUS * 1e3)
+        axes.set_ylim(top=100)
+    # Axes and panel labels
+    for axes in axs.ravel():
+        axes.set_xlabel(r'Location (mm)')
+    for i, axes in enumerate(axs[:, 0].ravel()):
+        axes.set_ylabel('Static firing (Hz) \nPredicted from internal %s' %
+                        (['strain', 'SED', 'stress'][i]))
+    for axes_id, axes in enumerate(axs.ravel()):
+        if axes_id % 2:
+            x = -.15
+        else:
+            x = -.2
+        axes.text(x, 1.125, chr(65+axes_id), transform=axes.transAxes,
+                  fontsize=12, fontweight='bold', va='top')
+    axs[0, 0].set_title('Controlled tip displacement')
+    axs[0, 1].set_title('Controlled tip force')
+    # Legends
+    handels, labels = axs[0, 0].get_legend_handles_labels()
+    axs[0, 0].legend(handels[0:1], ['Average skin'], loc=2)
+    # Save
+    fig.tight_layout()
+    fig.savefig('./plots/RepSample/neural_geom.png', dpi=300)
+    fig.savefig('./plots/RepSample/neural_geom.pdf', dpi=300)
+    plt.close(fig)
+
+
 if __name__ == '__main__':
     run_fiber = False
     fname = './pickles/repSample_list.pkl'
@@ -484,6 +545,7 @@ if __name__ == '__main__':
     plot_shape(repSample_list)
     plot_neural_mechanics(repSample_list)
     plot_neural(repSample_list, force_control=True)
+    plot_neural_geom(repSample_list)
     # %% Make quantification table
     # Obtain values
     isrd_list = quantify_variance(repSample_list)
