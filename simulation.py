@@ -68,17 +68,15 @@ def fill_between_curves(x_array_list, y_array_list, axes, **kwargs):
 def fill_between_geom_curves(x_array_list, y_array_list, axes=None, **kwargs):
     if axes is None:
         fig, axes = plt.subplots()
-    x_array_list_list, y_array_list_list = [[], [], []], [[], [], []]
+    x_array_list_list, y_array_list_list = [[], []], [[], []]
     for i, x in enumerate(x_array_list):
         y = y_array_list[i]
         maxidx = y.argmax()
         endidx = (x > MAX_RADIUS * 1e3).nonzero()[0][0]
-        x_array_list_list[0].append(x[:maxidx])
-        x_array_list_list[1].append(x[maxidx - 1:maxidx + 2])
-        x_array_list_list[2].append(x[maxidx + 1:endidx])
-        y_array_list_list[0].append(y[:maxidx])
-        y_array_list_list[1].append(y[maxidx - 1:maxidx + 2])
-        y_array_list_list[2].append(y[maxidx + 1:endidx])
+        x_array_list_list[0].append(x[:maxidx + 1])
+        x_array_list_list[1].append(x[maxidx:endidx])
+        y_array_list_list[0].append(y[:maxidx + 1])
+        y_array_list_list[1].append(y[maxidx:endidx])
     polygons_list = []
     for list_index, x_array_list in enumerate(x_array_list_list):
         y_array_list = y_array_list_list[list_index]
@@ -86,10 +84,14 @@ def fill_between_geom_curves(x_array_list, y_array_list, axes=None, **kwargs):
         for (i1, x1), (i2, x2) in combinations(enumerate(x_array_list), 2):
             y1 = y_array_list[i1]
             y2 = y_array_list[i2]
-            x = np.r_[x1, x2[::-1]]
-            y = np.r_[y1, y2[::-1]]
-            polygons.append(Polygon(np.c_[x, y]).buffer(0))
-        polygons = cascaded_union(polygons)
+            x = np.r_[x1, x2[::-1], x1[0]]
+            y = np.r_[y1, y2[::-1], y1[0]]
+            coords = np.c_[x, y]
+            lr = LineString(coords)
+            mls = unary_union(lr)
+            mp = MultiPolygon(list(polygonize(mls)))
+            polygons.extend(mp)
+        polygons = cascaded_union(MultiPolygon(polygons).buffer(0))
         polygons_list.append(polygons)
     final_polygons = cascaded_union(polygons_list)
     fill_polygons(final_polygons, axes, **kwargs)
