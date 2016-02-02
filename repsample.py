@@ -94,6 +94,18 @@ def plot_variance(repSample_list):
                     repSample_list[0][1].traces[stim][
                         'stress'] / 1e3,
                     '-', color=color, label='Average skin')
+        # Plot the bars
+
+        def get_min_max(array_list):
+            arr_end_arr = np.array([array[-1] for array in array_list])
+            return (arr_end_arr.min(), arr_end_arr.max())
+        for i, array_list in enumerate([displ_strain_array_list,
+                                        displ_sener_array_list,
+                                        force_stress_array_list]):
+            axes = axs[i]
+            axes.plot([MAX_TIME + .05 + .1 * (stim - stim_plot_list[0])] * 2,
+                      get_min_max(array_list),
+                      lw=2, color=color, alpha=.5, clip_on=False)
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_TIME)
@@ -421,6 +433,10 @@ def plot_neural(repSample_list, force_control):
             y_err = y_err[:, np.newaxis]
             axes.errorbar(x, y, y_err,
                           alpha=.25, c=color, capsize=0, elinewidth=4)
+            annotate_text = '%d - %d Hz' % (np.min(y_all), np.max(y_all))
+            axes.annotate(annotate_text, xy=(x, np.max(y_all)),
+                          xytext=(x, np.max(y_all) + 2),
+                          color=color, ha='right')
     add_colored_bands(axs[0, 0], 'strain', 0)
     add_colored_bands(axs[1, 0], 'sener', 0)
     if force_control:
@@ -429,7 +445,7 @@ def plot_neural(repSample_list, force_control):
     for axes in axs.ravel():
         axes.set_ylim(0, 50)
     for axes in axs[0].ravel():
-        axes.set_ylim(0, 80)
+        axes.set_ylim(0, 90)
     for axes in axs[:, 0]:
         axes.set_xlim(.3, .8)
     for axes in axs[:, 1]:
