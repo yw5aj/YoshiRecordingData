@@ -103,9 +103,9 @@ def plot_variance(repSample_list):
                                         displ_sener_array_list,
                                         force_stress_array_list]):
             axes = axs[i]
-            axes.plot([MAX_TIME + .05 + .1 * (stim - stim_plot_list[0])] * 2,
+            axes.plot([MAX_TIME + .1 + .1 * (stim - stim_plot_list[0])] * 2,
                       get_min_max(array_list),
-                      lw=2, color=color, alpha=.5, clip_on=False)
+                      lw=2.5, color=color, alpha=.5, clip_on=False)
     # Set x and y lim
     for axes in axs.ravel():
         axes.set_xlim(0, MAX_TIME)
@@ -123,6 +123,7 @@ def plot_variance(repSample_list):
                   fontsize=12, fontweight='bold', va='top')
     # Save figure
     fig.tight_layout()
+    fig.subplots_adjust(right=.95)
     fig.savefig('./plots/RepSample/variance.png', dpi=300)
     fig.savefig('./plots/RepSample/variance.pdf', dpi=300)
     plt.close(fig)
@@ -362,6 +363,23 @@ def plot_neural_mechanics(repSample_list):
         repSample.static_displ_exp,
         repSample.static_force_exp,
         '-k', label='Average skin')
+    # Plot lines for connecting traces figure
+    for stim in stim_plot_list:
+        color = get_color(stim)
+        x = repSample_list[0][0].static_displ_exp[stim]
+        y = repSample_list[0][0].static_force_exp[stim]
+        y_all = [
+            repSample_list[i][0].static_force_exp[stim]
+            for i in level_plot_iter]
+        y_err = np.array(
+            [y_all[0] - np.min(y_all), np.max(y_all) - y_all[0]])
+        y_err = y_err[:, np.newaxis]
+        axs.errorbar(x, y, y_err,
+                     alpha=.25, c=color, capsize=0, elinewidth=4)
+        annotate_text = '%.1f - %.1f mN' % (np.min(y_all), np.max(y_all))
+        axs.annotate(annotate_text, xy=(x, np.max(y_all)),
+                     xytext=(x, np.max(y_all) + .2),
+                     color=color, ha='right')
     # X and Y limits
     axs.set_xlim(.3, .8)
     # Axes and panel labels
@@ -445,7 +463,7 @@ def plot_neural(repSample_list, force_control):
     for axes in axs.ravel():
         axes.set_ylim(0, 50)
     for axes in axs[0].ravel():
-        axes.set_ylim(0, 90)
+        axes.set_ylim(0, 80)
     for axes in axs[:, 0]:
         axes.set_xlim(.3, .8)
     for axes in axs[:, 1]:
@@ -468,8 +486,8 @@ def plot_neural(repSample_list, force_control):
     axs[0, 0].set_title('Controlled tip displacement')
     axs[0, 1].set_title('Controlled tip force')
     # Legends
-    handels, labels = axs[0, 0].get_legend_handles_labels()
-    axs[0, 0].legend(handels[0:1], ['Average skin'], loc=2)
+    handels, labels = axs[0, 1].get_legend_handles_labels()
+    axs[0, 1].legend(handels[0:1], ['Average skin'], loc=2)
     # Save
     fig.tight_layout()
     fig.savefig('./plots/RepSample/neural.png', dpi=300)
