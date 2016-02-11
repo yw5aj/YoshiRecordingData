@@ -715,14 +715,15 @@ if __name__ == '__main__':
     for stim_group in fiber_mech.stim_group_dict:
         for i, stim_num in enumerate(stim_group['stim_num']):
             axs[1].plot(
-                stim_group['traces_exp'][i]['time'],
-                stim_group['traces_exp'][i]['force'], '.', color='.5',
+                stim_group['traces_exp'][i]['time'][::50],
+                stim_group['traces_exp'][i]['force'][::50], '.', color='.5',
                 label='Experiment')
     # Wrote two separate loops so that the model traces always stay on top
     for stim_group in fiber_mech.stim_group_dict:
         axs[1].plot(
-            stim_group['traces_fem']['time'], stim_group['traces_fem']
-            ['force'] * 1e3, '-k', label='Model')
+            stim_group['traces_fem']['time'][::100],
+            stim_group['traces_fem']['force'][::100] * 1e3,
+            '-k', label='Model')
     # Formatting
     axs[0].legend(loc=2)
     axs[0].set_xlabel(r'Static displacement (mm)')
@@ -741,6 +742,7 @@ if __name__ == '__main__':
                   fontsize=12, fontweight='bold', va='top')
     fig.tight_layout()
     fig.savefig('./plots/paper_plot_fitting_mechanical.png', dpi=300)
+    fig.savefig('./plots/paper_plot_fitting_mechanical.tif', dpi=300)
     fig.savefig('./plots/paper_plot_fitting_mechanical.pdf')
     plt.close(fig)
     # %% Plot experiment data with displ / force aligned - static, separate

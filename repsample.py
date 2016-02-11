@@ -481,7 +481,7 @@ def plot_neural(repSample_list, force_control):
             x = -.15
         else:
             x = -.2
-        axes.text(x, 1.125, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(x, 1.13, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     axs[0, 0].set_title('Controlled tip displacement')
     axs[0, 1].set_title('Controlled tip force')
@@ -607,6 +607,14 @@ if __name__ == '__main__':
         representative_stim_num]
     representative_stim_num_force = repSample_list[0][1].static_force_exp[
         representative_stim_num]
+    repSample = repSample_list[0][0]
+    np.savetxt('./csvs/RepSample/stim_displ.csv',
+               repSample.static_displ_exp[None],
+               delimiter=', ', fmt='%.2f')
+    repSampleForce = repSample_list[0][1]
+    np.savetxt('./csvs/RepSample/stim_force.csv',
+               repSampleForce.static_force_exp[None],
+               delimiter=', ', fmt='%.2f')
     # %% Make the new table - with full neural quantification
     range_avg_dict = quantify_neural(repSample_list, full=True)
     range_avg_df = pd.DataFrame(range_avg_dict,
