@@ -113,10 +113,12 @@ def plot_variance(repSample_list):
     # x-axis
     axs[-1].set_xlabel('Time (s)')
     # y-axis for the Stimulus magnitude over time
-    axs[0].set_ylabel('Internal strain\nControlled surface deflection')
-    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)' +
-                      '\nControlled surface deflection')
-    axs[2].set_ylabel('Internal stress (kPa)\nControlled surface pressure')
+    axs[0].set_ylabel('Internal strain')
+    axs[0].set_title('Controlled surface deflection')
+    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[1].set_title('Controlled surface deflection')
+    axs[2].set_ylabel('Internal stress (kPa)')
+    axs[2].set_title('Controlled surface pressure')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
         axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -216,22 +218,23 @@ def plot_shape(repSample_list):
     axs_rate[-1].set_xlabel('Time (s)')
     axs_geom[-1].set_xlabel('Location (mm)')
     # y-axis
-    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)' +
-                           '\nControlled surface deflection')
+    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs_rate[0].set_title('Controlled surface deflection')
     axs_rate_0_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)' +
-                           '\nControlled surface deflection')
+    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    axs_rate[1].set_title('Controlled surface deflection')
     axs_rate_1_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)' +
-                           '\nControlled surface pressure')
+    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)')
+    axs_rate[2].set_title('Controlled surface pressure')
     axs_rate_2_twin.set_ylabel(r'Surface pressure rate (kPa/s)')
-    axs_geom[0].set_ylabel('Internal strain\nControlled surface deflection')
+    axs_geom[0].set_ylabel('Internal strain')
+    axs_geom[0].set_title('Controlled surface deflection')
     axs_geom_0_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)' +
-                           '\nControlled surface deflection')
+    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)')
+    axs_geom[1].set_title('Controlled surface deflection')
     axs_geom_1_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[2].set_ylabel('Internal stress (kPa)' +
-                           '\nControlled surface pressure')
+    axs_geom[2].set_ylabel('Internal stress (kPa)')
+    axs_geom[2].set_title('Controlled surface pressure')
     axs_geom_2_twin.set_ylabel(r'Surface pressure (kPa)')
     # Add legends
     h1, l1 = axs_rate[0].get_legend_handles_labels()
@@ -607,6 +610,13 @@ if __name__ == '__main__':
         representative_stim_num]
     representative_stim_num_force = repSample_list[0][1].static_force_exp[
         representative_stim_num]
+    # Order of skin mechanics from min to max for displ
+    fr_list_for_each_skin = [
+        repSample_list[i][0].predicted_fr[FIBER_MECH_ID]['stress'][-1, 1]
+        for i in range(level_num)]
+    print('Skin order for displ. case: ',
+          np.argsort(fr_list_for_each_skin) + 1)
+    # List of stimuli
     repSample = repSample_list[0][0]
     np.savetxt('./csvs/RepSample/stim_displ.csv',
                repSample.static_displ_exp[None],

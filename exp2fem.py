@@ -899,3 +899,7 @@ if __name__ == '__main__':
                     stim_group_dict['traces_fem'][key] = item - start_idx
     savemat('./pickles/lindsayfiber.mat',
             dict(data=fiber2lindsay.stim_group_dict), do_compression=True)
+    # %% Minimum displacement and force to trigger a response
+    min_displ = fiber_mech.binned_exp['displ_all'].min()
+    min_force = fiber_mech.binned_exp['force_all'][
+        fiber_mech.binned_exp['displ_all'].argmin()]
