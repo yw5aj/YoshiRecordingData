@@ -17,13 +17,13 @@ factor_list = ['RaThick', 'RaInd']
 
 
 rathick_thick_array = np.loadtxt(
-    'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/simprop.csv',
+    'X:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/simprop.csv',
     delimiter=',').T[0]
 rathick_ginf_array = np.loadtxt(
-    'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/rathickg.csv',
+    'X:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/rathickg.csv',
     delimiter=',').T[-1]
 raind_ginf_array = np.loadtxt(
-    'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/raindg.csv',
+    'X:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/raindg.csv',
     delimiter=',').T[-1]
 
 

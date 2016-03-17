@@ -330,7 +330,7 @@ class Fiber:
             return sign * r2
 
         self.abq_displ, self.abq_force = np.genfromtxt(
-            'x:/WorkFolder/AbaqusFolder/YoshiModel/csvs/FitFemDisplForce.csv',
+            'x:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/FitFemDisplForce.csv',
             delimiter=',').T
         self.abq_displ *= 1e6
         self.abq_force *= 1e3
@@ -377,11 +377,11 @@ class Fiber:
         return
 
     def generate_script(self):
-        with open('x:/WorkFolder/AbaqusFolder/YoshiModel/fittemplate.py', 'r'
+        with open('x:/YuxiangWang/AbaqusFolder/YoshiModel/fittemplate.py', 'r'
                   ) as f:
             template_script = f.read()
         self.abq_script = template_script.replace(
-            'CSVFILEPATH', '\'x:/WorkFolder/DataAnalysis/' +
+            'CSVFILEPATH', '\'x:/YuxiangWang/DataAnalysis/' +
             'YoshiRecordingData/csvs/stim_block_' +
             str(self.fiber_id) + '.csv\'').replace(
                 'BASEMODELNAME', '\'Fiber' + str(self.fiber_id) + '\'')
@@ -392,7 +392,7 @@ class Fiber:
     def run_script(self):
         os.system(
             'call \"C:/SIMULIA/Abaqus/Commands/abaqus.bat\"' +
-            ' cae script=x:/WorkFolder/DataAnalysis/YoshiRecordingData/' +
+            ' cae script=x:/YuxiangWang/DataAnalysis/YoshiRecordingData/' +
             'scripts/%d.py' % self.fiber_id)
         return
 
@@ -439,7 +439,7 @@ class Fiber:
 
     def get_stim_block_trace_fem(self):
         for i, stim_group in enumerate(self.stim_group_dict):
-            file_path = 'x:/WorkFolder/AbaqusFolder/YoshiModel/csvs/Fiber' +\
+            file_path = 'x:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/Fiber' +\
                 str(self.fiber_id) + 'Output' + str(i) + '.csv'
             time, force, displ, stress, strain, sener = np.genfromtxt(
                 file_path, delimiter=',').T
@@ -481,7 +481,7 @@ if __name__ == '__main__':
     if run_calibration:
         os.system(
             'call \"C:/SIMULIA/Abaqus/Commands/abaqus.bat\" cae ' +
-            'script=x:/WorkFolder/AbaqusFolder/YoshiModel/calibration.py')
+            'script=x:/YuxiangWang/AbaqusFolder/YoshiModel/calibration.py')
     # Real coding starts here!
     fiber_list = []
     for i in range(FIBER_TOT_NUM):
@@ -492,7 +492,7 @@ if __name__ == '__main__':
     # Save fiber_mech's fem displ - ramp_time coeff, and displcoeff.
     displtimecoeff = np.polyfit(fiber_mech.stim_block_array[:, 1],
                                 fiber_mech.stim_block_array[:, 0], 1)
-    np.savetxt('X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/displtimecoeff.csv',
+    np.savetxt('X:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/displtimecoeff.csv',
                displtimecoeff, delimiter=',')
     np.savetxt('./csvs/displcoeff.csv', fiber_mech.displ_coeff, delimiter=',')
     # To plot the exact fit to force trace

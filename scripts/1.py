@@ -1,5 +1,5 @@
 import os
-os.chdir('x:/WorkFolder/AbaqusFolder/YoshiModel/')
+os.chdir('x:/YuxiangWang/AbaqusFolder/YoshiModel/')
 
 
 import numpy as np
@@ -8,7 +8,7 @@ from setfiber import Fiber, getStimBlockFromCsv
 from feconstants import materialBlockFiber as materialBlock
 
 
-stimBlock = getStimBlockFromCsv('x:/WorkFolder/DataAnalysis/YoshiRecordingData/csvs/stim_block_1.csv')
+stimBlock = getStimBlockFromCsv('x:/YuxiangWang/DataAnalysis/YoshiRecordingData/csvs/stim_block_1.csv')
 fiber = Fiber(baseModelName='Fiber1', suffix='', stimBlock=stimBlock, materialBlock=materialBlock, runFiber=True, doAnalysis=False, skipWait=True)
 np.savetxt('./csvs/'+fiber.baseModelName+'StaticForceDispl.csv', np.column_stack((fiber.staticDisplList, fiber.staticForceList)), delimiter=',')
 for i, model in enumerate(fiber.modelList):

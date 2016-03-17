@@ -25,7 +25,7 @@ from fitlif import LifModel
 
 
 
-BASE_CSV_PATH = 'X:/WorkFolder/AbaqusFolder/YoshiModel/csvs/'
+BASE_CSV_PATH = 'X:/YuxiangWang/AbaqusFolder/YoshiModel/csvs/'
 factor_list = ['SkinThick', 'SkinAlpha', 'SkinGinf', 'SylgardThick',
                'SylgardC10']
 factor_display_list = ['skin thickness', 'skin modulus',
