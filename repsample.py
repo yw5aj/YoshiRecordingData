@@ -113,11 +113,11 @@ def plot_variance(repSample_list):
     # x-axis
     axs[-1].set_xlabel('Time (s)')
     # y-axis for the Stimulus magnitude over time
-    axs[0].set_ylabel('Internal strain')
+    axs[0].set_ylabel('Interior strain')
     axs[0].set_title('Controlled surface deflection')
-    axs[1].set_ylabel(r'Internal SED (kPa/$m^3$)')
+    axs[1].set_ylabel(r'Interior SED (kPa/$m^3$)')
     axs[1].set_title('Controlled surface deflection')
-    axs[2].set_ylabel('Internal stress (kPa)')
+    axs[2].set_ylabel('Interior stress (kPa)')
     axs[2].set_title('Controlled surface pressure')
     # Added panel labels
     for axes_id, axes in enumerate(axs.ravel()):
@@ -166,21 +166,21 @@ def plot_shape(repSample_list):
     repSampleForce = repSample_list[level][1]
     axs_rate[0].plot(repSampleDispl.traces_rate[stim]['time'],
                      repSampleDispl.traces_rate[stim]['strain'],
-                     '-', c=color, label='Internal strain rate')
+                     '-', c=color, label='Interior strain rate')
     axs_rate_0_twin = axs_rate[0].twinx()
     axs_rate_0_twin.plot(repSampleDispl.traces_rate[stim]['time'],
                          repSampleDispl.traces_rate[stim]['displ'] * 1e3,
                          '--', c=color, label='Surface velocity')
     axs_rate[1].plot(repSampleForce.traces_rate[stim]['time'],
                      repSampleForce.traces_rate[stim]['sener'] * 1e-3,
-                     '-', c=color, label=r'Internal SED rate')
+                     '-', c=color, label=r'Interior SED rate')
     axs_rate_1_twin = axs_rate[1].twinx()
     axs_rate_1_twin.plot(repSampleDispl.traces_rate[stim]['time'],
                          repSampleDispl.traces_rate[stim]['displ'] * 1e3,
                          '--', c=color, label='Surface velocity')
     axs_rate[2].plot(repSampleForce.traces_rate[stim]['time'],
                      repSampleForce.traces_rate[stim]['stress'] * 1e-3,
-                     '-', c=color, label='Internal stress rate')
+                     '-', c=color, label='Interior stress rate')
     axs_rate_2_twin = axs_rate[2].twinx()
     axs_rate_2_twin.plot(repSampleForce.traces_rate[stim]['time'],
                          repSampleForce.traces_rate[stim]['press'] * 1e-3,
@@ -189,21 +189,21 @@ def plot_shape(repSample_list):
     dist_force = repSampleForce.dist[stim]
     axs_geom[0].plot(dist_displ['mxold'][-1, :] * 1e3,
                      dist_displ['mstrain'][-1, :],
-                     '-', c=color, label='Internal strain')
+                     '-', c=color, label='Interior strain')
     axs_geom_0_twin = axs_geom[0].twinx()
     axs_geom_0_twin.plot(dist_displ['cxold'][-1, :] * 1e3,
                          dist_displ['cy'][-1, :] * 1e-3,
                          '--', c=color, label='Surface deflection')
     axs_geom[1].plot(dist_displ['mxold'][-1, :] * 1e3,
                      dist_displ['msener'][-1, :] * 1e-3,
-                     '-', c=color, label='Internal SED')
+                     '-', c=color, label='Interior SED')
     axs_geom_1_twin = axs_geom[1].twinx()
     axs_geom_1_twin.plot(dist_displ['cxold'][-1, :] * 1e3,
                          dist_displ['cy'][-1, :] * 1e-3,
                          '--', c=color, label='Surface deflection')
     axs_geom[2].plot(dist_force['mxold'][-1, :] * 1e3,
                      dist_force['mstress'][-1, :] * 1e-3,
-                     '-', c=color, label='Internal stress')
+                     '-', c=color, label='Interior stress')
     axs_geom_2_twin = axs_geom[2].twinx()
     axs_geom_2_twin.plot(dist_force['cxold'][-1, :] * 1e3,
                          dist_force['cpress'][-1, :] * 1e-3,
@@ -218,22 +218,22 @@ def plot_shape(repSample_list):
     axs_rate[-1].set_xlabel('Time (s)')
     axs_geom[-1].set_xlabel('Location (mm)')
     # y-axis
-    axs_rate[0].set_ylabel(r'Internal strain rate (s$^{-1}$)')
+    axs_rate[0].set_ylabel(r'Interior strain rate (s$^{-1}$)')
     axs_rate[0].set_title('Controlled surface deflection')
     axs_rate_0_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[1].set_ylabel(r'Internal SED rate (kPa$\cdot m^3$/s)')
+    axs_rate[1].set_ylabel(r'Interior SED rate (kPa$\cdot m^3$/s)')
     axs_rate[1].set_title('Controlled surface deflection')
     axs_rate_1_twin.set_ylabel(r'Surface velocity (mm/s)')
-    axs_rate[2].set_ylabel('Internal stress rate (kPa/s)')
+    axs_rate[2].set_ylabel('Interior stress rate (kPa/s)')
     axs_rate[2].set_title('Controlled surface pressure')
     axs_rate_2_twin.set_ylabel(r'Surface pressure rate (kPa/s)')
-    axs_geom[0].set_ylabel('Internal strain')
+    axs_geom[0].set_ylabel('Interior strain')
     axs_geom[0].set_title('Controlled surface deflection')
     axs_geom_0_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[1].set_ylabel('Internal ED (kJ/$m^3$)')
+    axs_geom[1].set_ylabel('Interior SED (kJ/$m^3$)')
     axs_geom[1].set_title('Controlled surface deflection')
     axs_geom_1_twin.set_ylabel(r'Surface deflection (mm)')
-    axs_geom[2].set_ylabel('Internal stress (kPa)')
+    axs_geom[2].set_ylabel('Interior stress (kPa)')
     axs_geom[2].set_title('Controlled surface pressure')
     axs_geom_2_twin.set_ylabel(r'Surface pressure (kPa)')
     # Add legends
@@ -477,7 +477,7 @@ def plot_neural(repSample_list, force_control):
     for axes in axs[:, 1]:
         axes.set_xlabel(r'Steady-state tip force (mN)')
     for i, axes in enumerate(axs[:, 0].ravel()):
-        axes.set_ylabel('Static firing (Hz) \nPredicted from internal %s' %
+        axes.set_ylabel('Static firing (Hz) \nPredicted from interior %s' %
                         (['strain', 'SED', 'stress'][i]))
     for axes_id, axes in enumerate(axs.ravel()):
         if axes_id % 2:
@@ -538,7 +538,7 @@ def plot_neural_geom(repSample_list):
     for axes in axs.ravel():
         axes.set_xlabel(r'Location (mm)')
     for i, axes in enumerate(axs[:, 0].ravel()):
-        axes.set_ylabel('Static firing (Hz) \nPredicted from internal %s' %
+        axes.set_ylabel('Static firing (Hz) \nPredicted from interior %s' %
                         (['strain', 'SED', 'stress'][i]))
     for axes_id, axes in enumerate(axs.ravel()):
         if axes_id % 2:
