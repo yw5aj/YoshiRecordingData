@@ -590,8 +590,9 @@ if __name__ == '__main__':
                 fiber.df_lif_r2 = pd.DataFrame(fiber.lif_r2)
     # %% Plot fitting figure for paper
     for fiber_id in FIBER_FIT_ID_LIST:
-        fig, axs = plt.subplots(2, 1, figsize=(3.27, 6.83))
+        fig, axs = plt.subplots(3, 1, figsize=(3.5, 7))
         fiber = fiber_list[fiber_id]
+        fiber.get_stim_block_trace_exp()
         fmt = MARKER_LIST[fiber_id]
         color = 'k'
         # Plot experiment
@@ -603,6 +604,10 @@ if __name__ == '__main__':
             fiber.binned_exp['displ_mean'] * 1e-3, fiber.binned_exp
             ['static_fr_mean'], fiber.binned_exp['static_fr_std'],
             fmt=fmt, color=color, mec=color, ms=MS, label='Experiment')
+        for stim_id, stim_group in enumerate(fiber.stim_group_dict):
+            axs[2].plot(stim_group['traces_exp'][0]['time'],
+                        stim_group['traces_exp'][0]['raw_spike'] +
+                        250 * stim_id, color='k')
         # Plot fitting
         for quantity_id, quantity in enumerate(['stress', 'strain', 'sener']):
             ls = LS_LIST[quantity_id]
@@ -627,13 +632,18 @@ if __name__ == '__main__':
         elif fiber_id == 1:
             xmin, xmax = .40, .60
             ymin, ymax = -5, 25
-        for axes in axs:
+        for axes in axs[:-1]:
             axes.set_xlim(xmin, xmax)
         axs[1].set_ylim(ymin, ymax)
         axs[0].set_ylim(bottom=-5)
+        axs[0].set_xlabel(r'Static displacement (mm)')
         axs[1].set_xlabel(r'Static displacement (mm)')
+        axs[2].set_xlabel(r'Time (s)')
         axs[0].set_ylabel('Dynamic mean firing (Hz)')
         axs[1].set_ylabel('Static mean firing (Hz)')
+        axs[2].set_ylabel('Recorded neural responses\n')
+        plt.setp(axs[2].get_yticklabels(), visible=False)
+        plt.setp(axs[2].get_yticklines(), visible=False)
         h, l = axs[0].get_legend_handles_labels()
         legend = fig.legend(
             h, l, bbox_to_anchor=(0.125, 0.825, 0.85, .15), ncol=2,

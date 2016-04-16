@@ -9,6 +9,7 @@ VOLTAGE_THRESHOLD_LIF = 30e-3  # V
 # Time window for static phase
 STATIC_START = 2.
 STATIC_END = 4.5
+FS = int(1 / DT)
 
 # Target COV for SAI, from Wellnitz et al., 0.78 ± 0.09
 COV = .78

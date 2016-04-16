@@ -19,8 +19,9 @@ from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import cascaded_union, polygonize, unary_union
 
 from constants import (
-    DT, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS, FIBER_MECH_ID,
-    FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE, FIBER_RCV)
+    DT, FS, FIBER_TOT_NUM, MARKER_LIST, COLOR_LIST, MS, FIBER_MECH_ID,
+    FIBER_FIT_ID_LIST, LS_LIST, EVAL_DISPL, EVAL_FORCE, FIBER_RCV,
+    STATIC_START, STATIC_END)
 from fitlif import LifModel
 
 
@@ -103,6 +104,13 @@ def fill_polygons(polygons, axes, **kwargs):
             axes.fill(*polygon.exterior.xy, **kwargs)
     elif isinstance(polygons, Polygon):
         axes.fill(*polygons.exterior.xy, **kwargs)
+
+
+def get_static_mean(array, max_index):
+    static_start_index = max_index + int(FS * STATIC_START)
+    static_end_index = max_index + int(FS * STATIC_END)
+    static_mean = array[static_start_index:static_end_index].mean()
+    return static_mean
 
 
 class SimFiber:
@@ -228,12 +236,16 @@ class SimFiber:
                 displcoeff[1] * self.traces[i]['displ']
         # Get the FEM and corresponding displ / force
         self.static_displ_exp = np.array(
-            [self.traces[i]['displ'][-1] for i in range(self.stim_num)]) * 1e3
+            [get_static_mean(self.traces[i]['displ'],
+                             self.traces[i]['max_index'])
+                for i in range(self.stim_num)]) * 1e3
         self.dynamic_displ_exp = np.array(
             [self.traces[i]['displ'][self.traces[i]['max_index']]
              for i in range(self.stim_num)]) * 1e3
         self.static_force_fem = np.array(
-            [self.traces[i]['force'][-1] for i in range(self.stim_num)])
+            [get_static_mean(self.traces[i]['force'],
+                             self.traces[i]['max_index'])
+                for i in range(self.stim_num)])
         self.dynamic_force_fem = np.array(
             [self.traces[i]['force'].max() for i in range(self.stim_num)])
         self.static_force_exp = self.static_force_fem * 1e3

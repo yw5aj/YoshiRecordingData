@@ -16,9 +16,11 @@ from scipy.stats import pearsonr
 from simulation import (
     SimFiber, fill_between_curves, fill_between_geom_curves,
     control_list, quantity_list,
-    MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, FIBER_MECH_ID)
+    MAX_RADIUS, MAX_TIME, MAX_RATE_TIME, FIBER_MECH_ID,
+    STATIC_END, STATIC_START, DT)
 
 
+fs = 1 / DT
 stim_num = 7
 level_num = 6
 level_plot_iter = range(6)
@@ -45,6 +47,7 @@ class RepSample(SimFiber):
         self.level = sample_id
         self.control = control
         self.stim_num = stim_num
+        self.fs = 1 / DT
         self.get_dist()
         self.load_traces()
         self.load_trans_params()
@@ -156,6 +159,34 @@ def quantify_variance(repSample_list):
     return isrd_list
 
 
+def fine_interp_array(dist, quantity, loc_index):
+    time = dist['time'][:, 0]
+    time_fine = np.arange(0, time.max(), DT)
+    array = dist[quantity][:, loc_index]
+    array_fine = np.interp(time_fine, time, array)
+    return time_fine, array_fine
+
+
+def get_dist_static_mean(dist, quantity):
+    # Get max_index amd max_loc_index
+    if quantity.startswith('m'):
+        time_fine, stress_fine = fine_interp_array(dist, 'mstress', 0)
+        max_index = stress_fine.argmax()
+        max_loc_index = dist['mstress'].shape[1]
+    elif quantity.startswith('c'):
+        time_fine, press_fine = fine_interp_array(dist, 'cpress', 0)
+        max_index = press_fine.argmax()
+        max_loc_index = dist['cpress'].shape[1]
+    static_mean_array = np.empty(max_loc_index)
+    for loc_index in range(max_loc_index):
+        time_fine, array_fine = fine_interp_array(dist, quantity, loc_index)
+        static_start_index = max_index + int(fs * STATIC_START)
+        static_end_index = max_index + int(fs * STATIC_END)
+        static_mean_array[loc_index] = array_fine[
+            static_start_index:static_end_index].mean()
+    return static_mean_array
+
+
 def plot_shape(repSample_list):
     fig_rate, axs_rate = plt.subplots(3, 1, figsize=(3.5, 6))
     fig_geom, axs_geom = plt.subplots(3, 1, figsize=(3.5, 6))
@@ -188,25 +219,25 @@ def plot_shape(repSample_list):
     dist_displ = repSampleDispl.dist[stim]
     dist_force = repSampleForce.dist[stim]
     axs_geom[0].plot(dist_displ['mxold'][-1, :] * 1e3,
-                     dist_displ['mstrain'][-1, :],
+                     get_dist_static_mean(dist_displ, 'mstrain'),
                      '-', c=color, label='Interior strain')
     axs_geom_0_twin = axs_geom[0].twinx()
     axs_geom_0_twin.plot(dist_displ['cxold'][-1, :] * 1e3,
-                         dist_displ['cy'][-1, :] * 1e-3,
+                         get_dist_static_mean(dist_displ, 'cy') * 1e-3,
                          '--', c=color, label='Surface deflection')
     axs_geom[1].plot(dist_displ['mxold'][-1, :] * 1e3,
-                     dist_displ['msener'][-1, :] * 1e-3,
+                     get_dist_static_mean(dist_displ, 'msener') * 1e-3,
                      '-', c=color, label='Interior SED')
     axs_geom_1_twin = axs_geom[1].twinx()
     axs_geom_1_twin.plot(dist_displ['cxold'][-1, :] * 1e3,
-                         dist_displ['cy'][-1, :] * 1e-3,
+                         get_dist_static_mean(dist_displ, 'cy') * 1e-3,
                          '--', c=color, label='Surface deflection')
     axs_geom[2].plot(dist_force['mxold'][-1, :] * 1e3,
-                     dist_force['mstress'][-1, :] * 1e-3,
+                     get_dist_static_mean(dist_force, 'mstress') * 1e-3,
                      '-', c=color, label='Interior stress')
     axs_geom_2_twin = axs_geom[2].twinx()
     axs_geom_2_twin.plot(dist_force['cxold'][-1, :] * 1e3,
-                         dist_force['cpress'][-1, :] * 1e-3,
+                         get_dist_static_mean(dist_force, 'cpress') * 1e-3,
                          '--', c=color, label='Surface pressure')
     # Set x and y lim
     for axes in axs_rate.ravel():
@@ -257,7 +288,7 @@ def plot_shape(repSample_list):
     axs_geom[2].legend(h1 + h2, l1 + l2, loc=3)
     # Add panel labels
     for axes_id, axes in enumerate(axs_rate.ravel()):
-        axes.text(-.175, 1.05, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(-.175, 1.1, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     for axes_id, axes in enumerate(axs_geom.ravel()):
         axes.text(-.2, 1.05, chr(65+axes_id), transform=axes.transAxes,
@@ -291,7 +322,7 @@ def quantify_shape(repSample_list):
             xcoord = np.linspace(0, MAX_RADIUS, 100)
             stimulus = np.interp(xcoord, dist['cxold'][-1], dist[surface][-1])
             response = np.interp(xcoord, dist['mxold'][-1],
-                                 dist['m' + quantity][-1])
+                                 get_dist_static_mean(dist, 'm%s' % quantity))
         return pearsonr(stimulus, response)[0]
 
     stim = representative_stim_num
@@ -545,7 +576,7 @@ def plot_neural_geom(repSample_list):
             x = -.15
         else:
             x = -.2
-        axes.text(x, 1.125, chr(65+axes_id), transform=axes.transAxes,
+        axes.text(x, 1.15, chr(65+axes_id), transform=axes.transAxes,
                   fontsize=12, fontweight='bold', va='top')
     axs[0, 0].set_title('Controlled tip displacement')
     axs[0, 1].set_title('Controlled tip force')
