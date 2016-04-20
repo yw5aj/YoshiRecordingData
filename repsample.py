@@ -187,12 +187,12 @@ def get_dist_static_mean(dist, quantity):
     return static_mean_array
 
 
-def plot_shape(repSample_list):
+def plot_shape(repSample_list, with_color=True):
     fig_rate, axs_rate = plt.subplots(3, 1, figsize=(3.5, 6))
     fig_geom, axs_geom = plt.subplots(3, 1, figsize=(3.5, 6))
     stim = representative_stim_num
     level = 0
-    color = get_color(stim)
+    color = get_color(stim) if with_color else 'k'
     repSampleDispl = repSample_list[level][0]
     repSampleForce = repSample_list[level][1]
     axs_rate[0].plot(repSampleDispl.traces_rate[stim]['time'],
@@ -296,10 +296,15 @@ def plot_shape(repSample_list):
     # Save figure
     fig_rate.tight_layout()
     fig_geom.tight_layout()
-    fig_rate.savefig('./plots/RepSample/shape_rate.png', dpi=300)
-    fig_rate.savefig('./plots/RepSample/shape_rate.pdf', dpi=300)
-    fig_geom.savefig('./plots/RepSample/shape_geom.png', dpi=300)
-    fig_geom.savefig('./plots/RepSample/shape_geom.pdf', dpi=300)
+    fname_rate = './plots/RepSample/shape_rate'
+    fname_geom = './plots/RepSample/shape_geom'
+    if not with_color:
+        fname_rate += '_bw'
+        fname_geom += '_bw'
+    fig_rate.savefig(fname_rate + '.png', dpi=300)
+    fig_rate.savefig(fname_rate + '.pdf', dpi=300)
+    fig_geom.savefig(fname_geom + '.png', dpi=300)
+    fig_geom.savefig(fname_geom + '.pdf', dpi=300)
     plt.close(fig_rate)
     plt.close(fig_geom)
 
@@ -384,7 +389,7 @@ def quantify_neural_mechanics(repSample_list):
     return range_avg_abs, range_avg_rel
 
 
-def plot_neural_mechanics(repSample_list):
+def plot_neural_mechanics(repSample_list, with_color=True):
     fig, axs = plt.subplots()
     x_array_list, y_array_list = [], []
     for level in level_plot_iter:
@@ -399,7 +404,7 @@ def plot_neural_mechanics(repSample_list):
         '-k', label='Average skin')
     # Plot lines for connecting traces figure
     for stim in stim_plot_list:
-        color = get_color(stim)
+        color = get_color(stim) if with_color else 'k'
         x = repSample_list[0][0].static_displ_exp[stim]
         y = repSample_list[0][0].static_force_exp[stim]
         y_all = [
@@ -424,12 +429,16 @@ def plot_neural_mechanics(repSample_list):
     axs.set_title('Controlled tip displacement')
     # Save
     fig.tight_layout()
-    fig.savefig('./plots/RepSample/neural_mechanics.png', dpi=300)
-    fig.savefig('./plots/RepSample/neural_mechanics.pdf', dpi=300)
+    if with_color:
+        fig.savefig('./plots/RepSample/neural_mechanics.png', dpi=300)
+        fig.savefig('./plots/RepSample/neural_mechanics.pdf', dpi=300)
+    else:
+        fig.savefig('./plots/RepSample/neural_mechanics_bw.png', dpi=300)
+        fig.savefig('./plots/RepSample/neural_mechanics_bw.pdf', dpi=300)
     plt.close(fig)
 
 
-def plot_neural(repSample_list, force_control):
+def plot_neural(repSample_list, force_control, with_color=True):
     control = int(force_control)
     fiber_id = FIBER_MECH_ID
     fig, axs = plt.subplots(3, 2, figsize=(5, 6))
@@ -469,7 +478,7 @@ def plot_neural(repSample_list, force_control):
 
     def add_colored_bands(axes, quantity, control):
         for stim in stim_plot_list:
-            color = get_color(stim)
+            color = get_color(stim) if with_color else 'k'
             if control == 0:
                 x = repSample_list[0][control].static_displ_exp[stim]
             elif control == 1:
@@ -524,8 +533,12 @@ def plot_neural(repSample_list, force_control):
     axs[0, 1].legend(handels[0:1], ['Average skin'], loc=2)
     # Save
     fig.tight_layout()
-    fig.savefig('./plots/RepSample/neural.png', dpi=300)
-    fig.savefig('./plots/RepSample/neural.pdf', dpi=300)
+    if with_color:
+        fig.savefig('./plots/RepSample/neural.png', dpi=300)
+        fig.savefig('./plots/RepSample/neural.pdf', dpi=300)
+    else:
+        fig.savefig('./plots/RepSample/neural_bw.png', dpi=300)
+        fig.savefig('./plots/RepSample/neural_bw.pdf', dpi=300)
     plt.close(fig)
 
 
@@ -611,8 +624,11 @@ if __name__ == '__main__':
     # %% Ploting
     plot_variance(repSample_list)
     plot_shape(repSample_list)
+    plot_shape(repSample_list, with_color=False)
     plot_neural_mechanics(repSample_list)
+    plot_neural_mechanics(repSample_list, with_color=False)
     plot_neural(repSample_list, force_control=True)
+    plot_neural(repSample_list, force_control=True, with_color=False)
     plot_neural_geom(repSample_list)
     # %% Make quantification table
     # Obtain values
