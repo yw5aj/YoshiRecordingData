@@ -603,6 +603,15 @@ def plot_neural_geom(repSample_list):
     plt.close(fig)
 
 
+def quantify_std(repSample_list, stim=4):
+    fr_list = []
+    fiber_id = FIBER_MECH_ID
+    for i in range(6):
+        repSample = repSample_list[i][0]
+        fr_list.append(repSample.predicted_fr[fiber_id]['strain'].T[1][stim])
+    return np.std(fr_list, ddof=1)
+
+
 if __name__ == '__main__':
     run_fiber = False
     fname = './pickles/repSample_list.pkl'
